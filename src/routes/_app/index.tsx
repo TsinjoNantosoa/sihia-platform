@@ -1,8 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_app/")({
   beforeLoad: () => {
-    // La home redirige vers le dashboard protégé.
     throw redirect({ to: "/dashboard" });
   },
 });
