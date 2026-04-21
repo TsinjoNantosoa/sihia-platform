@@ -12,8 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppRbacRouteImport } from './routes/_app/rbac'
+import { Route as AppPredictionRouteImport } from './routes/_app/prediction'
 import { Route as AppDoctorsRouteImport } from './routes/_app/doctors'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppAppointmentsRouteImport } from './routes/_app/appointments'
+import { Route as AppAnalyticsRouteImport } from './routes/_app/analytics'
 import { Route as AppPatientsIndexRouteImport } from './routes/_app/patients/index'
 import { Route as AppPatientsPatientIdRouteImport } from './routes/_app/patients/$patientId'
 
@@ -31,6 +36,21 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRbacRoute = AppRbacRouteImport.update({
+  id: '/rbac',
+  path: '/rbac',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPredictionRoute = AppPredictionRouteImport.update({
+  id: '/prediction',
+  path: '/prediction',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDoctorsRoute = AppDoctorsRouteImport.update({
   id: '/doctors',
   path: '/doctors',
@@ -39,6 +59,16 @@ const AppDoctorsRoute = AppDoctorsRouteImport.update({
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAppointmentsRoute = AppAppointmentsRouteImport.update({
+  id: '/appointments',
+  path: '/appointments',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPatientsIndexRoute = AppPatientsIndexRouteImport.update({
@@ -55,16 +85,26 @@ const AppPatientsPatientIdRoute = AppPatientsPatientIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/appointments': typeof AppAppointmentsRoute
   '/dashboard': typeof AppDashboardRoute
   '/doctors': typeof AppDoctorsRoute
+  '/prediction': typeof AppPredictionRoute
+  '/rbac': typeof AppRbacRoute
+  '/settings': typeof AppSettingsRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
   '/patients/': typeof AppPatientsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/appointments': typeof AppAppointmentsRoute
   '/dashboard': typeof AppDashboardRoute
   '/doctors': typeof AppDoctorsRoute
+  '/prediction': typeof AppPredictionRoute
+  '/rbac': typeof AppRbacRoute
+  '/settings': typeof AppSettingsRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
   '/patients': typeof AppPatientsIndexRoute
 }
@@ -73,8 +113,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/appointments': typeof AppAppointmentsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/doctors': typeof AppDoctorsRoute
+  '/_app/prediction': typeof AppPredictionRoute
+  '/_app/rbac': typeof AppRbacRoute
+  '/_app/settings': typeof AppSettingsRoute
   '/_app/patients/$patientId': typeof AppPatientsPatientIdRoute
   '/_app/patients/': typeof AppPatientsIndexRoute
 }
@@ -83,16 +128,26 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/analytics'
+    | '/appointments'
     | '/dashboard'
     | '/doctors'
+    | '/prediction'
+    | '/rbac'
+    | '/settings'
     | '/patients/$patientId'
     | '/patients/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/analytics'
+    | '/appointments'
     | '/dashboard'
     | '/doctors'
+    | '/prediction'
+    | '/rbac'
+    | '/settings'
     | '/patients/$patientId'
     | '/patients'
   id:
@@ -100,8 +155,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/analytics'
+    | '/_app/appointments'
     | '/_app/dashboard'
     | '/_app/doctors'
+    | '/_app/prediction'
+    | '/_app/rbac'
+    | '/_app/settings'
     | '/_app/patients/$patientId'
     | '/_app/patients/'
   fileRoutesById: FileRoutesById
@@ -135,6 +195,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/rbac': {
+      id: '/_app/rbac'
+      path: '/rbac'
+      fullPath: '/rbac'
+      preLoaderRoute: typeof AppRbacRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/prediction': {
+      id: '/_app/prediction'
+      path: '/prediction'
+      fullPath: '/prediction'
+      preLoaderRoute: typeof AppPredictionRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/doctors': {
       id: '/_app/doctors'
       path: '/doctors'
@@ -147,6 +228,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/appointments': {
+      id: '/_app/appointments'
+      path: '/appointments'
+      fullPath: '/appointments'
+      preLoaderRoute: typeof AppAppointmentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/patients/': {
@@ -167,15 +262,25 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppAppointmentsRoute: typeof AppAppointmentsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDoctorsRoute: typeof AppDoctorsRoute
+  AppPredictionRoute: typeof AppPredictionRoute
+  AppRbacRoute: typeof AppRbacRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppPatientsPatientIdRoute: typeof AppPatientsPatientIdRoute
   AppPatientsIndexRoute: typeof AppPatientsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAnalyticsRoute: AppAnalyticsRoute,
+  AppAppointmentsRoute: AppAppointmentsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDoctorsRoute: AppDoctorsRoute,
+  AppPredictionRoute: AppPredictionRoute,
+  AppRbacRoute: AppRbacRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppPatientsPatientIdRoute: AppPatientsPatientIdRoute,
   AppPatientsIndexRoute: AppPatientsIndexRoute,
 }
