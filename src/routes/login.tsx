@@ -116,9 +116,13 @@ function LoginPage() {
             </button>
 
             <div className="flex items-center justify-between text-xs">
-              <a href="#" className="text-primary hover:underline">
+              <button 
+                type="button" 
+                onClick={() => toast.info("Fonctionnalité à venir")}
+                className="text-primary hover:underline"
+              >
                 {t("login.forgot")}
-              </a>
+              </button>
               <div className="flex gap-1.5 text-muted-foreground">
                 {LOCALES.map((l) => (
                   <button

@@ -1,0 +1,932 @@
+﻿CAHIER DE PROJET
+SystÃ¨me Intelligent de Gestion HospitaliÃ¨re
+BasÃ© sur l'Intelligence Artificielle
+Niveau
+Master 2 / IngÃ©nierie Logicielle
+Domaine
+IA Â· Data Engineering Â· SaaS SantÃ©
+Technologies
+FastAPI Â· React Â· PostgreSQL Â· Airflow Â· ML/DL Â· Docker
+Version
+1.0 â€” Document complet
+AnnÃ©e
+2024 â€“ 2025
+Document confidentiel â€” Usage acadÃ©mique et business
+01  
+PrÃ©sentation du Projet
+1.1 Contexte
+Le secteur de la santÃ© mondiale fait face Ã  une pression croissante : augmentation de la population, vieillissement dÃ©mographique, pÃ©nurie de personnels soignants et explosion des donnÃ©es mÃ©dicales. Les hÃ´pitaux et cliniques, surtout dans les pays Ã©mergents, utilisent encore des systÃ¨mes fragmentÃ©s, souvent des feuilles Excel ou des logiciels obsolÃ¨tes, gÃ©nÃ©rant des erreurs mÃ©dicales, des pertes financiÃ¨res et une expÃ©rience patient dÃ©gradÃ©e.
+En Afrique, en Asie du Sud-Est et en AmÃ©rique Latine, la transformation numÃ©rique des hÃ´pitaux est Ã  peine amorcÃ©e. Pourtant, 90 % des donnÃ©es de santÃ© collectÃ©es ne sont jamais analysÃ©es. Cette masse de donnÃ©es inexploitÃ©e reprÃ©sente un gisement d'intelligence opÃ©rationnelle considÃ©rable.
+1.2 ProblÃ©matique
+Comment concevoir une plateforme hospitaliÃ¨re intelligente, capable de centraliser la gestion opÃ©rationnelle tout en exploitant l'IA et le Big Data pour amÃ©liorer la prise de dÃ©cision clinique, optimiser le flux de patients et offrir une expÃ©rience soignant-patient de niveau international ?
+1.3 Objectifs
+Objectifs Techniques
+Concevoir une API REST robuste avec FastAPI (Python) pour tous les modules mÃ©tiers
+ImplÃ©menter une architecture microservices scalable, conteneurisÃ©e avec Docker
+Mettre en place un pipeline de donnÃ©es Airflow pour l'ingestion, le nettoyage et la transformation
+DÃ©velopper un modÃ¨le ML de prÃ©diction du flux de patients (Time Series + Classification)
+IntÃ©grer un chatbot mÃ©dical intelligent basÃ© sur un LLM (GPT-4 ou LLaMA)
+Garantir la sÃ©curitÃ© des donnÃ©es mÃ©dicales (RGPD, HL7 FHIR, chiffrement)
+Objectifs Business
+CrÃ©er un produit SaaS vendable Ã  des cliniques privÃ©es et hÃ´pitaux Ã  l'international
+Atteindre un MVP opÃ©rationnel en 3 mois, prÃªt pour une dÃ©monstration investisseur
+Viser un ARR (Annual Recurring Revenue) de 500K$ d'ici 18 mois post-lancement
+Positionner la solution comme alternative africaine aux gÃ©ants du secteur (Epic, Meditech)
+02  
+Analyse des Besoins
+2.1 Besoins Fonctionnels
+Module 1 â€” Gestion des Patients
+CrÃ©ation, modification, archivage du dossier patient (donnÃ©es dÃ©mographiques, allergies, antÃ©cÃ©dents)
+NumÃ©ro de dossier unique (UUID) avec QR code imprimable
+Historique mÃ©dical complet : consultations, ordonnances, examens, hospitalisations
+Gestion des assurances et modes de paiement
+Recherche avancÃ©e multi-critÃ¨res (nom, date, pathologie, mÃ©decin traitant)
+Module 2 â€” Gestion des MÃ©decins
+Profil complet : spÃ©cialitÃ©, planning, disponibilitÃ©s
+Gestion des vacations et gardes
+Statistiques de performance et de charge de travail
+Tableau de bord mÃ©decin personnalisÃ©
+Module 3 â€” Gestion des Rendez-vous
+Prise de rendez-vous en ligne (patient ou staff)
+Calendrier interactif avec gestion des conflits
+Rappels automatiques (email, SMS)
+File d'attente intelligente avec prioritÃ© mÃ©dicale
+Module 4 â€” Dashboard Analytique
+KPIs en temps rÃ©el : taux d'occupation, durÃ©e moyenne de sÃ©jour, revenus
+Graphiques interactifs (recharts, D3.js)
+Rapports automatisÃ©s exportables (PDF, Excel)
+Comparatifs mensuels et tendances
+Module 5 â€” PrÃ©diction du Flux de Patients (IA)
+PrÃ©vision des admissions sur 7 et 30 jours (modÃ¨le LSTM / Prophet)
+Alerte automatique en cas de surcharge prÃ©visionnelle
+Aide Ã  la planification des ressources (lits, personnel)
+Module 6 â€” Chatbot MÃ©dical Intelligent
+RÃ©ponses aux questions mÃ©dicales gÃ©nÃ©rales (symptÃ´mes, mÃ©dicaments)
+Orientation vers le bon service / spÃ©cialiste
+Rappels de traitements et suivi post-consultation
+Interface multilingue (franÃ§ais, anglais, arabe)
+2.2 Besoins Non Fonctionnels
+CritÃ¨re
+Exigence
+Indicateur
+Performance
+Temps de rÃ©ponse API < 200ms (p95)
+Load testing avec Locust
+DisponibilitÃ©
+Uptime > 99.5% (SLA)
+Monitoring Prometheus + Grafana
+SÃ©curitÃ©
+Chiffrement TLS 1.3, JWT, RBAC
+Audit OWASP Top 10
+ScalabilitÃ©
+Support de 10 000 patients simultanÃ©s
+Architecture horizontale Docker Swarm
+ConformitÃ©
+RGPD, HL7 FHIR v4
+Audit annuel DPO
+MaintenabilitÃ©
+Couverture tests > 80%
+CI/CD avec GitHub Actions
+03  
+Analyse du MarchÃ© et Concurrence
+3.1 MarchÃ© Global des Logiciels Hospitaliers
+Le marchÃ© mondial des systÃ¨mes d'information hospitaliers (HIS) est Ã©valuÃ© Ã  35 milliards USD en 2024, avec un CAGR de 12,4% jusqu'en 2030. Les segments les plus dynamiques sont les pays en dÃ©veloppement (Afrique subsaharienne +18%, Asie du Sud-Est +15%) oÃ¹ la pÃ©nÃ©tration numÃ©rique hospitaliÃ¨re est encore faible (< 20%).
+3.2 Tableau Comparatif des Concurrents
+Solution
+Cible
+Forces
+Faiblesses
+Prix/mois
+Epic Systems
+Grands hÃ´pitaux US
+Complet, certifiÃ©
+CoÃ»t prohibitif, non adaptÃ© aux pays Ã©mergents
+> 10 000$
+Meditech
+HÃ´pitaux moyens US/Canada
+Solide, intÃ©grations
+Interface vieillissante, pas d'IA native
+3 000 â€“ 8 000$
+OpenMRS
+ONG, Afrique
+Open source gratuit
+Pas d'IA, UI pauvre, pas de SaaS
+Gratuit
+Athenahealth
+Cabinets mÃ©dicaux US
+Cloud natif, RCM
+Exclusivement marchÃ© US
+1 500 â€“ 4 000$
+HIS Axway
+Europe/MENA
+ConformitÃ© RGPD
+Pas de ML prÃ©dictif, coÃ»ts Ã©levÃ©s
+2 000 â€“ 5 000$
+Notre Solution
+PME santÃ© mondiale
+IA + Data + abordable
+Nouveau sur le marchÃ©
+200 â€“ 800$
+3.3 Avantages Concurrentiels
+Prix 10x infÃ©rieur aux solutions enterprise avec des fonctionnalitÃ©s IA comparables
+DÃ©ploiement en 48h grÃ¢ce Ã  l'architecture Docker + SaaS multi-tenant
+IA prÃ©dictive intÃ©grÃ©e nativement (pas un module additionnel payant)
+Interface multilingue dÃ¨s la v1 (franÃ§ais, anglais, arabe)
+ConÃ§u pour les infrastructures limitÃ©es (mode offline-first optionnel)
+04  
+Proposition de Valeur
+4.1 Pour les HÃ´pitaux et Cliniques
+ProblÃ¨me actuel
+Notre solution
+Valeur crÃ©Ã©e
+Files d'attente ingÃ©rables
+IA de prÃ©diction des flux
+RÃ©duction 30% des temps d'attente
+DonnÃ©es mÃ©dicales Ã©parpillÃ©es
+Dossier patient unifiÃ© + cloud
+ZÃ©ro perte de dossier
+DÃ©cisions empiriques
+Dashboard analytique IA
+DÃ©cisions basÃ©es sur la data
+Personnel dÃ©bordÃ©
+Chatbot + automatisation
+LibÃ¨re 2h/jour par soignant
+CoÃ»ts IT Ã©levÃ©s
+SaaS pay-as-you-go
+ROI positif dÃ¨s le 3Ã¨me mois
+4.2 Innovation Technologique
+Notre solution combine trois innovations majeures rarement rÃ©unies dans un seul produit Ã  ce niveau de prix :
+IA PrÃ©dictive EmbarquÃ©e : modÃ¨le LSTM entraÃ®nÃ© sur donnÃ©es hospitaliÃ¨res rÃ©elles, permettant de prÃ©voir les admissions Ã  7 et 30 jours avec une prÃ©cision > 85%
+Chatbot MÃ©dical LLM : basÃ© sur une fine-tuning de LLaMA-3 sur corpus mÃ©dical francophone, avec guardrails de sÃ©curitÃ© (pas de diagnostic critique)
+Data Pipeline Temps RÃ©el : Airflow + PostgreSQL + Redis Cache garantissant des dashboards Ã  jour toutes les 15 minutes
+05  
+Architecture Technique DÃ©taillÃ©e
+5.1 Vue d'Ensemble de l'Architecture
+L'architecture suit le pattern Clean Architecture avec sÃ©paration stricte des couches, combinÃ©e Ã  une approche microservices lÃ©gÃ¨re orchestrÃ©e par Docker Compose (dev) et Docker Swarm / Kubernetes (production).
+ARCHITECTURE
+3-Tier : Frontend React â†’ API Gateway FastAPI â†’ Microservices PostgreSQL/ML/Chatbot
+5.2 Composants Principaux
+Backend â€” API FastAPI
+Framework : FastAPI 0.110+ avec Python 3.11
+Structure : Routers modulaires (patients, mÃ©decins, RDV, analytics, ML, chatbot)
+ORM : SQLAlchemy 2.0 + Alembic pour les migrations
+Cache : Redis pour sessions et rÃ©sultats ML frÃ©quents
+File de tÃ¢ches : Celery + Redis pour jobs asynchrones (rapports, emails)
+Documentation : OpenAPI/Swagger auto-gÃ©nÃ©rÃ©e
+Frontend â€” React Application
+Framework : React 18 + TypeScript + Vite
+UI Library : Shadcn/UI + TailwindCSS
+State Management : Zustand + React Query pour le cache API
+Graphiques : Recharts + D3.js pour dashboards complexes
+PWA : Service Worker pour mode offline partiel
+Base de DonnÃ©es â€” PostgreSQL
+PostgreSQL 16 avec extensions : pgvector (embeddings chatbot), TimescaleDB (sÃ©ries temporelles)
+SchÃ©ma multi-tenant avec isolation par schema PostgreSQL
+Backups automatiques toutes les 6h vers S3/MinIO
+Read Replica pour les requÃªtes analytiques lourdes
+Pipeline de DonnÃ©es â€” Airflow
+Apache Airflow 2.8 orchestrant les DAGs d'ingestion et transformation
+Connexions : PostgreSQL, API externes (assurances, labos), CSV uploads
+FrÃ©quences : temps rÃ©el (webhook), horaire (agrÃ©gats), quotidien (rapports ML)
+Module Machine Learning
+EntraÃ®nement : scikit-learn (baseline), TensorFlow/Keras (LSTM), Prophet (sÃ©ries temporelles)
+Serving : modÃ¨les sÃ©rialisÃ©s (joblib/ONNX) servis via endpoint FastAPI dÃ©diÃ©
+Suivi expÃ©riences : MLflow pour versioning des modÃ¨les
+RÃ©entraÃ®nement automatique mensuel via DAG Airflow
+Chatbot IA
+Base : LLaMA-3-8B-Instruct fine-tunÃ© sur corpus mÃ©dical (MedQA, PubMedQA FR)
+RAG : LangChain + pgvector pour recherche dans la base de connaissances locale
+Guardrails : systÃ¨me de filtrage des demandes de diagnostic critique
+Interface : widget React intÃ©grable dans le portail patient
+5.3 Flux de DonnÃ©es
+Source
+Traitement
+Destination
+FrÃ©quence
+Saisie staff (formulaire)
+Validation Pydantic + ORM
+PostgreSQL patients
+Temps rÃ©el
+Upload CSV (labo/imagerie)
+DAG Airflow clean+transform
+PostgreSQL + S3
+Ã€ la demande
+API Assurance externe
+DAG Airflow fetch+normalize
+PostgreSQL assurances
+Toutes les 6h
+DonnÃ©es historiques RDV
+Feature engineering ML
+ModÃ¨le LSTM
+Quotidien
+Logs systÃ¨me
+Elasticsearch + Kibana
+Dashboard ops
+Continu
+06  
+ModÃ©lisation des DonnÃ©es
+6.1 EntitÃ©s Principales
+Table : patients
+Colonne
+Type
+Contrainte
+Description
+id
+UUID
+PK, NOT NULL
+Identifiant unique du patient
+numero_dossier
+VARCHAR(20)
+UNIQUE
+RÃ©fÃ©rence lisible (ex: PAT-2024-0001)
+nom
+VARCHAR(100)
+NOT NULL
+Nom de famille
+prenom
+VARCHAR(100)
+NOT NULL
+PrÃ©nom
+date_naissance
+DATE
+NOT NULL
+Date de naissance
+sexe
+ENUM(M,F,A)
+NOT NULL
+Genre
+telephone
+VARCHAR(20)
+
+Contact tÃ©lÃ©phonique
+email
+VARCHAR(150)
+UNIQUE
+Email (login portail patient)
+groupe_sanguin
+VARCHAR(5)
+
+A+, B-, O+, etc.
+allergies
+TEXT[]
+
+Liste d'allergies (array PostgreSQL)
+medecin_referent_id
+UUID
+FK â†’ medecins.id
+MÃ©decin traitant principal
+assurance_id
+UUID
+FK â†’ assurances.id
+Couverture assurance
+created_at
+TIMESTAMPTZ
+DEFAULT NOW()
+Date crÃ©ation dossier
+tenant_id
+UUID
+FK â†’ tenants.id
+Isolation multi-tenant
+Table : medecins
+Colonne
+Type
+Contrainte
+Description
+id
+UUID
+PK
+Identifiant
+nom_complet
+VARCHAR(200)
+NOT NULL
+Nom et titre
+specialite
+VARCHAR(100)
+NOT NULL
+Ex: Cardiologie, PÃ©diatrie
+ordre_medecin
+VARCHAR(50)
+UNIQUE
+NumÃ©ro d'ordre professionnel
+email
+VARCHAR(150)
+UNIQUE
+Login systÃ¨me
+planning
+JSONB
+
+Horaires hebdomadaires structurÃ©s
+max_patients_jour
+INTEGER
+DEFAULT 20
+CapacitÃ© journaliÃ¨re
+tenant_id
+UUID
+FK â†’ tenants.id
+Multi-tenant
+Table : rendez_vous
+Colonne
+Type
+Contrainte
+Description
+id
+UUID
+PK
+Identifiant
+patient_id
+UUID
+FK â†’ patients.id
+Patient concernÃ©
+medecin_id
+UUID
+FK â†’ medecins.id
+MÃ©decin assignÃ©
+date_heure
+TIMESTAMPTZ
+NOT NULL
+Date et heure du RDV
+duree_minutes
+INTEGER
+DEFAULT 30
+DurÃ©e prÃ©vue
+statut
+ENUM
+NOT NULL
+planifie/confirme/annule/termine
+motif
+TEXT
+
+Raison de la consultation
+notes_consultation
+TEXT
+
+Notes post-consultation (chiffrÃ©es)
+created_by
+UUID
+FK â†’ users.id
+CrÃ©Ã© par (staff/patient)
+Table : historique_medical
+Colonne
+Type
+Contrainte
+Description
+id
+UUID
+PK
+Identifiant
+patient_id
+UUID
+FK â†’ patients.id
+Patient
+rdv_id
+UUID
+FK â†’ rendez_vous.id
+Consultation liÃ©e
+type_evenement
+ENUM
+NOT NULL
+consultation/hospit/examen/ordonnance
+description
+TEXT ENCRYPTED
+NOT NULL
+DÃ©tail clinique chiffrÃ© (pgcrypto)
+documents
+TEXT[]
+
+URLs vers S3 (radios, analyses)
+diagnostics_cim10
+VARCHAR[]
+
+Codes CIM-10 standardisÃ©s
+prescriptions
+JSONB
+
+MÃ©dicaments, posologie, durÃ©e
+created_at
+TIMESTAMPTZ
+DEFAULT NOW()
+Horodatage immuable
+07  
+Data Pipeline â€” Architecture Airflow
+7.1 Vue Globale du Pipeline
+Le pipeline de donnÃ©es est orchestrÃ© par Apache Airflow 2.8. Il gÃ¨re 4 grandes familles de flux : ingestion des donnÃ©es brutes, nettoyage et validation, transformation mÃ©tier, et alimentation des modÃ¨les ML.
+7.2 DAGs Principaux
+DAG 1 : dag_patient_import (quotidien 02:00)
+Lecture des fichiers CSV dÃ©posÃ©s dans le bucket S3/MinIO (uploads manuels)
+Validation du schÃ©ma avec Great Expectations (qualitÃ© donnÃ©es)
+Nettoyage : suppression doublons, normalisation noms, format tÃ©lÃ©phone
+Enrichissement : gÃ©ocodage adresses, dÃ©tection groupe sanguin manquant
+Chargement en base via UPSERT PostgreSQL avec tracking des changements
+Notification Slack/email si taux d'erreur > 5%
+DAG 2 : dag_ml_features (quotidien 03:00)
+Extraction donnÃ©es historiques RDV (12 derniers mois)
+Feature Engineering : lag features, rolling averages, variables calendaires (fÃ©riÃ©s, saison)
+Export vers table ml_features_store (feature store PostgreSQL)
+DÃ©clenchement conditionnel du DAG de rÃ©entraÃ®nement si drift dÃ©tectÃ©
+DAG 3 : dag_analytics_refresh (horaire)
+AgrÃ©gation des mÃ©triques KPI (occupation lits, revenus, NPS)
+Mise Ã  jour des vues matÃ©rialisÃ©es PostgreSQL
+Invalide le cache Redis pour forcer le rechargement des dashboards
+DAG 4 : dag_backup_and_archive (hebdomadaire)
+Dump complet PostgreSQL chiffrÃ© (AES-256)
+Upload vers S3/MinIO avec rÃ©tention 90 jours
+Archivage donnÃ©es > 5 ans en cold storage
+7.3 QualitÃ© des DonnÃ©es
+Dimension
+RÃ¨gle de validation
+Action si Ã©chec
+ComplÃ©tude
+Champs obligatoires non nuls (nom, date naissance)
+Rejet + log + alerte
+UnicitÃ©
+Un seul dossier par patient (nom+naissance+tel)
+Merge intelligent ou rejet
+Format
+Email regex, tÃ©lÃ©phone E.164, CIM-10 valide
+Correction automatique ou rejet
+FraÃ®cheur
+DonnÃ©es < 24h pour flux temps rÃ©el
+Alerte staleness
+CohÃ©rence
+Date RDV > Date naissance, RDV dans horaires mÃ©decin
+Rejet + notification
+08  
+Machine Learning â€” PrÃ©diction du Flux
+8.1 DÃ©finition du ProblÃ¨me
+OBJECTIF ML
+PrÃ©dire le nombre d'admissions journaliÃ¨res Ã  l'hÃ´pital pour les 7 et 30 prochains jours, afin d'optimiser la planification des ressources humaines et matÃ©rielles.
+8.2 DonnÃ©es UtilisÃ©es
+Historique des admissions : 3 ans minimum (minimum 1 000 observations pour LSTM)
+Variables calendaires : jour de la semaine, mois, jours fÃ©riÃ©s, vacances scolaires
+Variables mÃ©tÃ©orologiques : tempÃ©rature, saison (corrÃ©lation grippe/chaleur)
+Variables Ã©pidÃ©miologiques : donnÃ©es CDC/OMS sur maladies saisonniÃ¨res
+DonnÃ©es internes : taux d'occupation, capacitÃ©, Ã©vÃ©nements ponctuels
+8.3 Pipeline ML
+Ã‰tape
+Outil
+Description
+Collecte
+Airflow DAG
+Extraction depuis PostgreSQL + APIs externes
+Preprocessing
+pandas + scikit-learn
+Normalisation, encodage, gestion valeurs manquantes
+Feature Store
+PostgreSQL ml_features
+Centralisation des features calculÃ©es
+ModÃ¨le Baseline
+Prophet (Meta)
+ModÃ¨le rapide Ã  dÃ©ployer, interprÃ©table
+ModÃ¨le AvancÃ©
+LSTM (TensorFlow/Keras)
+Capture des patterns complexes non-linÃ©aires
+Ã‰valuation
+MAE, RMSE, MAPE
+MÃ©triques de rÃ©gression sur validation temporelle
+Versioning
+MLflow
+Tracking des expÃ©riences, comparaison modÃ¨les
+Serving
+FastAPI /api/v1/ml/predict
+Endpoint REST pour prÃ©dictions temps rÃ©el
+Monitoring
+Evidently AI
+DÃ©tection drift donnÃ©es et dÃ©gradation modÃ¨le
+8.4 MÃ©triques Cibles
+ModÃ¨le
+MAE (j)
+MAPE (%)
+Horizon
+ComplexitÃ©
+Moyenne mobile (baseline)
+8.2
+22%
+7 jours
+TrÃ¨s faible
+Prophet
+4.1
+11%
+30 jours
+Faible
+Random Forest
+3.8
+9.5%
+7 jours
+Moyenne
+LSTM (cible)
+2.3
+6.2%
+30 jours
+Ã‰levÃ©e
+8.5 ModÃ¨le LSTM â€” Architecture
+L'architecture LSTM utilise une fenÃªtre glissante de 60 jours en entrÃ©e pour prÃ©dire les 7 prochains jours (ou 30 avec ajustement). Le modÃ¨le comprend 2 couches LSTM (128 et 64 neurones), suivies d'une couche Dense de sortie avec rÃ©gularisation Dropout(0.2).
+Input shape : (batch_size, 60, n_features) â€” n_features â‰ˆ 15 aprÃ¨s feature engineering
+Architecture : LSTM(128) â†’ Dropout(0.2) â†’ LSTM(64) â†’ Dense(32, relu) â†’ Dense(7)
+Optimizer : Adam(lr=1e-3) avec LR scheduler
+Loss : Huber Loss (robustesse aux outliers Ã©pidÃ©miques)
+Early stopping : patience=10 sur validation loss
+09  
+Chatbot MÃ©dical Intelligent
+9.1 RÃ´le et Positionnement
+Le chatbot mÃ©dical est un assistant conversationnel de premier niveau, conÃ§u pour rÃ©duire la charge du personnel d'accueil, orienter les patients et rÃ©pondre aux questions non urgentes. Il n'a PAS vocation Ã  remplacer un mÃ©decin ni Ã  Ã©tablir des diagnostics.
+PÃ‰RIMÃˆTRE
+Information mÃ©dicale gÃ©nÃ©rale, orientation services, rappels traitements, FAQ administrative. HORS PÃ‰RIMÃˆTRE : diagnostics critiques, urgences vitales, prescriptions.
+9.2 Architecture Technique
+ModÃ¨le base : LLaMA-3-8B-Instruct (open source, dÃ©ployable on-premise)
+Fine-tuning : QLoRA sur corpus mÃ©dical francophone (MedQA-FR, Maladies.net, Vidal simplifiÃ©)
+RAG Pipeline : LangChain + pgvector pour recherche sÃ©mantique dans knowledge base locale
+Knowledge Base : fiches maladies OMS, guides HAS, protocoles de l'Ã©tablissement
+Guardrails : LlamaGuard pour filtrer les demandes hors pÃ©rimÃ¨tre
+Interface : React Chat Widget embarquÃ© dans le portail patient + Telegram optionnel
+9.3 Exemples d'Utilisation
+RequÃªte Patient
+RÃ©ponse Chatbot
+Action systÃ¨me
+J'ai de la fiÃ¨vre depuis 3 jours
+FiÃ¨vre persistante > 3j nÃ©cessite consultation. Je peux vous proposer un RDV demain matin avec Dr. Martin. Souhaitez-vous le prendre ?
+Propose slot RDV dispo
+Quel est le prix d'une consultation ?
+La consultation en mÃ©decine gÃ©nÃ©rale est tarifÃ©e 25â‚¬. Votre assurance XYZ couvre 70%. Reste Ã  charge : 7,50â‚¬.
+Calcul automatique
+Je souffre de diabÃ¨te, puis-je manger du riz ?
+Le riz blanc a un index glycÃ©mique Ã©levÃ©. PrÃ©fÃ©rez le riz basmati ou complet en petites portions. Consultez votre diabÃ©tologue pour adapter votre rÃ©gime.
+RÃ©pond (info gÃ©nÃ©rale)
+J'ai mal Ã  la poitrine, je fais un infarctus ?
+Cette situation peut Ãªtre une urgence. Appelez immÃ©diatement le 15 (SAMU) ou le 18. N'attendez pas.
+Alerte urgence + escalade
+9.4 Limitations et Garde-fous
+Clause de non-responsabilitÃ© affichÃ©e Ã  chaque session et dans chaque rÃ©ponse mÃ©dicale
+DÃ©tection automatique des mots-clÃ©s d'urgence (infarctus, AVC, suicide, overdose) â†’ redirection immÃ©diate
+Aucun stockage des conversations dans le profil patient sans consentement explicite
+Audit log de toutes les interactions pour revue mÃ©dicale pÃ©riodique
+10  
+SÃ©curitÃ© et ConformitÃ©
+10.1 Authentification et Autorisation
+JWT (JSON Web Tokens) avec refresh tokens (access: 15min, refresh: 7 jours)
+OAuth2 avec support SSO (Google Workspace pour les Ã©tablissements)
+Multi-Factor Authentication (TOTP) obligatoire pour les comptes Admin et MÃ©decins
+Rate limiting : 100 req/min par IP, 1000 req/min par token authentifiÃ©
+10.2 Gestion des RÃ´les (RBAC)
+RÃ´le
+Droits Patients
+Droits MÃ©decins
+Analytics
+Config SystÃ¨me
+Super Admin
+CRUD complet
+CRUD complet
+Tout voir
+AccÃ¨s total
+Admin HÃ´pital
+CRUD complet
+CRUD complet
+HÃ´pital
+LimitÃ©
+MÃ©decin
+Read + Update (ses patients)
+Read (profil propre)
+Ses stats
+Non
+Infirmier/Staff
+Read + Create
+Read planning
+Non
+Non
+Patient
+Read (son dossier)
+Read (ses mÃ©decins)
+Non
+Non
+Chatbot (service)
+Read symptÃ´mes
+Read disponibilitÃ©s
+Non
+Non
+10.3 Protection des DonnÃ©es MÃ©dicales
+Chiffrement au repos : AES-256 pour champs sensibles (notes cliniques, diagnostics) via pgcrypto
+Chiffrement en transit : TLS 1.3 obligatoire, HSTS, certificats Let's Encrypt
+Pseudonymisation des donnÃ©es pour les analyses ML (UUID non rÃ©versible sans clÃ© maÃ®tre)
+Audit trail immuable : toute modification de dossier patient est loggÃ©e (qui, quand, quoi)
+Droit Ã  l'oubli : procÃ©dure RGPD automatisÃ©e de suppression dans les 30 jours
+Localisation des donnÃ©es : donnÃ©es hÃ©bergÃ©es dans le pays du client (data residency)
+10.4 ConformitÃ© RÃ©glementaire
+Norme
+PÃ©rimÃ¨tre
+Statut
+RGPD (UE 2016/679)
+Tout traitement donnÃ©es patients UE
+Conforme dÃ¨s v1
+HL7 FHIR v4
+InteropÃ©rabilitÃ© donnÃ©es de santÃ©
+Partiel v1, complet v2
+ISO 27001
+SÃ©curitÃ© du systÃ¨me d'information
+Audit planifiÃ© 18 mois
+HIPAA (USA)
+Si expansion marchÃ© amÃ©ricain
+Roadmap v3
+HDS (France)
+HÃ©bergeur DonnÃ©es de SantÃ©
+Certification partenaire hÃ©bergeur
+11  
+Plan de DÃ©veloppement
+11.1 Phase 0 â€” Mise en Place (Semaine 1)
+Initialisation repo Git (monorepo : backend/, frontend/, ml/, infra/)
+Configuration Docker Compose local (FastAPI + PostgreSQL + Redis + Airflow)
+Setup CI/CD : GitHub Actions (lint, tests, build Docker)
+DÃ©finition des modÃ¨les de donnÃ©es SQLAlchemy + premiÃ¨res migrations Alembic
+Maquettes UI/UX (Figma) validÃ©es par l'Ã©quipe
+11.2 Phase 1 â€” MVP Core (Mois 1)
+Semaine
+Backend
+Frontend
+Infra/Data
+S2
+Auth JWT + RBAC, CRUD Patients, CRUD MÃ©decins
+Login, liste patients, fiche patient
+Docker Compose stable
+S3
+CRUD RDV, calendrier, notifications email
+Calendrier interactif, prise RDV
+Airflow setup + 1er DAG import
+S4
+Historique mÃ©dical, upload documents S3
+Dossier patient complet, upload UI
+DAG analytics_refresh
+S5
+Dashboard KPIs API, export PDF/Excel
+Dashboard admin avec charts
+Read Replica PostgreSQL
+11.3 Phase 2 â€” IA et Data (Mois 2-3)
+Sprint
+Objectif
+Livrable
+Sprint 5-6
+Pipeline ML complet
+DAG features + modÃ¨le Prophet dÃ©ployÃ©
+Sprint 7
+ModÃ¨le LSTM + MLflow
+Endpoint prÃ©diction flux avec UI dashboard
+Sprint 8
+Chatbot v1 (LLaMA + RAG)
+Widget chatbot intÃ©grÃ© portail patient
+Sprint 9
+Multi-tenant SaaS
+Isolation tenant + onboarding self-service
+Sprint 10
+Tests, perf, sÃ©curitÃ©
+Rapport audit OWASP + load test 1000 users
+11.4 MVP vs Version AvancÃ©e
+FonctionnalitÃ©
+MVP (3 mois)
+V2 (6 mois)
+V3 (12 mois)
+Gestion patients/RDV
+Oui
+Oui
+Oui
+Dashboard analytique
+KPIs basiques
+Temps rÃ©el + alertes
+BI avancÃ© custom
+PrÃ©diction flux
+Prophet 7j
+LSTM 30j
+Ensemble multi-modÃ¨les
+Chatbot
+Non
+LLaMA RAG basique
+Fine-tunÃ© + multilingue
+Multi-tenant
+Non
+Oui
+Oui + white-label
+Mobile app
+Non
+Non
+React Native
+HL7 FHIR
+Non
+Partiel
+Complet
+Marketplace modules
+Non
+Non
+Oui
+12  
+Business Model SaaS
+12.1 Type de ModÃ¨le
+ModÃ¨le SaaS B2B Ã  abonnement mensuel (MRR), avec des niveaux tarifaires (tiers) adaptÃ©s Ã  la taille de l'Ã©tablissement. Facturation Ã  l'usage pour les modules IA avancÃ©s.
+12.2 Plans Tarifaires
+Plan
+Cible
+Prix/mois
+Inclus
+Starter
+Clinique < 5 mÃ©decins
+199$/mois
+500 patients, modules core, support email
+Growth
+Clinique 5-20 mÃ©decins
+499$/mois
+5 000 patients, IA prÃ©dictive, chatbot basique, support prioritaire
+Enterprise
+HÃ´pital > 20 mÃ©decins
+999$/mois
+IllimitÃ©, tous modules, SLA 99.9%, support dÃ©diÃ©, white-label
+On-Premise
+Grands hÃ´pitaux publics
+Sur devis
+DÃ©ploiement sur site, formation, maintenance annuelle
+12.3 StratÃ©gie Go-to-Market
+Phase 1 â€” MarchÃ© domestique (Mois 1-6)
+DÃ©marcher 50 cliniques privÃ©es localement avec dÃ©mo gratuite 30 jours
+Partenariats avec associations de mÃ©decins et ordres professionnels
+Content marketing : blog mÃ©dical + LinkedIn thought leadership
+Objectif : 10 clients payants, MRR = 3 000$
+Phase 2 â€” Expansion rÃ©gionale (Mois 6-18)
+Expansion vers pays francophones : CÃ´te d'Ivoire, SÃ©nÃ©gal, Cameroun, Maroc, Tunisie
+Adaptation rÃ©glementaire par pays (data residency, conformitÃ© locale)
+Programme partenaires : intÃ©grateurs IT locaux avec commission 20%
+Objectif : 100 clients, MRR = 35 000$
+Phase 3 â€” International (18-36 mois)
+EntrÃ©e marchÃ© anglophone : Nigeria, Kenya, Ghana (traduction + adaptation UI)
+LevÃ©e de fonds SÃ©rie A (cible : 2M$) pour accÃ©lÃ©rer dÃ©veloppement
+Objectif : 500 clients, ARR = 500 000$
+13  
+Analyse de RentabilitÃ©
+13.1 CoÃ»ts EstimÃ©s
+Poste de CoÃ»t
+Mois 1-3 (MVP)
+Mois 4-12
+Annuel
+Infrastructure cloud (AWS/GCP)
+150$/mois
+400$/mois
+4 950$
+Outils tiers (GitHub, MLflow, Airflow)
+50$/mois
+100$/mois
+1 050$
+API LLM (si GPT-4 fallback)
+100$/mois
+300$/mois
+3 100$
+Marketing/Acquisition
+200$/mois
+1 000$/mois
+9 600$
+Legal/ConformitÃ©
+500$ (one-shot)
+0$
+500$
+DÃ©veloppement (coÃ»t opportunitÃ©)
+Variable
+Variable
+Non valorisÃ©
+TOTAL COÃ›TS
+~1 000$/mois
+~1 800$/mois
+~19 200$
+13.2 Projections de Revenus
+PÃ©riode
+Clients
+ARPU/mois
+MRR
+ARR projetÃ©
+Mois 3
+5
+250$
+1 250$
+15 000$
+Mois 6
+15
+300$
+4 500$
+54 000$
+Mois 12
+50
+380$
+19 000$
+228 000$
+Mois 18
+120
+420$
+50 400$
+604 800$
+Mois 24
+250
+450$
+112 500$
+1 350 000$
+BREAK-EVEN
+RentabilitÃ© opÃ©rationnelle atteinte au Mois 10 avec ~48 clients actifs (MRR > coÃ»ts fixes ~1 800$/mois)
+13.3 HypothÃ¨ses ClÃ©s
+Churn mensuel : 3% (conservateur pour SaaS B2B santÃ©)
+Taux de conversion dÃ©mo vers payant : 25%
+CAC (CoÃ»t Acquisition Client) : 200$ via marketing digital + partenariats
+LTV (Lifetime Value) : 450$ x 36 mois = 16 200$ â†’ LTV/CAC = 81x (excellent)
+14  
+Roadmap Produit
+14.1 Version 1.0 â€” MVP (0-3 mois)
+Gestion complÃ¨te patients, mÃ©decins, rendez-vous
+Dashboard KPIs temps rÃ©el
+Authentification JWT + RBAC 5 rÃ´les
+Pipeline Airflow ingestion CSV
+ModÃ¨le Prophet prÃ©diction flux 7 jours
+DÃ©ploiement Docker Compose 1-click
+14.2 Version 2.0 â€” IA + SaaS (3-9 mois)
+Chatbot LLaMA-3 avec RAG intÃ©grÃ© portail patient
+LSTM 30 jours + dashboard prÃ©dictif alertes
+Multi-tenant isolÃ© + onboarding self-service
+IntÃ©gration partielle HL7 FHIR
+Application mobile PWA
+Marketplace premier module : module facturation/pharmacie
+14.3 Version 3.0 â€” Scale International (9-24 mois)
+React Native app iOS/Android
+ConformitÃ© FHIR R4 complÃ¨te + HIPAA
+White-label pour revendeurs
+Module tÃ©lÃ©mÃ©decine (vidÃ©o consultation intÃ©grÃ©e)
+Marketplace modules tiers (partenaires ISV)
+AI Copilot pour mÃ©decins (aide Ã  la dÃ©cision clinique, non diagnostique)
+IntÃ©gration Ã©quipements mÃ©dicaux IoT (oxymÃ¨tre, ECG connectÃ©)
+15  
+Risques et Mitigation
+15.1 Risques Techniques
+Risque
+ProbabilitÃ©
+Impact
+Mitigation
+DÃ©gradation modÃ¨le ML (data drift)
+Ã‰levÃ©e
+Moyen
+Monitoring Evidently + rÃ©entraÃ®nement auto mensuel
+Failles sÃ©curitÃ© donnÃ©es mÃ©dicales
+Faible
+Critique
+Audit OWASP trimestriel + bug bounty program
+Surcharge API (pic d'utilisation)
+Moyenne
+Ã‰levÃ©
+Auto-scaling Docker Swarm + CDN + cache Redis
+Hallucinations chatbot mÃ©dical
+Moyenne
+Critique
+Guardrails LlamaGuard + escalade automatique mÃ©decin
+Perte donnÃ©es (sinistre serveur)
+TrÃ¨s faible
+Critique
+Backup 3-2-1 : 3 copies, 2 mÃ©dias, 1 hors site
+15.2 Risques Business
+Risque
+ProbabilitÃ©
+Impact
+Mitigation
+RÃ©sistance adoption (culture papier)
+Ã‰levÃ©e
+Moyen
+Formation gratuite incluse, UX ultra-simplifiÃ©e
+Concurrent bien financÃ© copie le produit
+Moyenne
+Moyen
+Vitesse d'exÃ©cution + donnÃ©es = moat dÃ©fensif
+Crise de trÃ©sorerie (burn rate)
+Faible
+Ã‰levÃ©
+Bootstrapping + revenue-based financing avant levÃ©e
+Perte client stratÃ©gique (> 20% MRR)
+Faible
+Ã‰levÃ©
+Diversification clients + contrats annuels
+15.3 Risques LÃ©gaux et RÃ©glementaires
+Risque
+Contexte
+Mitigation
+Violation RGPD (fuite donnÃ©es)
+Amende jusqu'Ã  4% CA mondial
+DPO externe + chiffrement + audit annuel
+ResponsabilitÃ© chatbot mÃ©dical
+Conseil mÃ©dical non autorisÃ©
+Disclaimer lÃ©gal clair + pÃ©rimÃ¨tre restreint
+Changement rÃ©glementation nationale
+Loi santÃ© numÃ©rique Ã©volutive
+Veille rÃ©glementaire + conseil juridique local
+PropriÃ©tÃ© intellectuelle modÃ¨le ML
+DonnÃ©es entraÃ®nement tierces
+Corpus open source uniquement + contrats data
+16  
+Conclusion StratÃ©gique
+16.1 Potentiel du Projet
+Ce projet reprÃ©sente bien plus qu'un exercice acadÃ©mique. Il rÃ©pond Ã  un besoin rÃ©el, sous-adressÃ© par les acteurs existants, sur un marchÃ© de 35 milliards USD en croissance Ã  deux chiffres. Les fondamentaux business sont solides : LTV/CAC de 81x, break-even atteignable en moins d'un an, et un avantage concurrentiel technologique dÃ©fendable grÃ¢ce aux effets rÃ©seau des donnÃ©es.
+La combinaison FastAPI + React + PostgreSQL + Airflow + TensorFlow reprÃ©sente une stack industrielle Ã©prouvÃ©e, utilisÃ©e par des entreprises comme Stripe, Airbnb et Netflix. Ce choix garantit la crÃ©dibilitÃ© technique du projet et facilite le recrutement futur.
+16.2 Transformation en Startup
+Le chemin de l'acadÃ©mie vers la startup est balisÃ© :
+Mois 0-3 : DÃ©velopper le MVP, obtenir 2-3 clients pilotes non payants pour valider le produit
+Mois 3-6 : Convertir les pilotes en clients payants, atteindre le MRR de 5 000$ (preuve de concept)
+Mois 6-12 : Structurer la sociÃ©tÃ© (SAS ou Ã©quivalent), candidater Ã  des programmes d'accÃ©lÃ©ration (Y Combinator Africa, Station F, Orange Ventures)
+Mois 12-18 : Lever une Seed Round de 500K-1M$ pour accÃ©lÃ©rer l'expansion rÃ©gionale
+Mois 18-36 : SÃ©rie A de 2-5M$ pour l'internationalisation
+16.3 Vision Long Terme
+La vision Ã  5 ans est de devenir la plateforme de rÃ©fÃ©rence pour la santÃ© numÃ©rique dans les marchÃ©s Ã©mergents : le "Salesforce de la santÃ© africaine". Avec 5 000 Ã©tablissements clients et un ARR de 50M$, la valorisation cible serait de 200-300M$ (multiple SaaS x5-6 ARR), ouvrant la voie Ã  une introduction en bourse ou une acquisition stratÃ©gique par un acteur global (Oracle Health, Microsoft, Google Cloud).
+"L'IA ne remplacera pas les mÃ©decins â€” mais les mÃ©decins qui utilisent l'IA remplaceront ceux qui ne l'utilisent pas."
+â€” Bertalan Mesko, The Medical Futurist
