@@ -1,6 +1,7 @@
 // Couche services API connectée.
 // Remplace les mocks par des appels REST complets (FastAPI).
 
+import { toast } from "sonner";
 import type { Appointment, Patient } from "./types";
 import { useAuth } from "../auth/store"; // Import the actual store instance
 import {
@@ -18,6 +19,38 @@ const USE_MOCKS = !IS_PROD && (import.meta.env.VITE_USE_MOCKS as string | undefi
 
 let mockPatientsDb: Patient[] = [...PATIENTS];
 let mockAppointmentsDb: Appointment[] = [...APPOINTMENTS];
+let refreshPromise: Promise<string | null> | null = null;
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  const { refreshToken, setSession, logout } = useAuth.getState();
+  if (!refreshToken) return null;
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const newToken = data.access_token as string | undefined;
+      const newRefreshToken = (data.refresh_token as string | undefined) ?? refreshToken;
+      if (!newToken) return null;
+      setSession(newToken, newRefreshToken);
+      return newToken;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  const token = await refreshPromise;
+  if (!token) logout();
+  return token;
+};
 
 const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   console.warn(`[MODE SECOURS] Récupération des données mockées pour: ${endpoint}`);
@@ -55,7 +88,7 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   return [];
 };
 
-const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
+const fetchWithAuth = async (endpoint: string, options: RequestInit = {}, hasRetried = false) => {
   const token = useAuth.getState().token;
   const headers = new Headers(options.headers);
   if (token) {
@@ -77,8 +110,17 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
 
     if (!response.ok) {
       if (response.status === 401) {
+        if (!hasRetried) {
+          const newToken = await refreshAccessToken();
+          if (newToken) {
+            return fetchWithAuth(endpoint, options, true);
+          }
+        }
         useAuth.getState().logout();
         window.location.replace("/login");
+      }
+      if (response.status === 403) {
+        window.location.replace("/403");
       }
       const contentType = response.headers.get("content-type") || "";
       const errorData = contentType.includes("application/json")
@@ -94,7 +136,11 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
           ? (errorData.message ?? errorData.detail)
           : errorData;
 
-      throw new Error((errorCode as string) || (errorMessage as string) || "API_ERROR");
+      const msg = (errorCode as string) || (errorMessage as string) || "API_ERROR";
+      if (response.status >= 500) {
+        toast.error("Erreur serveur", { description: msg });
+      }
+      throw new Error(msg);
     }
 
     const contentType = response.headers.get("content-type") || "";
@@ -104,6 +150,9 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
     return await response.json();
   } catch (error) {
     const isNetworkError = error instanceof TypeError;
+    if (isNetworkError) {
+      toast.error("API inaccessible", { description: "Vérifiez que le serveur backend est démarré.", id: "network-error" });
+    }
     if (USE_MOCKS && isNetworkError) {
       return getMockData(endpoint, options);
     }
@@ -119,13 +168,22 @@ export const patientsService = {
     return fetchWithAuth(`/api/patients?${params.toString()}`);
   },
   get: (id: string) => fetchWithAuth(`/api/patients/${id}`),
-  create: (input: Omit<Patient, "id" | "recordNumber" | "lastVisit" | "status">) => 
+  create: (input: Omit<Patient, "id" | "recordNumber" | "lastVisit" | "status">) =>
     fetchWithAuth("/api/patients", {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  remove: (id: string) => 
+  remove: (id: string) =>
     fetchWithAuth(`/api/patients/${id}`, { method: "DELETE" }),
+  history: (id: string) => fetchWithAuth(`/api/patients/${id}/history`),
+  addVisit: (
+    id: string,
+    visit: { date: string; reason: string; doctorName: string; specialty: string; diagnosis: string; treatment?: string; notes?: string },
+  ) =>
+    fetchWithAuth(`/api/patients/${id}/history`, {
+      method: "POST",
+      body: JSON.stringify(visit),
+    }),
 };
 
 export const doctorsService = {
@@ -146,13 +204,15 @@ export const appointmentsService = {
 
 export const analyticsService = {
   kpis: () => fetchWithAuth("/api/analytics/kpis"),
-  monthlyRevenue: () => fetchWithAuth("/api/analytics/revenue"),
+  monthlyRevenue: (period: "3m" | "6m" | "12m" = "6m") =>
+    fetchWithAuth(`/api/analytics/revenue?period=${period}`),
   admissionsByDept: () => fetchWithAuth("/api/analytics/admissions-dept"),
   satisfaction: () => fetchWithAuth("/api/analytics/satisfaction"),
 };
 
 export const mlService = {
   predict7d: () => fetchWithAuth("/api/ml/predict-7d"),
+  predict30d: () => fetchWithAuth("/api/ml/predict-30d"),
 };
 
 export const alertsService = {
@@ -161,4 +221,17 @@ export const alertsService = {
 
 export const rbacService = {
   list: () => fetchWithAuth("/api/rbac/users"),
+};
+
+export const authService = {
+  logout: async () => {
+    const refreshToken = useAuth.getState().refreshToken;
+    if (!refreshToken) return;
+    await fetch(`${API_URL}/api/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    }).catch(() => null);
+  },
+  logoutAll: () => fetchWithAuth("/api/auth/logout-all", { method: "POST" }),
 };

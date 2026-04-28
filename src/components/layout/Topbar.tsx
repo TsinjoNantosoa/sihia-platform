@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
 import { useAuth } from "@/lib/auth/store";
+import { authService } from "@/lib/api/services";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -21,9 +22,13 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
-  const handleLogout = () => {
-    logout();
-    navigate({ to: "/login" });
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      logout();
+      navigate({ to: "/login" });
+    }
   };
 
   return (

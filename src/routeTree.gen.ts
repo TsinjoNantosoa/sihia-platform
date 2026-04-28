@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as R403RouteImport } from './routes/403'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppRbacRouteImport } from './routes/_app/rbac'
@@ -29,6 +30,11 @@ const LoginRoute = LoginRouteImport.update({
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R403Route = R403RouteImport.update({
+  id: '/403',
+  path: '/403',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -83,6 +89,7 @@ const AppPatientsPatientIdRoute = AppPatientsPatientIdRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/403': typeof R403Route
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/analytics': typeof AppAnalyticsRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/patients/': typeof AppPatientsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/403': typeof R403Route
   '/login': typeof LoginRoute
   '/analytics': typeof AppAnalyticsRoute
   '/appointments': typeof AppAppointmentsRoute
@@ -110,6 +118,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/403': typeof R403Route
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/analytics': typeof AppAnalyticsRoute
@@ -126,6 +135,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/403'
     | '/'
     | '/login'
     | '/analytics'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/patients/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/403'
     | '/login'
     | '/analytics'
     | '/appointments'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/patients'
   id:
     | '__root__'
+    | '/403'
     | '/_app'
     | '/login'
     | '/_app/analytics'
@@ -167,6 +179,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  R403Route: typeof R403Route
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
 }
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/403': {
+      id: '/403'
+      path: '/403'
+      fullPath: '/403'
+      preLoaderRoute: typeof R403RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -289,6 +309,7 @@ const AppRouteChildren: AppRouteChildren = {
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  R403Route: R403Route,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
 }

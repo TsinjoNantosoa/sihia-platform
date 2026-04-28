@@ -3,3 +3,4 @@ uvicorn
 pydantic
 PyJWT
 email-validator
+pytest

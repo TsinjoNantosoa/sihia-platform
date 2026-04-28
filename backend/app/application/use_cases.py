@@ -1,15 +1,17 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException, status
 
-from app.application.schemas import AppointmentCreate, PatientCreate
-from app.core.security import create_access_token
-from app.domain.models import Appointment, Patient
+from app.application.schemas import AppointmentCreate, MedicalVisitCreate, PatientCreate
+from app.core.config import settings
+from app.core.security import create_access_token, create_refresh_token, decode_access_token, verify_password
+from app.domain.models import Appointment, MedicalVisit, Patient
 from app.domain.ports import (
     AppointmentRepository,
     DoctorRepository,
     PatientRepository,
+    RefreshSessionRepository,
     UserRepository,
 )
 
@@ -63,14 +65,15 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
 
 
 class AuthService:
-    def __init__(self, users: UserRepository) -> None:
+    def __init__(self, users: UserRepository, refresh_sessions: RefreshSessionRepository) -> None:
         self.users = users
+        self.refresh_sessions = refresh_sessions
 
-    def login(self, email: str, password: str) -> str:
+    def login(self, email: str, password: str) -> tuple[str, str]:
         user = self.users.find_by_email(email)
-        if user is None or user.password != password:
+        if user is None or not verify_password(password, user.password):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identifiants invalides")
-        return create_access_token(
+        access_token = create_access_token(
             subject=user.id,
             claims={
                 "id": user.id,
@@ -81,6 +84,75 @@ class AuthService:
                 "facility": user.facility,
             },
         )
+        refresh_session_id = f"rs-{uuid4().hex}"
+        refresh_token = create_refresh_token(subject=user.id, session_id=refresh_session_id)
+        refresh_claims = decode_access_token(refresh_token)
+        self.refresh_sessions.create(refresh_session_id, user.id, int(refresh_claims["exp"]))
+        self.refresh_sessions.prune_active_sessions(
+            user.id, settings.max_refresh_sessions_per_user, int(datetime.now(timezone.utc).timestamp())
+        )
+        return access_token, refresh_token
+
+    def refresh(self, refresh_token: str) -> tuple[str, str]:
+        try:
+            claims = decode_access_token(refresh_token)
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token invalide") from exc
+
+        if claims.get("token_type") != "refresh":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Type de token invalide")
+
+        user_id = claims.get("sub")
+        session_id = claims.get("sid")
+        exp = claims.get("exp")
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token invalide")
+        if not session_id or not isinstance(exp, int):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session refresh invalide")
+
+        if not self.refresh_sessions.is_active(session_id, user_id, int(datetime.now(timezone.utc).timestamp())):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session refresh expirée ou révoquée")
+
+        user = self.users.find_by_id(user_id)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable")
+
+        self.refresh_sessions.revoke(session_id)
+
+        new_session_id = f"rs-{uuid4().hex}"
+        new_refresh_token = create_refresh_token(subject=user.id, session_id=new_session_id)
+        new_refresh_claims = decode_access_token(new_refresh_token)
+        self.refresh_sessions.create(new_session_id, user.id, int(new_refresh_claims["exp"]))
+        self.refresh_sessions.prune_active_sessions(
+            user.id, settings.max_refresh_sessions_per_user, int(datetime.now(timezone.utc).timestamp())
+        )
+
+        access_token = create_access_token(
+            subject=user.id,
+            claims={
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role,
+                "permissions": ROLE_PERMISSIONS.get(user.role, []),
+                "facility": user.facility,
+            },
+        )
+        return access_token, new_refresh_token
+
+    def logout(self, refresh_token: str) -> None:
+        try:
+            claims = decode_access_token(refresh_token)
+        except Exception:
+            return
+        if claims.get("token_type") != "refresh":
+            return
+        sid = claims.get("sid")
+        if sid:
+            self.refresh_sessions.revoke(sid)
+
+    def logout_all(self, user_id: str) -> None:
+        self.refresh_sessions.revoke_all_for_user(user_id)
 
 
 class PatientsService:
@@ -132,6 +204,28 @@ class DoctorsService:
         if doctor is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
         return doctor
+
+
+class MedicalHistoryService:
+    def __init__(self, repo) -> None:
+        self.repo = repo
+
+    def list(self, patient_id: str) -> list[MedicalVisit]:
+        return self.repo.get_for_patient(patient_id)
+
+    def add(self, patient_id: str, data: MedicalVisitCreate) -> MedicalVisit:
+        visit = MedicalVisit(
+            id=f"{patient_id}-v{uuid4().hex[:8]}",
+            patient_id=patient_id,
+            date=data.date,
+            reason=data.reason,
+            doctor_name=data.doctorName,
+            specialty=data.specialty,
+            diagnosis=data.diagnosis,
+            treatment=data.treatment,
+            notes=data.notes,
+        )
+        return self.repo.add_visit(visit)
 
 
 class AppointmentsService:

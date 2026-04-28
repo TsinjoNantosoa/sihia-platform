@@ -1,7 +1,9 @@
-# SIH IA — Frontend
+# SIH IA — Plateforme (Frontend + Backend)
 
 **SIH IA** (Système Intelligent de Gestion Hospitalière) — SaaS B2B HealthTech.
-Frontend complet en **React + TypeScript + TanStack Start + Vite + Tailwind CSS**.
+Plateforme complète avec :
+- Frontend en **React + TypeScript + TanStack Start + Vite + Tailwind CSS**
+- Backend en **FastAPI + SQLite + JWT**
 
 ## ✨ Fonctionnalités
 
@@ -20,6 +22,8 @@ Frontend complet en **React + TypeScript + TanStack Start + Vite + Tailwind CSS*
 
 ## 🚀 Démarrage
 
+### Frontend
+
 ```bash
 npm install
 npm run dev
@@ -29,6 +33,18 @@ Ouvre http://localhost:5173 — tu seras redirigé vers `/login`.
 Identifiants démo : **n'importe quel email + mot de passe**.
 
 Astuce : utiliser un email contenant `admin`, `manager` ou `staff` pour changer le rôle.
+
+### Backend
+
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\pip install -r requirements.txt
+.\venv\Scripts\uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Backend disponible sur `http://localhost:8000`  
+Swagger UI : `http://localhost:8000/docs`
 
 ## ⚙️ Configuration
 
@@ -96,11 +112,81 @@ list: async () => {
 
 Endpoints attendus côté FastAPI :
 - `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
+- `POST /auth/logout-all`
 - `GET/POST/DELETE /patients`
+- `GET/POST /patients/{id}/history`
 - `GET /doctors`
 - `GET/POST /rendez-vous`
 - `GET /analytics/*`
 - `GET /ml/predict-7d`
+- `GET /ml/predict-30d`
+- `GET /health/details`
+
+## ✅ Travaux réalisés dans cette session
+
+### Sécurité Auth / Session
+- Passage à une auth JWT complète avec **access token + refresh token**
+- Endpoint `POST /api/auth/refresh` implémenté
+- **Rotation des refresh tokens** (un refresh token = usage unique)
+- Stockage des sessions refresh en base SQLite (`refresh_sessions`)
+- Révocation de session :
+  - `POST /api/auth/logout` (appareil courant)
+  - `POST /api/auth/logout-all` (tous les appareils)
+- Limite du nombre de sessions actives par utilisateur (`max_refresh_sessions_per_user`)
+- Mots de passe sécurisés en `pbkdf2_sha256` (+ migration auto des anciens mots de passe en clair)
+
+### Persistance backend
+- Remplacement des repositories in-memory par des repositories SQLite
+- Création auto de la base (`backend/app.db`) et des tables
+- Seed initial des utilisateurs et médecins
+- Persistance durable des patients, rendez-vous, historique médical, sessions refresh
+
+### RBAC et contrôle d'accès
+- Vérification de permissions backend par route (`require_permission`)
+- Protection des actions sensibles (ex: suppression patient, lecture RBAC users)
+- Guards frontend sur navigation et actions (sidebar + boutons)
+
+### Fonctionnel métier
+- Historique médical patient branché sur API réelle (`GET/POST /patients/{id}/history`)
+- Validation renforcée du formulaire patient
+- Prédiction IA étendue 7j/30j avec métadonnées modèle
+- Analytics avec filtre période (`3m/6m/12m`) et export CSV
+- Page 403 dédiée pour accès refusé
+
+### Observabilité et UX
+- `GET /health/details` backend
+- Indicateur de santé API dans la sidebar (ok/degraded/down)
+- Toasts d’erreur réseau / serveur
+- Confirmation avant "Déconnecter tous les appareils"
+
+### Tests et validation
+- Tests backend ajoutés dans `backend/tests/test_auth_security.py`
+- Couverture tests auth:
+  - hash + verify password
+  - rotation refresh token
+  - logout session
+  - limite sessions actives
+- Résultat actuel : **4 tests passés**
+
+## 🛣️ Étapes suivantes recommandées
+
+### Priorité P0 (production readiness)
+- Ajouter une **gestion de secrets par environnement** (`JWT_SECRET` via `.env`, jamais hardcodé)
+- Ajouter une **table users administrable** (CRUD users/roles côté RBAC)
+- Implémenter **rate limiting** sur login/refresh (protection brute force)
+
+### Priorité P1 (qualité et exploitation)
+- Ajouter migrations versionnées (**Alembic**) au lieu de création implicite
+- Ajouter suite de tests API FastAPI (patients, appointments, analytics)
+- Ajouter tests frontend (auth flow, guards RBAC)
+
+### Priorité P2 (fonctionnel métier)
+- Export PDF analytics
+- Edition planning médecins
+- Rappels RDV automatiques (statut + historique en UI)
+- Durcir la conformité RGPD (journal d’audit, masquage données sensibles)
 
 ## 🌍 Multilingue & RTL
 

@@ -10,7 +10,16 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: str
 
 
 class PatientCreate(BaseModel):
@@ -24,6 +33,16 @@ class PatientCreate(BaseModel):
     bloodType: str
     allergies: list[str]
     insurance: str | None = None
+
+
+class MedicalVisitCreate(BaseModel):
+    date: str
+    reason: str
+    doctorName: str
+    specialty: str
+    diagnosis: str
+    treatment: str | None = None
+    notes: str | None = None
 
 
 class AppointmentCreate(BaseModel):

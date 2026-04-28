@@ -2,13 +2,23 @@ from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.application.schemas import AppointmentCreate, LoginRequest, LoginResponse, PatientCreate
+from app.application.schemas import (
+    AppointmentCreate,
+    LoginRequest,
+    LoginResponse,
+    LogoutRequest,
+    MedicalVisitCreate,
+    PatientCreate,
+    RefreshTokenRequest,
+)
 from app.presentation.deps import (
     appointments_service,
     auth_service,
     doctors_service,
+    medical_history_service,
     patients_service,
     require_auth,
+    require_permission,
 )
 
 api_router = APIRouter(prefix="/api")
@@ -16,8 +26,26 @@ api_router = APIRouter(prefix="/api")
 
 @api_router.post("/auth/login", response_model=LoginResponse)
 def login(payload: LoginRequest):
-    token = auth_service.login(payload.email, payload.password)
-    return LoginResponse(access_token=token)
+    access_token, refresh_token = auth_service.login(payload.email, payload.password)
+    return LoginResponse(access_token=access_token, refresh_token=refresh_token)
+
+
+@api_router.post("/auth/refresh", response_model=LoginResponse)
+def refresh_token(payload: RefreshTokenRequest):
+    access_token, refresh_token_value = auth_service.refresh(payload.refresh_token)
+    return LoginResponse(access_token=access_token, refresh_token=refresh_token_value)
+
+
+@api_router.post("/auth/logout")
+def logout(payload: LogoutRequest):
+    auth_service.logout(payload.refresh_token)
+    return {"success": True}
+
+
+@api_router.post("/auth/logout-all")
+def logout_all(claims: dict = Depends(require_auth)):
+    auth_service.logout_all(claims.get("sub"))
+    return {"success": True}
 
 
 @api_router.get("/patients")
@@ -70,7 +98,7 @@ def get_patient(patient_id: str, _claims: dict = Depends(require_auth)):
 
 
 @api_router.post("/patients")
-def create_patient(payload: PatientCreate, _claims: dict = Depends(require_auth)):
+def create_patient(payload: PatientCreate, _claims: dict = Depends(require_permission("patients:create"))):
     p = patients_service.create(payload)
     return {
         "id": p.id,
@@ -91,9 +119,46 @@ def create_patient(payload: PatientCreate, _claims: dict = Depends(require_auth)
 
 
 @api_router.delete("/patients/{patient_id}", status_code=status.HTTP_200_OK)
-def delete_patient(patient_id: str, _claims: dict = Depends(require_auth)):
+def delete_patient(patient_id: str, _claims: dict = Depends(require_permission("patients:delete"))):
     patients_service.delete(patient_id)
     return {"success": True}
+
+
+@api_router.get("/patients/{patient_id}/history")
+def get_patient_history(patient_id: str, _claims: dict = Depends(require_permission("patients:read"))):
+    visits = medical_history_service.list(patient_id)
+    return [
+        {
+            "id": v.id,
+            "date": v.date,
+            "reason": v.reason,
+            "doctorName": v.doctor_name,
+            "specialty": v.specialty,
+            "diagnosis": v.diagnosis,
+            "treatment": v.treatment,
+            "notes": v.notes,
+        }
+        for v in visits
+    ]
+
+
+@api_router.post("/patients/{patient_id}/history")
+def add_patient_visit(
+    patient_id: str,
+    payload: MedicalVisitCreate,
+    _claims: dict = Depends(require_permission("patients:update")),
+):
+    v = medical_history_service.add(patient_id, payload)
+    return {
+        "id": v.id,
+        "date": v.date,
+        "reason": v.reason,
+        "doctorName": v.doctor_name,
+        "specialty": v.specialty,
+        "diagnosis": v.diagnosis,
+        "treatment": v.treatment,
+        "notes": v.notes,
+    }
 
 
 @api_router.get("/doctors")
@@ -153,7 +218,7 @@ def list_appointments(_claims: dict = Depends(require_auth)):
 
 
 @api_router.post("/appointments")
-def create_appointment(payload: AppointmentCreate, _claims: dict = Depends(require_auth)):
+def create_appointment(payload: AppointmentCreate, _claims: dict = Depends(require_permission("appointments:create"))):
     a = appointments_service.create(payload)
     return {
         "id": a.id,
@@ -188,15 +253,23 @@ def kpis(_claims: dict = Depends(require_auth)):
 
 
 @api_router.get("/analytics/revenue")
-def monthly_revenue(_claims: dict = Depends(require_auth)):
-    return [
+def monthly_revenue(period: str = Query(default="6m"), _claims: dict = Depends(require_auth)):
+    all_months = [
         {"label": "Jan", "value": 90000},
         {"label": "Fev", "value": 94000},
         {"label": "Mar", "value": 98000},
         {"label": "Avr", "value": 102000},
         {"label": "Mai", "value": 107000},
         {"label": "Juin", "value": 110000},
+        {"label": "Juil", "value": 108000},
+        {"label": "Aout", "value": 113000},
+        {"label": "Sep", "value": 117000},
+        {"label": "Oct", "value": 121000},
+        {"label": "Nov", "value": 119000},
+        {"label": "Dec", "value": 125000},
     ]
+    n = 3 if period == "3m" else 12 if period == "12m" else 6
+    return all_months[-n:]
 
 
 @api_router.get("/analytics/admissions-dept")
@@ -228,6 +301,36 @@ def predict(_claims: dict = Depends(require_auth)):
     }
 
 
+@api_router.get("/ml/predict-30d")
+def predict_30d(_claims: dict = Depends(require_auth)):
+    from datetime import date, timedelta
+    base = date(2026, 4, 21)
+    actuals = [
+        {"date": (base + timedelta(days=i)).isoformat(), "actual": 118 + i * 2}
+        for i in range(7)
+    ]
+    forecasts = [
+        {
+            "date": (base + timedelta(days=7 + i)).isoformat(),
+            "forecast": 132 + i,
+            "upper": 140 + i,
+            "lower": 124 + i,
+        }
+        for i in range(23)
+    ]
+    points = actuals + forecasts
+    return {
+        "points": points,
+        "model": "LSTM-v1",
+        "model_version": "2026-04-01",
+        "confidence": 0.79,
+        "horizon": 30,
+        "peak": {"date": (base + timedelta(days=29)).isoformat(), "value": 155},
+        "recommendation": "Prévoir un renforcement progressif des effectifs sur les semaines 3 et 4.",
+        "drift_score": 0.04,
+    }
+
+
 @api_router.get("/alerts")
 def alerts(_claims: dict = Depends(require_auth)):
     return [
@@ -243,7 +346,7 @@ def alerts(_claims: dict = Depends(require_auth)):
 
 
 @api_router.get("/rbac/users")
-def rbac_users(_claims: dict = Depends(require_auth)):
+def rbac_users(_claims: dict = Depends(require_permission("users:read"))):
     return [
         {"id": "u-admin", "name": "Admin SIH", "email": "admin@sihia.health", "role": "admin", "status": "active", "lastLogin": "2026-04-21T10:00:00Z"},
         {"id": "u-doc", "name": "Dr Benali", "email": "dr.benali@sihia.health", "role": "doctor", "status": "active", "lastLogin": "2026-04-21T08:30:00Z"},

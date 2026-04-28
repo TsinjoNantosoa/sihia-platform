@@ -9,32 +9,36 @@ import {
   ShieldCheck,
   Settings,
   HeartPulse,
+  WifiOff,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useT, useI18n } from "@/lib/i18n/store";
+import { usePermissions } from "@/lib/auth/usePermission";
+import { API_URL } from "@/lib/api/services";
 import { cn } from "@/lib/utils";
 
 const groups = [
   {
     labelKey: "nav.section.main",
     items: [
-      { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, exact: true },
-      { to: "/patients", labelKey: "nav.patients", icon: Users },
-      { to: "/doctors", labelKey: "nav.doctors", icon: Stethoscope },
-      { to: "/appointments", labelKey: "nav.appointments", icon: CalendarDays },
+      { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, exact: true, permission: "dashboard:read" },
+      { to: "/patients", labelKey: "nav.patients", icon: Users, permission: "patients:read" },
+      { to: "/doctors", labelKey: "nav.doctors", icon: Stethoscope, permission: "doctors:read" },
+      { to: "/appointments", labelKey: "nav.appointments", icon: CalendarDays, permission: "appointments:read" },
     ],
   },
   {
     labelKey: "nav.section.intelligence",
     items: [
-      { to: "/analytics", labelKey: "nav.analytics", icon: BarChart3 },
-      { to: "/prediction", labelKey: "nav.prediction", icon: Brain, beta: true },
+      { to: "/analytics", labelKey: "nav.analytics", icon: BarChart3, permission: "analytics:read" },
+      { to: "/prediction", labelKey: "nav.prediction", icon: Brain, beta: true, permission: "ml:read" },
     ],
   },
   {
     labelKey: "nav.section.system",
     items: [
-      { to: "/rbac", labelKey: "nav.rbac", icon: ShieldCheck },
-      { to: "/settings", labelKey: "nav.settings", icon: Settings },
+      { to: "/rbac", labelKey: "nav.rbac", icon: ShieldCheck, permission: "users:read" },
+      { to: "/settings", labelKey: "nav.settings", icon: Settings, permission: "settings:read" },
     ],
   },
 ] as const;
@@ -43,6 +47,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const t = useT();
   const locale = useI18n((s) => s.locale);
   const location = useLocation();
+  const permissions = usePermissions();
   const isRtl = locale === "ar";
 
   const isActive = (to: string, exact?: boolean) =>
@@ -71,7 +76,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               {t(g.labelKey)}
             </div>
-            {g.items.map((item) => {
+            {g.items.filter((item) => permissions.includes(item.permission)).map((item) => {
               const active = isActive(item.to, "exact" in item ? item.exact : false);
               const Icon = item.icon;
               return (
@@ -106,13 +111,59 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="border-t border-border p-4">
-        <div className="flex items-center gap-2">
-          <span className="size-2 animate-pulse rounded-full bg-success" />
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Système opérationnel
-          </span>
-        </div>
+        <ApiHealthIndicator />
       </div>
     </aside>
+  );
+}
+
+type ApiStatus = "ok" | "degraded" | "down" | "checking";
+
+function ApiHealthIndicator() {
+  const [status, setStatus] = useState<ApiStatus>("checking");
+  const [lastChecked, setLastChecked] = useState<string>("");
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const start = Date.now();
+        const res = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(4000) });
+        const ms = Date.now() - start;
+        setStatus(res.ok ? (ms > 2000 ? "degraded" : "ok") : "down");
+      } catch {
+        setStatus("down");
+      }
+      setLastChecked(new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
+    };
+
+    check();
+    const id = setInterval(check, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const dot: Record<ApiStatus, string> = {
+    ok: "bg-success",
+    degraded: "bg-warning",
+    down: "bg-destructive",
+    checking: "bg-muted-foreground",
+  };
+  const label: Record<ApiStatus, string> = {
+    ok: "Système opérationnel",
+    degraded: "Latence élevée",
+    down: "API hors ligne",
+    checking: "Vérification…",
+  };
+
+  return (
+    <div className="flex items-center gap-2" title={lastChecked ? `Vérifié à ${lastChecked}` : undefined}>
+      {status === "down" ? (
+        <WifiOff className="size-3.5 text-destructive" />
+      ) : (
+        <span className={`size-2 rounded-full ${dot[status]} ${status === "ok" ? "animate-pulse" : ""}`} />
+      )}
+      <span className={`text-[10px] font-medium uppercase tracking-wide ${status === "down" ? "text-destructive" : "text-muted-foreground"}`}>
+        {label[status]}
+      </span>
+    </div>
   );
 }

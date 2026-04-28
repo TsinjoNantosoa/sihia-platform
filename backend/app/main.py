@@ -76,3 +76,19 @@ async def unhandled_exception_handler(_request: Request, _exc: Exception):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/health/details")
+def health_details():
+    from datetime import datetime, timezone
+    return {
+        "status": "ok",
+        "version": "0.1.0",
+        "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+        "components": {
+            "api": {"status": "ok", "latency_ms": 0},
+            "database": {"status": "ok", "type": "in-memory"},
+            "ml_engine": {"status": "ok", "model": "LSTM-v1"},
+            "auth": {"status": "ok", "algorithm": "HS256"},
+        },
+    }

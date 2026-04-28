@@ -16,9 +16,13 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
+  refreshToken: string | null;
+  permissions: string[];
   isAuthenticated: boolean;
   hasHydrated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  setToken: (token: string) => void;
+  setSession: (token: string, refreshToken: string | null) => void;
   logout: () => void;
   setHasHydrated: (value: boolean) => void;
 }
@@ -45,9 +49,13 @@ export const useAuth = create<AuthState>()(
     (set) => ({
       user: null,
       token: null,
+      refreshToken: null,
+      permissions: [],
       isAuthenticated: false,
       hasHydrated: false,
       setHasHydrated: (value) => set({ hasHydrated: value }),
+      setToken: (token) => set({ token, isAuthenticated: true }),
+      setSession: (token, refreshToken) => set({ token, refreshToken, isAuthenticated: true }),
       login: async (email, password) => {
         const IS_PROD = import.meta.env.PROD;
         const USE_MOCKS = !IS_PROD && (import.meta.env.VITE_USE_MOCKS as string | undefined) === "true";
@@ -66,10 +74,13 @@ export const useAuth = create<AuthState>()(
 
           const data = await res.json();
           const token = data.access_token || data.token;
+          const refreshToken = data.refresh_token ?? null;
           const claims = parseJwt(token) || {};
 
           set({
             token,
+            refreshToken,
+            permissions: Array.isArray(claims.permissions) ? claims.permissions : [],
             isAuthenticated: true,
             user: {
               id: claims.sub || claims.id || "unknown",
@@ -96,8 +107,16 @@ export const useAuth = create<AuthState>()(
                 : "doctor";
           const name = email.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
           
+          const mockPermissions: Record<string, string[]> = {
+            admin: ["dashboard:read","patients:read","patients:create","patients:update","patients:delete","doctors:read","appointments:read","appointments:create","appointments:update","analytics:read","ml:read","users:read","settings:read"],
+            manager: ["dashboard:read","patients:read","doctors:read","appointments:read","analytics:read","ml:read","settings:read"],
+            doctor: ["dashboard:read","patients:read","patients:update","doctors:read","appointments:read","appointments:create","appointments:update","analytics:read","ml:read","settings:read"],
+            staff: ["dashboard:read","patients:read","patients:create","doctors:read","appointments:read","appointments:create","settings:read"],
+          };
           set({
             token: "mock-jwt-" + Math.random().toString(36).slice(2),
+            refreshToken: "mock-refresh-" + Math.random().toString(36).slice(2),
+            permissions: mockPermissions[role] ?? [],
             isAuthenticated: true,
             user: {
               id: "u-" + Math.random().toString(36).slice(2, 8),
@@ -110,7 +129,7 @@ export const useAuth = create<AuthState>()(
           });
         }
       },
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
+      logout: () => set({ user: null, token: null, refreshToken: null, permissions: [], isAuthenticated: false }),
     }),
     {
       name: "sih-ia-auth",

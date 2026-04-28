@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { LoadingState, EmptyState, ErrorState } from "@/components/shared/States";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { patientsService } from "@/lib/api/services";
 import {
   Dialog,
@@ -68,12 +69,14 @@ function PatientsListPage() {
         title={t("patients.title")}
         subtitle={t("patients.subtitle")}
         actions={
-          <button
-            onClick={() => setShowNew(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="size-4" /> {t("patients.new")}
-          </button>
+          <PermissionGuard permission="patients:create">
+            <button
+              onClick={() => setShowNew(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="size-4" /> {t("patients.new")}
+            </button>
+          </PermissionGuard>
         }
       />
 
@@ -133,7 +136,7 @@ function PatientsListPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {pageData.map((p) => (
+                  {pageData.map((p: Patient) => (
                     <tr key={p.id} className="hover:bg-muted/30">
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                         {p.recordNumber}
@@ -171,13 +174,15 @@ function PatientsListPage() {
                           >
                             <Eye className="size-4" />
                           </Link>
-                          <button
-                            onClick={() => setToDelete(p)}
-                            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
-                            aria-label="Supprimer"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
+                          <PermissionGuard permission="patients:delete">
+                            <button
+                              onClick={() => setToDelete(p)}
+                              className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
+                              aria-label="Supprimer"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </PermissionGuard>
                         </div>
                       </td>
                     </tr>
@@ -275,15 +280,32 @@ function NewPatientDialog({
 
   const submit = () => {
     const errs: Record<string, string> = {};
-    if (!form.firstName) errs.firstName = "Requis";
-    if (!form.lastName) errs.lastName = "Requis";
-    if (!form.dob) errs.dob = "Requis";
-    if (!form.phone) errs.phone = "Requis";
+    if (!form.firstName.trim()) errs.firstName = "Requis";
+    if (!form.lastName.trim()) errs.lastName = "Requis";
+    if (!form.dob) {
+      errs.dob = "Requis";
+    } else {
+      const dob = new Date(form.dob);
+      const today = new Date();
+      if (dob > today) errs.dob = "La date de naissance ne peut pas être dans le futur";
+      else if (today.getFullYear() - dob.getFullYear() > 150) errs.dob = "Date de naissance invalide";
+    }
+    if (!form.phone.trim()) {
+      errs.phone = "Requis";
+    } else if (!/^\+?[\d\s\-()]{7,20}$/.test(form.phone.trim())) {
+      errs.phone = "Numéro de téléphone invalide";
+    }
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errs.email = "Adresse email invalide";
+    }
+    if (!form.address.trim()) errs.address = "Requis";
     setErrors(errs);
     if (Object.keys(errs).length) return;
     createMut.mutate({
       ...form,
-      allergies: form.allergies ? form.allergies.split(",").map((a) => a.trim()) : [],
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      allergies: form.allergies ? form.allergies.split(",").map((a) => a.trim()).filter(Boolean) : [],
     });
   };
 

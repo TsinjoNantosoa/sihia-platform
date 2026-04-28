@@ -51,6 +51,19 @@ class Doctor:
 
 
 @dataclass
+class MedicalVisit:
+    id: str
+    patient_id: str
+    date: str
+    reason: str
+    doctor_name: str
+    specialty: str
+    diagnosis: str
+    treatment: str | None
+    notes: str | None
+
+
+@dataclass
 class Appointment:
     id: str
     patient_id: str
