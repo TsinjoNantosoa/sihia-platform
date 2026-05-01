@@ -2,12 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Stethoscope, Phone, Mail, Star } from "lucide-react";
 import { useT } from "@/lib/i18n/store";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, ErrorState } from "@/components/shared/States";
 import { doctorsService } from "@/lib/api/services";
 
 export const Route = createFileRoute("/_app/doctors")({
+  beforeLoad: requireRoutePermission("view_doctors"),
   head: () => ({
     meta: [
       { title: "Médecins — SIH IA" },

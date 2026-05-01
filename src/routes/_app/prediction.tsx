@@ -10,9 +10,11 @@ import { useT } from "@/lib/i18n/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { LoadingState } from "@/components/shared/States";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { mlService, alertsService } from "@/lib/api/services";
 
 export const Route = createFileRoute("/_app/prediction")({
+  beforeLoad: requireRoutePermission("view_prediction"),
   head: () => ({ meta: [{ title: "Prédiction IA — SIH IA" }] }),
   component: PredictionPage,
 });

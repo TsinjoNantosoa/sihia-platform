@@ -97,6 +97,8 @@ def init_db() -> None:
             [
                 ("u-admin", "Admin SIH", "admin@sihia.health", hash_password("admin123"), "admin", "Hopital Central"),
                 ("u-doctor", "Dr Benali", "dr.benali@sihia.health", hash_password("demo1234"), "doctor", "Hopital Central"),
+                ("u-manager", "Mme Diallo", "manager@sihia.health", hash_password("manager123"), "manager", "Hopital Central"),
+                ("u-staff", "Accueil SIH", "staff@sihia.health", hash_password("staff123"), "staff", "Hopital Central"),
             ],
         )
     else:
@@ -106,6 +108,18 @@ def init_db() -> None:
             pwd = row["password"]
             if not str(pwd).startswith("pbkdf2_sha256$"):
                 cur.execute("UPDATE users SET password=? WHERE id=?", (hash_password(pwd), row["id"]))
+
+    # Ensure demo accounts exist even if the database was initialized previously.
+    for user_id, name, email, password, role in [
+        ("u-manager", "Mme Diallo", "manager@sihia.health", "manager123", "manager"),
+        ("u-staff", "Accueil SIH", "staff@sihia.health", "staff123", "staff"),
+    ]:
+        exists = cur.execute("SELECT 1 FROM users WHERE lower(email)=lower(?)", (email,)).fetchone()
+        if not exists:
+            cur.execute(
+                "INSERT INTO users (id,name,email,password,role,facility) VALUES (?,?,?,?,?,?)",
+                (user_id, name, email, hash_password(password), role, "Hopital Central"),
+            )
     if cur.execute("SELECT COUNT(*) AS c FROM doctors").fetchone()["c"] == 0:
         days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
         cur.executemany(

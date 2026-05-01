@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Phone, Mail, MapPin, Droplet, ShieldCheck, Calendar, Plus, Stethoscope, FileText } from "lucide-react";
 import { patientsService } from "@/lib/api/services";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { useT } from "@/lib/i18n/store";
 import { LoadingState, ErrorState } from "@/components/shared/States";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/patients/$patientId")({
+  beforeLoad: requireRoutePermission("view_patients"),
   head: ({ params }) => ({
     meta: [{ title: `Dossier ${params.patientId} — SIH IA` }],
   }),

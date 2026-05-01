@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { useAuth } from "@/lib/auth/store";
 import { Bell, Globe, User, Building, LogOut, Shield } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
@@ -9,6 +10,7 @@ import { authService } from "@/lib/api/services";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/settings")({
+  beforeLoad: requireRoutePermission("view_settings"),
   head: () => ({ meta: [{ title: "Paramètres — SIH IA" }] }),
   component: SettingsPage,
 });

@@ -52,7 +52,7 @@ def logout_all(claims: dict = Depends(require_auth)):
 def list_patients(
     search: str | None = Query(default=None),
     status: str | None = Query(default=None),
-    _claims: dict = Depends(require_auth),
+    _claims: dict = Depends(require_permission("patients:read")),
 ):
     items = patients_service.list(search=search, status_filter=status)
     return [
@@ -77,7 +77,7 @@ def list_patients(
 
 
 @api_router.get("/patients/{patient_id}")
-def get_patient(patient_id: str, _claims: dict = Depends(require_auth)):
+def get_patient(patient_id: str, _claims: dict = Depends(require_permission("patients:read"))):
     p = patients_service.get(patient_id)
     return {
         "id": p.id,
@@ -162,7 +162,7 @@ def add_patient_visit(
 
 
 @api_router.get("/doctors")
-def list_doctors(_claims: dict = Depends(require_auth)):
+def list_doctors(_claims: dict = Depends(require_permission("doctors:read"))):
     return [
         {
             "id": d.id,
@@ -182,7 +182,7 @@ def list_doctors(_claims: dict = Depends(require_auth)):
 
 
 @api_router.get("/doctors/{doctor_id}")
-def get_doctor(doctor_id: str, _claims: dict = Depends(require_auth)):
+def get_doctor(doctor_id: str, _claims: dict = Depends(require_permission("doctors:read"))):
     d = doctors_service.get(doctor_id)
     return {
         "id": d.id,
@@ -200,7 +200,7 @@ def get_doctor(doctor_id: str, _claims: dict = Depends(require_auth)):
 
 
 @api_router.get("/appointments")
-def list_appointments(_claims: dict = Depends(require_auth)):
+def list_appointments(_claims: dict = Depends(require_permission("appointments:read"))):
     return [
         {
             "id": a.id,
@@ -234,13 +234,13 @@ def create_appointment(payload: AppointmentCreate, _claims: dict = Depends(requi
 
 
 @api_router.post("/appointments/{appointment_id}/cancel")
-def cancel_appointment(appointment_id: str, _claims: dict = Depends(require_auth)):
+def cancel_appointment(appointment_id: str, _claims: dict = Depends(require_permission("appointments:update"))):
     a = appointments_service.cancel(appointment_id)
     return asdict(a)
 
 
 @api_router.get("/analytics/kpis")
-def kpis(_claims: dict = Depends(require_auth)):
+def kpis(_claims: dict = Depends(require_permission("analytics:read"))):
     return {
         "patientsToday": 142,
         "patientsTrend": 4.2,
@@ -253,7 +253,7 @@ def kpis(_claims: dict = Depends(require_auth)):
 
 
 @api_router.get("/analytics/revenue")
-def monthly_revenue(period: str = Query(default="6m"), _claims: dict = Depends(require_auth)):
+def monthly_revenue(period: str = Query(default="6m"), _claims: dict = Depends(require_permission("analytics:read"))):
     all_months = [
         {"label": "Jan", "value": 90000},
         {"label": "Fev", "value": 94000},
@@ -273,17 +273,17 @@ def monthly_revenue(period: str = Query(default="6m"), _claims: dict = Depends(r
 
 
 @api_router.get("/analytics/admissions-dept")
-def admissions_by_dept(_claims: dict = Depends(require_auth)):
+def admissions_by_dept(_claims: dict = Depends(require_permission("analytics:read"))):
     return [{"label": "Urgences", "value": 320}, {"label": "Cardio", "value": 210}, {"label": "Pediatrie", "value": 180}]
 
 
 @api_router.get("/analytics/satisfaction")
-def satisfaction(_claims: dict = Depends(require_auth)):
+def satisfaction(_claims: dict = Depends(require_permission("analytics:read"))):
     return [{"label": "S1", "value": 82}, {"label": "S2", "value": 85}, {"label": "S3", "value": 88}]
 
 
 @api_router.get("/ml/predict-7d")
-def predict(_claims: dict = Depends(require_auth)):
+def predict(_claims: dict = Depends(require_permission("ml:read"))):
     points = [
         {"date": "2026-04-21", "actual": 118},
         {"date": "2026-04-22", "actual": 121},
@@ -302,7 +302,7 @@ def predict(_claims: dict = Depends(require_auth)):
 
 
 @api_router.get("/ml/predict-30d")
-def predict_30d(_claims: dict = Depends(require_auth)):
+def predict_30d(_claims: dict = Depends(require_permission("ml:read"))):
     from datetime import date, timedelta
     base = date(2026, 4, 21)
     actuals = [
@@ -332,7 +332,7 @@ def predict_30d(_claims: dict = Depends(require_auth)):
 
 
 @api_router.get("/alerts")
-def alerts(_claims: dict = Depends(require_auth)):
+def alerts(_claims: dict = Depends(require_permission("dashboard:read"))):
     return [
         {
             "id": "al-1",

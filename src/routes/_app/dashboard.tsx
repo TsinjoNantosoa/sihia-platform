@@ -23,6 +23,7 @@ import {
 import { format, parseISO } from "date-fns";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { useAuth } from "@/lib/auth/store";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, ErrorState } from "@/components/shared/States";
@@ -34,6 +35,7 @@ import {
 } from "@/lib/api/services";
 
 export const Route = createFileRoute("/_app/dashboard")({
+  beforeLoad: requireRoutePermission("view_dashboard"),
   head: () => ({
     meta: [
       { title: "Tableau de bord — SIH IA" },

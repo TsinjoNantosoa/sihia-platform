@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, List, CalendarDays, AlertTriangle } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/store";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, EmptyState } from "@/components/shared/States";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/appointments")({
+  beforeLoad: requireRoutePermission("view_appointments"),
   head: () => ({ meta: [{ title: "Rendez-vous — SIH IA" }] }),
   component: AppointmentsPage,
 });

@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { patientsService } from "@/lib/api/services";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ import { toast } from "sonner";
 import type { Patient } from "@/lib/api/types";
 
 export const Route = createFileRoute("/_app/patients/")({
+  beforeLoad: requireRoutePermission("view_patients"),
   head: () => ({
     meta: [
       { title: "Patients — SIH IA" },

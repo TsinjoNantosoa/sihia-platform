@@ -5,9 +5,11 @@ import { useT } from "@/lib/i18n/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState } from "@/components/shared/States";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { rbacService } from "@/lib/api/services";
 
 export const Route = createFileRoute("/_app/rbac")({
+  beforeLoad: requireRoutePermission("manage_roles"),
   head: () => ({ meta: [{ title: "RBAC — SIH IA" }] }),
   component: RbacPage,
 });

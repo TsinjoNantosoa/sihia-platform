@@ -9,9 +9,11 @@ import { useT } from "@/lib/i18n/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { LoadingState } from "@/components/shared/States";
+import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { analyticsService } from "@/lib/api/services";
 
 export const Route = createFileRoute("/_app/analytics")({
+  beforeLoad: requireRoutePermission("view_analytics"),
   head: () => ({ meta: [{ title: "Analytique — SIH IA" }] }),
   component: AnalyticsPage,
 });
