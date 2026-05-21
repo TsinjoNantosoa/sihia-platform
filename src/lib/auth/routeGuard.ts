@@ -1,6 +1,6 @@
 import { redirect } from "@tanstack/react-router";
 
-import { type Permission, getPermissionsForRole } from "./rbac";
+import { hasExplicitPermission, type Permission } from "./rbac";
 import { useAuth } from "./store";
 
 type RouteAccessKey =
@@ -54,12 +54,6 @@ function waitForAuthHydration(timeoutMs = 1500): Promise<void> {
   });
 }
 
-function getEffectivePermissions() {
-  const { user, permissions } = useAuth.getState();
-  if (!user) return permissions;
-  return permissions.length > 0 ? permissions : getPermissionsForRole(user.role);
-}
-
 export function requireRoutePermission(accessKey: RouteAccessKey) {
   const requiredPermission = ROUTE_PERMISSION_MAP[accessKey];
 
@@ -72,8 +66,8 @@ export function requireRoutePermission(accessKey: RouteAccessKey) {
       throw redirect({ to: "/login" });
     }
 
-    const permissions = getEffectivePermissions();
-    if (!permissions.includes(requiredPermission)) {
+    const state = useAuth.getState();
+    if (!hasExplicitPermission(state, requiredPermission)) {
       console.warn(
         `[RBAC] Access denied for ${accessKey}: missing permission ${requiredPermission} for role ${user.role}`,
       );

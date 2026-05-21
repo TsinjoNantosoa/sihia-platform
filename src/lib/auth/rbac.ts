@@ -1,5 +1,10 @@
 import type { Role } from "./store";
 
+export interface AuthStateLike {
+  user: { role: Role } | null;
+  permissions: string[];
+}
+
 export type Permission =
   | "dashboard:read"
   | "patients:read"
@@ -70,4 +75,13 @@ export function getPermissionsForRole(role: Role): Permission[] {
 export function canAccess(permissions: string[] | undefined, permission: Permission): boolean {
   if (!permissions) return false;
   return permissions.includes(permission);
+}
+
+export function resolvePermissions(state: AuthStateLike): string[] {
+  return state.permissions;
+}
+
+export function hasExplicitPermission(state: AuthStateLike, permission: Permission): boolean {
+  if (!state.user) return false;
+  return resolvePermissions(state).includes(permission);
 }
