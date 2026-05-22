@@ -1,6 +1,7 @@
 // Auth store mocké. Token bidon stocké en localStorage. Préparé pour FastAPI.
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { DEFAULT_API_URL, shouldUseMocks } from "../api/mockPolicy";
 
 export type Role = "admin" | "doctor" | "staff" | "manager";
 
@@ -57,10 +58,9 @@ export const useAuth = create<AuthState>()(
       setToken: (token) => set({ token, isAuthenticated: true }),
       setSession: (token, refreshToken) => set({ token, refreshToken, isAuthenticated: true }),
       login: async (email, password) => {
-        const IS_PROD = import.meta.env.PROD;
-        const USE_MOCKS = !IS_PROD && (import.meta.env.VITE_USE_MOCKS as string | undefined) === "true";
+        const USE_MOCKS = shouldUseMocks();
         try {
-          const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+          const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
           const res = await fetch(`${API_URL}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

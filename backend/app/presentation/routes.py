@@ -1,6 +1,8 @@
 from dataclasses import asdict
+from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 
 from app.application.schemas import (
     AppointmentCreate,
@@ -280,6 +282,103 @@ def admissions_by_dept(_claims: dict = Depends(require_permission("analytics:rea
 @api_router.get("/analytics/satisfaction")
 def satisfaction(_claims: dict = Depends(require_permission("analytics:read"))):
     return [{"label": "S1", "value": 82}, {"label": "S2", "value": 85}, {"label": "S3", "value": 88}]
+
+
+@api_router.get("/analytics/export/excel")
+def export_excel(period: str = Query(default="6m"), _claims: dict = Depends(require_permission("analytics:read"))):
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Analytics Export"
+
+    ws.append(["Rapport Analytique - SIH IA"])
+    ws.append(["Période", period])
+    ws.append([])
+
+    ws.append(["Indicateurs Clés"])
+    ws.append(["Indicateur", "Valeur"])
+    ws.append(["Patients Aujourd'hui", 142])
+    ws.append(["Taux d'occupation", "87.5%"])
+    ws.append(["Total Rendez-vous", 412])
+    ws.append([])
+
+    ws.append(["Revenus mensuels"])
+    ws.append(["Mois", "Revenu (€)"])
+    revenue_data = monthly_revenue(period, _claims)
+    for r in revenue_data:
+        ws.append([r["label"], r["value"]])
+
+    ws2 = wb.create_sheet(title="Patients")
+    ws2.append(["ID Dossier", "Nom", "Prenom", "Telephone", "Statut", "Derniere Visite"])
+    for p in patients_service.list(None, None):
+        ws2.append([p.record_number, p.last_name, p.first_name, p.phone, p.status, p.last_visit])
+
+    ws3 = wb.create_sheet(title="Rendez-vous")
+    ws3.append(["ID", "Patient", "Medecin", "Date", "Motif", "Statut"])
+    for a in appointments_service.list():
+        ws3.append([a.id, a.patient_name, a.doctor_name, a.date, a.reason, a.status])
+
+    out = BytesIO()
+    wb.save(out)
+    out.seek(0)
+    return StreamingResponse(
+        out,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=analytics_{period}.xlsx"}
+    )
+
+
+@api_router.get("/analytics/export/pdf")
+def export_pdf(period: str = Query(default="6m"), _claims: dict = Depends(require_permission("analytics:read"))):
+    from fpdf import FPDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("helvetica", size=16)
+    pdf.cell(0, 10, text="Rapport Analytique - SIH IA", ln=True, align="C")
+    
+    pdf.set_font("helvetica", size=12)
+    pdf.ln(10)
+    pdf.cell(0, 10, text=f"Periode : {period}", ln=True)
+    pdf.ln(5)
+
+    pdf.set_font("helvetica", style="B", size=14)
+    pdf.cell(0, 10, text="Indicateurs Cles", ln=True)
+    pdf.set_font("helvetica", size=12)
+    pdf.cell(0, 10, text="Patients Aujourd'hui : 142", ln=True)
+    pdf.cell(0, 10, text="Taux d'occupation : 87.5%", ln=True)
+    pdf.cell(0, 10, text="Total Rendez-vous : 412", ln=True)
+    pdf.ln(5)
+
+    pdf.set_font("helvetica", style="B", size=14)
+    pdf.cell(0, 10, text="Revenus mensuels", ln=True)
+    pdf.set_font("helvetica", size=12)
+    revenue_data = monthly_revenue(period, _claims)
+    for r in revenue_data:
+        pdf.cell(0, 10, text=f"{r['label']} : {r['value']} eur", ln=True)
+
+    pdf.add_page()
+    pdf.set_font("helvetica", style="B", size=14)
+    pdf.cell(0, 10, text="Registre des Patients (Extrait)", ln=True)
+    pdf.set_font("helvetica", size=10)
+    pdf.cell(40, 10, text="Dossier", border=1)
+    pdf.cell(60, 10, text="Nom Prenom", border=1)
+    pdf.cell(40, 10, text="Telephone", border=1)
+    pdf.cell(40, 10, text="Statut", border=1, ln=True)
+    
+    # Export up to 100 recent patients for PDF to avoid blowing up memory quickly
+    all_patients = patients_service.list(None, None)[:100]
+    for p in all_patients:
+        pdf.cell(40, 10, text=str(p.record_number), border=1)
+        pdf.cell(60, 10, text=f"{p.last_name[:15]} {p.first_name[:15]}", border=1)
+        pdf.cell(40, 10, text=str(p.phone), border=1)
+        pdf.cell(40, 10, text=str(p.status), border=1, ln=True)
+
+    out = BytesIO(pdf.output())
+    return StreamingResponse(
+        out,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=analytics_{period}.pdf"}
+    )
 
 
 @api_router.get("/ml/predict-7d")

@@ -4,13 +4,19 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import { Download } from "lucide-react";
+import { Download, FileText, FileSpreadsheet, Table } from "lucide-react";
 import { useT } from "@/lib/i18n/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { LoadingState } from "@/components/shared/States";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { analyticsService } from "@/lib/api/services";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_app/analytics")({
   beforeLoad: requireRoutePermission("view_analytics"),
@@ -63,15 +69,29 @@ function AnalyticsPage() {
                 </button>
               ))}
             </div>
-            {/* Export CSV */}
-            <button
-              onClick={() => revenue.data && exportCsv(`revenus-${period}.csv`, revenue.data)}
-              disabled={!revenue.data}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-            >
-              <Download className="size-4" />
-              Export CSV
-            </button>
+            {/* Export CSV/PDF/Excel */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  disabled={!revenue.data}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                >
+                  <Download className="size-4" />
+                  Export
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => analyticsService.exportPdf(period)}>
+                  <FileText className="mr-2 size-4" /> PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => analyticsService.exportExcel(period)}>
+                  <FileSpreadsheet className="mr-2 size-4" /> Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => revenue.data && exportCsv(`revenus-${period}.csv`, revenue.data)}>
+                  <Table className="mr-2 size-4" /> CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         }
       />

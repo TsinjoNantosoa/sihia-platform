@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.application.use_cases import AuthService
 from app.core.config import settings
-from app.core.security import hash_password, verify_password
+from app.core.security import decode_access_token, hash_password, verify_password
 from app.infrastructure.sqlite_repositories import (
     SQLiteRefreshSessionRepository,
     SQLiteUserRepository,
@@ -37,6 +37,25 @@ def test_refresh_rotation_invalidates_old_token(tmp_path: Path) -> None:
         pass
     # latest refresh still works
     _access3, _refresh3 = auth.refresh(refresh2)
+
+
+def test_access_token_includes_permissions_claim(tmp_path: Path) -> None:
+    auth = _setup_test_db(tmp_path)
+    access_token, _refresh = auth.login("admin@sihia.health", "admin123")
+    claims = decode_access_token(access_token)
+    assert "permissions" in claims
+    assert isinstance(claims["permissions"], list)
+    assert "patients:read" in claims["permissions"]
+
+
+def test_refresh_access_token_includes_permissions_claim(tmp_path: Path) -> None:
+    auth = _setup_test_db(tmp_path)
+    _access, refresh = auth.login("admin@sihia.health", "admin123")
+    new_access, _new_refresh = auth.refresh(refresh)
+    claims = decode_access_token(new_access)
+    assert "permissions" in claims
+    assert isinstance(claims["permissions"], list)
+    assert "patients:read" in claims["permissions"]
 
 
 def test_logout_revokes_session(tmp_path: Path) -> None:

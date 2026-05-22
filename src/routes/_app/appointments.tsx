@@ -5,6 +5,7 @@ import { Plus, List, CalendarDays, AlertTriangle } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, EmptyState } from "@/components/shared/States";
 import { appointmentsService, doctorsService, patientsService } from "@/lib/api/services";
@@ -13,6 +14,33 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
+type AppointmentStatus = "confirmed" | "scheduled" | "cancelled" | "noshow" | "neutral";
+
+type Appointment = {
+  id: string;
+  date: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  durationMin: number;
+  reason: string;
+  status: AppointmentStatus;
+};
+
+type Patient = {
+  id: string;
+  firstName: string;
+  lastName: string;
+};
+
+type Doctor = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  specialty?: string;
+};
 
 export const Route = createFileRoute("/_app/appointments")({
   beforeLoad: requireRoutePermission("view_appointments"),
@@ -29,7 +57,10 @@ function AppointmentsPage() {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [showNew, setShowNew] = useState(false);
 
-  const { data, isLoading } = useQuery({ queryKey: ["appts"], queryFn: appointmentsService.list });
+  const { data, isLoading } = useQuery<Appointment[]>({
+    queryKey: ["appts"],
+    queryFn: appointmentsService.list,
+  });
 
   // Build calendar grid for current week
   const today = new Date();
@@ -66,12 +97,14 @@ function AppointmentsPage() {
                 <CalendarDays className="size-3.5" /> {t("appts.view.calendar")}
               </button>
             </div>
-            <button
-              onClick={() => setShowNew(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              <Plus className="size-4" /> {t("appts.new")}
-            </button>
+            <PermissionGuard permission="appointments:create">
+              <button
+                onClick={() => setShowNew(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="size-4" /> {t("appts.new")}
+              </button>
+            </PermissionGuard>
           </>
         }
       />
@@ -95,7 +128,7 @@ function AppointmentsPage() {
                 {data?.length === 0 ? (
                   <tr><td colSpan={5}><EmptyState /></td></tr>
                 ) : (
-                  data?.map((a) => (
+                  data?.map((a: Appointment) => (
                     <tr key={a.id} className="hover:bg-muted/30">
                       <td className="px-4 py-3 font-mono text-xs">
                         {new Date(a.date).toLocaleString(locale, {
@@ -143,8 +176,8 @@ function AppointmentsPage() {
                 <div className="border-e border-border p-2 text-end font-mono text-[10px] text-muted-foreground">
                   {String(h).padStart(2, "0")}:00
                 </div>
-                {weekDays.map((d, di) => {
-                  const slot = data?.filter((a) => {
+                {weekDays.map((d: Date, di: number) => {
+                  const slot = data?.filter((a: Appointment) => {
                     const ad = new Date(a.date);
                     return (
                       ad.getDate() === d.getDate() &&
@@ -154,7 +187,7 @@ function AppointmentsPage() {
                   }) ?? [];
                   return (
                     <div key={di} className="min-h-[56px] border-e border-border p-1 last:border-e-0">
-                      {slot.map((a) => (
+                      {slot.map((a: Appointment) => (
                         <div
                           key={a.id}
                           className={`mb-1 rounded-md border-s-2 p-1.5 text-[10px] ${
@@ -176,7 +209,9 @@ function AppointmentsPage() {
         </div>
       )}
 
-      <NewAppointmentDialog open={showNew} onOpenChange={setShowNew} />
+      <PermissionGuard permission="appointments:create">
+        <NewAppointmentDialog open={showNew} onOpenChange={setShowNew} />
+      </PermissionGuard>
     </div>
   );
 }
@@ -184,8 +219,14 @@ function AppointmentsPage() {
 function NewAppointmentDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const t = useT();
   const qc = useQueryClient();
-  const { data: patients } = useQuery({ queryKey: ["patients", "", "all"], queryFn: () => patientsService.list() });
-  const { data: doctors } = useQuery({ queryKey: ["doctors"], queryFn: doctorsService.list });
+  const { data: patients } = useQuery<Patient[]>({
+    queryKey: ["patients", "", "all"],
+    queryFn: () => patientsService.list(),
+  });
+  const { data: doctors } = useQuery<Doctor[]>({
+    queryKey: ["doctors"],
+    queryFn: doctorsService.list,
+  });
   const [form, setForm] = useState({ patientId: "", doctorId: "", date: "", time: "09:00", reason: "" });
   const [conflict, setConflict] = useState(false);
 
@@ -205,8 +246,8 @@ function NewAppointmentDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
   const submit = () => {
     setConflict(false);
-    const patient = patients?.find((p) => p.id === form.patientId);
-    const doctor = doctors?.find((d) => d.id === form.doctorId);
+    const patient = patients?.find((p: Patient) => p.id === form.patientId);
+    const doctor = doctors?.find((d: Doctor) => d.id === form.doctorId);
     if (!patient || !doctor || !form.date) return;
     const dt = new Date(`${form.date}T${form.time}:00`);
     mut.mutate({
@@ -234,7 +275,7 @@ function NewAppointmentDialog({ open, onOpenChange }: { open: boolean; onOpenCha
             <select value={form.patientId} onChange={(e) => setForm((f) => ({ ...f, patientId: e.target.value }))}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
               <option value="">— Choisir —</option>
-              {patients?.slice(0, 30).map((p) => (
+              {patients?.slice(0, 30).map((p: Patient) => (
                 <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
               ))}
             </select>
@@ -244,7 +285,7 @@ function NewAppointmentDialog({ open, onOpenChange }: { open: boolean; onOpenCha
             <select value={form.doctorId} onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value }))}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
               <option value="">— Choisir —</option>
-              {doctors?.map((d) => (
+              {doctors?.map((d: Doctor) => (
                 <option key={d.id} value={d.id}>Dr. {d.firstName} {d.lastName} — {d.specialty}</option>
               ))}
             </select>

@@ -4,6 +4,8 @@
 import { toast } from "sonner";
 import type { Appointment, Patient } from "./types";
 import { useAuth } from "../auth/store"; // Import the actual store instance
+import { getAuthRedirectPath } from "./httpErrors";
+import { DEFAULT_API_URL, shouldUseMocks } from "./mockPolicy";
 import {
   ALERTS,
   APPOINTMENTS,
@@ -13,9 +15,8 @@ import {
   RBAC_USERS,
 } from "./mockData";
 
-export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
-const IS_PROD = import.meta.env.PROD;
-const USE_MOCKS = !IS_PROD && (import.meta.env.VITE_USE_MOCKS as string | undefined) === "true";
+export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? DEFAULT_API_URL;
+const USE_MOCKS = shouldUseMocks();
 
 let mockPatientsDb: Patient[] = [...PATIENTS];
 let mockAppointmentsDb: Appointment[] = [...APPOINTMENTS];
@@ -117,10 +118,14 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}, hasRet
           }
         }
         useAuth.getState().logout();
-        window.location.replace("/login");
+        toast.error("Session expiree", { description: "Merci de vous reconnecter." });
+        const target = getAuthRedirectPath(401, window.location.pathname);
+        if (target) window.location.replace(target);
       }
       if (response.status === 403) {
-        window.location.replace("/403");
+        toast.error("Acces refuse", { description: "Vous n'avez pas la permission." });
+        const target = getAuthRedirectPath(403, window.location.pathname);
+        if (target) window.location.replace(target);
       }
       const contentType = response.headers.get("content-type") || "";
       const errorData = contentType.includes("application/json")
@@ -159,7 +164,14 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}, hasRet
     throw error;
   }
 };
-
+const fetchBlobWithAuth = async (endpoint: string, options: RequestInit = {}) => {
+  const token = useAuth.getState().token;
+  const headers = new Headers(options.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+  if (!response.ok) throw new Error("Export failed");
+  return response.blob();
+};
 export const patientsService = {
   list: (query?: { search?: string; status?: string }) => {
     const params = new URLSearchParams();
@@ -208,6 +220,24 @@ export const analyticsService = {
     fetchWithAuth(`/api/analytics/revenue?period=${period}`),
   admissionsByDept: () => fetchWithAuth("/api/analytics/admissions-dept"),
   satisfaction: () => fetchWithAuth("/api/analytics/satisfaction"),
+  exportExcel: async (period: "3m" | "6m" | "12m" = "6m") => {
+    const blob = await fetchBlobWithAuth(`/api/analytics/export/excel?period=${period}`);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `analytics_${period}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  exportPdf: async (period: "3m" | "6m" | "12m" = "6m") => {
+    const blob = await fetchBlobWithAuth(`/api/analytics/export/pdf?period=${period}`);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `analytics_${period}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };
 
 export const mlService = {
