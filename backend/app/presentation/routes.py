@@ -11,17 +11,59 @@ from app.application.schemas import (
     LogoutRequest,
     MedicalVisitCreate,
     PatientCreate,
+    DoctorUpdate,
+    PatientUpdate,
     RefreshTokenRequest,
+    UserCreate,
+    UserUpdate,
 )
 from app.presentation.deps import (
+    analytics_service,
     appointments_service,
     auth_service,
     doctors_service,
     medical_history_service,
     patients_service,
+    ml_service,
+    rbac_service,
     require_auth,
     require_permission,
 )
+
+
+def _doctor_payload(d) -> dict:
+    return {
+        "id": d.id,
+        "firstName": d.first_name,
+        "lastName": d.last_name,
+        "specialty": d.specialty,
+        "phone": d.phone,
+        "email": d.email,
+        "availability": d.availability,
+        "patientsCount": d.patients_count,
+        "weeklyAppointments": d.weekly_appointments,
+        "satisfaction": d.satisfaction,
+        "schedule": d.schedule,
+    }
+
+
+def _patient_payload(p) -> dict:
+    return {
+        "id": p.id,
+        "recordNumber": p.record_number,
+        "firstName": p.first_name,
+        "lastName": p.last_name,
+        "dob": p.dob,
+        "gender": p.gender,
+        "phone": p.phone,
+        "email": p.email,
+        "address": p.address,
+        "bloodType": p.blood_type,
+        "allergies": p.allergies,
+        "insurance": p.insurance,
+        "status": p.status,
+        "lastVisit": p.last_visit,
+    }
 
 api_router = APIRouter(prefix="/api")
 
@@ -57,67 +99,26 @@ def list_patients(
     _claims: dict = Depends(require_permission("patients:read")),
 ):
     items = patients_service.list(search=search, status_filter=status)
-    return [
-        {
-            "id": p.id,
-            "recordNumber": p.record_number,
-            "firstName": p.first_name,
-            "lastName": p.last_name,
-            "dob": p.dob,
-            "gender": p.gender,
-            "phone": p.phone,
-            "email": p.email,
-            "address": p.address,
-            "bloodType": p.blood_type,
-            "allergies": p.allergies,
-            "insurance": p.insurance,
-            "status": p.status,
-            "lastVisit": p.last_visit,
-        }
-        for p in items
-    ]
+    return [_patient_payload(p) for p in items]
 
 
 @api_router.get("/patients/{patient_id}")
 def get_patient(patient_id: str, _claims: dict = Depends(require_permission("patients:read"))):
-    p = patients_service.get(patient_id)
-    return {
-        "id": p.id,
-        "recordNumber": p.record_number,
-        "firstName": p.first_name,
-        "lastName": p.last_name,
-        "dob": p.dob,
-        "gender": p.gender,
-        "phone": p.phone,
-        "email": p.email,
-        "address": p.address,
-        "bloodType": p.blood_type,
-        "allergies": p.allergies,
-        "insurance": p.insurance,
-        "status": p.status,
-        "lastVisit": p.last_visit,
-    }
+    return _patient_payload(patients_service.get(patient_id))
 
 
 @api_router.post("/patients")
 def create_patient(payload: PatientCreate, _claims: dict = Depends(require_permission("patients:create"))):
-    p = patients_service.create(payload)
-    return {
-        "id": p.id,
-        "recordNumber": p.record_number,
-        "firstName": p.first_name,
-        "lastName": p.last_name,
-        "dob": p.dob,
-        "gender": p.gender,
-        "phone": p.phone,
-        "email": p.email,
-        "address": p.address,
-        "bloodType": p.blood_type,
-        "allergies": p.allergies,
-        "insurance": p.insurance,
-        "status": p.status,
-        "lastVisit": p.last_visit,
-    }
+    return _patient_payload(patients_service.create(payload))
+
+
+@api_router.patch("/patients/{patient_id}")
+def update_patient(
+    patient_id: str,
+    payload: PatientUpdate,
+    _claims: dict = Depends(require_permission("patients:update")),
+):
+    return _patient_payload(patients_service.update(patient_id, payload))
 
 
 @api_router.delete("/patients/{patient_id}", status_code=status.HTTP_200_OK)
@@ -165,40 +166,21 @@ def add_patient_visit(
 
 @api_router.get("/doctors")
 def list_doctors(_claims: dict = Depends(require_permission("doctors:read"))):
-    return [
-        {
-            "id": d.id,
-            "firstName": d.first_name,
-            "lastName": d.last_name,
-            "specialty": d.specialty,
-            "phone": d.phone,
-            "email": d.email,
-            "availability": d.availability,
-            "patientsCount": d.patients_count,
-            "weeklyAppointments": d.weekly_appointments,
-            "satisfaction": d.satisfaction,
-            "schedule": d.schedule,
-        }
-        for d in doctors_service.list()
-    ]
+    return [_doctor_payload(d) for d in doctors_service.list()]
 
 
 @api_router.get("/doctors/{doctor_id}")
 def get_doctor(doctor_id: str, _claims: dict = Depends(require_permission("doctors:read"))):
-    d = doctors_service.get(doctor_id)
-    return {
-        "id": d.id,
-        "firstName": d.first_name,
-        "lastName": d.last_name,
-        "specialty": d.specialty,
-        "phone": d.phone,
-        "email": d.email,
-        "availability": d.availability,
-        "patientsCount": d.patients_count,
-        "weeklyAppointments": d.weekly_appointments,
-        "satisfaction": d.satisfaction,
-        "schedule": d.schedule,
-    }
+    return _doctor_payload(doctors_service.get(doctor_id))
+
+
+@api_router.patch("/doctors/{doctor_id}")
+def update_doctor(
+    doctor_id: str,
+    payload: DoctorUpdate,
+    _claims: dict = Depends(require_permission("doctors:update")),
+):
+    return _doctor_payload(doctors_service.update(doctor_id, payload))
 
 
 @api_router.get("/appointments")
@@ -243,45 +225,22 @@ def cancel_appointment(appointment_id: str, _claims: dict = Depends(require_perm
 
 @api_router.get("/analytics/kpis")
 def kpis(_claims: dict = Depends(require_permission("analytics:read"))):
-    return {
-        "patientsToday": 142,
-        "patientsTrend": 4.2,
-        "occupancy": 87.5,
-        "occupancyCapacity": 320,
-        "appointments": 412,
-        "appointmentsCapacity": 450,
-        "criticalAlerts": 3,
-    }
+    return analytics_service.kpis()
 
 
 @api_router.get("/analytics/revenue")
 def monthly_revenue(period: str = Query(default="6m"), _claims: dict = Depends(require_permission("analytics:read"))):
-    all_months = [
-        {"label": "Jan", "value": 90000},
-        {"label": "Fev", "value": 94000},
-        {"label": "Mar", "value": 98000},
-        {"label": "Avr", "value": 102000},
-        {"label": "Mai", "value": 107000},
-        {"label": "Juin", "value": 110000},
-        {"label": "Juil", "value": 108000},
-        {"label": "Aout", "value": 113000},
-        {"label": "Sep", "value": 117000},
-        {"label": "Oct", "value": 121000},
-        {"label": "Nov", "value": 119000},
-        {"label": "Dec", "value": 125000},
-    ]
-    n = 3 if period == "3m" else 12 if period == "12m" else 6
-    return all_months[-n:]
+    return analytics_service.monthly_revenue(period)
 
 
 @api_router.get("/analytics/admissions-dept")
 def admissions_by_dept(_claims: dict = Depends(require_permission("analytics:read"))):
-    return [{"label": "Urgences", "value": 320}, {"label": "Cardio", "value": 210}, {"label": "Pediatrie", "value": 180}]
+    return analytics_service.admissions_by_dept()
 
 
 @api_router.get("/analytics/satisfaction")
 def satisfaction(_claims: dict = Depends(require_permission("analytics:read"))):
-    return [{"label": "S1", "value": 82}, {"label": "S2", "value": 85}, {"label": "S3", "value": 88}]
+    return analytics_service.satisfaction()
 
 
 @api_router.get("/analytics/export/excel")
@@ -297,14 +256,15 @@ def export_excel(period: str = Query(default="6m"), _claims: dict = Depends(requ
 
     ws.append(["Indicateurs Clés"])
     ws.append(["Indicateur", "Valeur"])
-    ws.append(["Patients Aujourd'hui", 142])
-    ws.append(["Taux d'occupation", "87.5%"])
-    ws.append(["Total Rendez-vous", 412])
+    kpi_data = analytics_service.kpis()
+    ws.append(["Patients Aujourd'hui", kpi_data["patientsToday"]])
+    ws.append(["Taux d'occupation", f"{kpi_data['occupancy']}%"])
+    ws.append(["Total Rendez-vous", kpi_data["appointments"]])
     ws.append([])
 
     ws.append(["Revenus mensuels"])
     ws.append(["Mois", "Revenu (€)"])
-    revenue_data = monthly_revenue(period, _claims)
+    revenue_data = analytics_service.monthly_revenue(period)
     for r in revenue_data:
         ws.append([r["label"], r["value"]])
 
@@ -344,15 +304,16 @@ def export_pdf(period: str = Query(default="6m"), _claims: dict = Depends(requir
     pdf.set_font("helvetica", style="B", size=14)
     pdf.cell(0, 10, text="Indicateurs Cles", ln=True)
     pdf.set_font("helvetica", size=12)
-    pdf.cell(0, 10, text="Patients Aujourd'hui : 142", ln=True)
-    pdf.cell(0, 10, text="Taux d'occupation : 87.5%", ln=True)
-    pdf.cell(0, 10, text="Total Rendez-vous : 412", ln=True)
+    kpi_data = analytics_service.kpis()
+    pdf.cell(0, 10, text=f"Patients Aujourd'hui : {kpi_data['patientsToday']}", ln=True)
+    pdf.cell(0, 10, text=f"Taux d'occupation : {kpi_data['occupancy']}%", ln=True)
+    pdf.cell(0, 10, text=f"Total Rendez-vous : {kpi_data['appointments']}", ln=True)
     pdf.ln(5)
 
     pdf.set_font("helvetica", style="B", size=14)
     pdf.cell(0, 10, text="Revenus mensuels", ln=True)
     pdf.set_font("helvetica", size=12)
-    revenue_data = monthly_revenue(period, _claims)
+    revenue_data = analytics_service.monthly_revenue(period)
     for r in revenue_data:
         pdf.cell(0, 10, text=f"{r['label']} : {r['value']} eur", ln=True)
 
@@ -383,70 +344,47 @@ def export_pdf(period: str = Query(default="6m"), _claims: dict = Depends(requir
 
 @api_router.get("/ml/predict-7d")
 def predict(_claims: dict = Depends(require_permission("ml:read"))):
-    points = [
-        {"date": "2026-04-21", "actual": 118},
-        {"date": "2026-04-22", "actual": 121},
-        {"date": "2026-04-23", "actual": 124},
-        {"date": "2026-04-24", "forecast": 126, "upper": 132, "lower": 120},
-        {"date": "2026-04-25", "forecast": 130, "upper": 137, "lower": 123},
-        {"date": "2026-04-26", "forecast": 128, "upper": 136, "lower": 121},
-    ]
-    return {
-        "points": points,
-        "model": "LSTM-v1",
-        "confidence": 0.87,
-        "peak": {"date": "2026-04-25", "value": 130},
-        "recommendation": "Renforcer l'effectif jeudi-vendredi.",
-    }
+    return ml_service.predict_7d()
 
 
 @api_router.get("/ml/predict-30d")
 def predict_30d(_claims: dict = Depends(require_permission("ml:read"))):
-    from datetime import date, timedelta
-    base = date(2026, 4, 21)
-    actuals = [
-        {"date": (base + timedelta(days=i)).isoformat(), "actual": 118 + i * 2}
-        for i in range(7)
-    ]
-    forecasts = [
-        {
-            "date": (base + timedelta(days=7 + i)).isoformat(),
-            "forecast": 132 + i,
-            "upper": 140 + i,
-            "lower": 124 + i,
-        }
-        for i in range(23)
-    ]
-    points = actuals + forecasts
-    return {
-        "points": points,
-        "model": "LSTM-v1",
-        "model_version": "2026-04-01",
-        "confidence": 0.79,
-        "horizon": 30,
-        "peak": {"date": (base + timedelta(days=29)).isoformat(), "value": 155},
-        "recommendation": "Prévoir un renforcement progressif des effectifs sur les semaines 3 et 4.",
-        "drift_score": 0.04,
-    }
+    body = ml_service.predict_30d()
+    body["horizon"] = 30
+    body["model_version"] = body.get("model", "linear-sqlite")
+    return body
 
 
 @api_router.get("/alerts")
 def alerts(_claims: dict = Depends(require_permission("dashboard:read"))):
-    return [
-        {
-            "id": "al-1",
-            "level": "critical",
-            "title": "Tension sur les lits",
-            "description": "Le taux d'occupation depasse 85%.",
-            "area": "Hospitalisation",
-            "createdAt": "2026-04-21T09:20:00Z",
-        }
-    ]
+    return analytics_service.alerts()
 
 
 @api_router.get("/rbac/users")
 def rbac_users(_claims: dict = Depends(require_permission("users:read"))):
-    return [
-        {"id": "u-admin", "name": "Admin SIH", "email": "admin@sihia.health", "role": "admin", "status": "active", "lastLogin": "2026-04-21T10:00:00Z"},
-        {"id": "u-doc", "name": "Dr Benali", "email": "dr.benali@sihia.health", "role": "doctor", "status": "active", "lastLogin": "2026-04-21T08:30:00Z"},
-    ]
+    return rbac_service.list_users()
+
+
+@api_router.post("/rbac/users", status_code=201)
+def create_rbac_user(
+    payload: UserCreate,
+    _claims: dict = Depends(require_permission("users:create")),
+):
+    return rbac_service.create_user(payload)
+
+
+@api_router.patch("/rbac/users/{user_id}")
+def update_rbac_user(
+    user_id: str,
+    payload: UserUpdate,
+    claims: dict = Depends(require_permission("users:update")),
+):
+    return rbac_service.update_user(user_id, payload, claims.get("sub", ""))
+
+
+@api_router.delete("/rbac/users/{user_id}", status_code=204)
+def delete_rbac_user(
+    user_id: str,
+    claims: dict = Depends(require_permission("users:delete")),
+):
+    rbac_service.delete_user(user_id, claims.get("sub", ""))

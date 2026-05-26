@@ -3,7 +3,7 @@ import sqlite3
 from pathlib import Path
 
 from app.core.config import settings
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.domain.models import Appointment, Doctor, MedicalVisit, Patient, User
 
 
@@ -28,7 +28,8 @@ def init_db() -> None:
             email TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL,
             role TEXT NOT NULL,
-            facility TEXT NOT NULL
+            facility TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active'
         );
         CREATE TABLE IF NOT EXISTS patients (
             id TEXT PRIMARY KEY,
@@ -110,16 +111,21 @@ def init_db() -> None:
                 cur.execute("UPDATE users SET password=? WHERE id=?", (hash_password(pwd), row["id"]))
 
     # Ensure demo accounts exist even if the database was initialized previously.
-    for user_id, name, email, password, role in [
+    demo_accounts = [
+        ("u-admin", "Admin SIH", "admin@sihia.health", "admin123", "admin"),
+        ("u-doctor", "Dr Benali", "dr.benali@sihia.health", "demo1234", "doctor"),
         ("u-manager", "Mme Diallo", "manager@sihia.health", "manager123", "manager"),
         ("u-staff", "Accueil SIH", "staff@sihia.health", "staff123", "staff"),
-    ]:
-        exists = cur.execute("SELECT 1 FROM users WHERE lower(email)=lower(?)", (email,)).fetchone()
-        if not exists:
+    ]
+    for user_id, name, email, password, role in demo_accounts:
+        row = cur.execute("SELECT id, password FROM users WHERE lower(email)=lower(?)", (email,)).fetchone()
+        if not row:
             cur.execute(
                 "INSERT INTO users (id,name,email,password,role,facility) VALUES (?,?,?,?,?,?)",
                 (user_id, name, email, hash_password(password), role, "Hopital Central"),
             )
+        elif not verify_password(password, row["password"]):
+            cur.execute("UPDATE users SET password=? WHERE id=?", (hash_password(password), row["id"]))
     if cur.execute("SELECT COUNT(*) AS c FROM doctors").fetchone()["c"] == 0:
         days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
         cur.executemany(
@@ -156,18 +162,41 @@ def init_db() -> None:
                 ),
             ],
         )
+    try:
+        cur.execute("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
 
+def _row_to_user(row: sqlite3.Row) -> User:
+    data = dict(row)
+    return User(
+        id=data["id"],
+        name=data["name"],
+        email=data["email"],
+        password=data["password"],
+        role=data["role"],
+        facility=data["facility"],
+        status=data.get("status") or "active",
+    )
+
+
 class SQLiteUserRepository:
+    def list_all(self) -> list[User]:
+        conn = _connect()
+        rows = conn.execute("SELECT * FROM users ORDER BY name").fetchall()
+        conn.close()
+        return [_row_to_user(r) for r in rows]
+
     def find_by_email(self, email: str) -> User | None:
         conn = _connect()
         row = conn.execute("SELECT * FROM users WHERE lower(email)=lower(?)", (email,)).fetchone()
         conn.close()
         if not row:
             return None
-        return User(**dict(row))
+        return _row_to_user(row)
 
     def find_by_id(self, user_id: str) -> User | None:
         conn = _connect()
@@ -175,7 +204,41 @@ class SQLiteUserRepository:
         conn.close()
         if not row:
             return None
-        return User(**dict(row))
+        return _row_to_user(row)
+
+    def create(self, user: User) -> User:
+        conn = _connect()
+        conn.execute(
+            "INSERT INTO users (id,name,email,password,role,facility,status) VALUES (?,?,?,?,?,?,?)",
+            (user.id, user.name, user.email, user.password, user.role, user.facility, user.status),
+        )
+        conn.commit()
+        conn.close()
+        return user
+
+    def update(self, user: User) -> User:
+        conn = _connect()
+        conn.execute(
+            "UPDATE users SET name=?, email=?, password=?, role=?, facility=?, status=? WHERE id=?",
+            (user.name, user.email, user.password, user.role, user.facility, user.status, user.id),
+        )
+        conn.commit()
+        conn.close()
+        return user
+
+    def delete(self, user_id: str) -> None:
+        conn = _connect()
+        conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+        conn.commit()
+        conn.close()
+
+    def count_admins(self) -> int:
+        conn = _connect()
+        count = conn.execute(
+            "SELECT COUNT(*) AS c FROM users WHERE role='admin' AND status='active'",
+        ).fetchone()["c"]
+        conn.close()
+        return int(count)
 
 
 class SQLitePatientRepository:
@@ -236,6 +299,35 @@ class SQLitePatientRepository:
         conn.close()
         return patient
 
+    def update(self, patient: Patient) -> Patient:
+        conn = _connect()
+        conn.execute(
+            """
+            UPDATE patients SET
+                first_name=?, last_name=?, dob=?, gender=?, phone=?, email=?,
+                address=?, blood_type=?, allergies=?, insurance=?, status=?, last_visit=?
+            WHERE id=?
+            """,
+            (
+                patient.first_name,
+                patient.last_name,
+                patient.dob,
+                patient.gender,
+                patient.phone,
+                patient.email,
+                patient.address,
+                patient.blood_type,
+                json.dumps(patient.allergies),
+                patient.insurance,
+                patient.status,
+                patient.last_visit,
+                patient.id,
+            ),
+        )
+        conn.commit()
+        conn.close()
+        return patient
+
     def delete(self, patient_id: str) -> None:
         conn = _connect()
         conn.execute("DELETE FROM patients WHERE id=?", (patient_id,))
@@ -245,11 +337,42 @@ class SQLitePatientRepository:
 
 
 class SQLiteDoctorRepository:
+    def _row_to_doctor(self, r: sqlite3.Row) -> Doctor:
+        return Doctor(**{**dict(r), "schedule": json.loads(r["schedule"] or "[]")})
+
     def list(self) -> list[Doctor]:
         conn = _connect()
-        rows = conn.execute("SELECT * FROM doctors").fetchall()
+        rows = conn.execute("SELECT * FROM doctors ORDER BY last_name, first_name").fetchall()
         conn.close()
-        return [Doctor(**{**dict(r), "schedule": json.loads(r["schedule"] or "[]")}) for r in rows]
+        return [self._row_to_doctor(r) for r in rows]
+
+    def get(self, doctor_id: str) -> Doctor | None:
+        conn = _connect()
+        row = conn.execute("SELECT * FROM doctors WHERE id=?", (doctor_id,)).fetchone()
+        conn.close()
+        if not row:
+            return None
+        return self._row_to_doctor(row)
+
+    def update(self, doctor: Doctor) -> Doctor:
+        conn = _connect()
+        conn.execute(
+            """
+            UPDATE doctors SET
+                phone=?, availability=?, weekly_appointments=?, schedule=?
+            WHERE id=?
+            """,
+            (
+                doctor.phone,
+                doctor.availability,
+                doctor.weekly_appointments,
+                json.dumps(doctor.schedule),
+                doctor.id,
+            ),
+        )
+        conn.commit()
+        conn.close()
+        return doctor
 
 
 class SQLiteMedicalHistoryRepository:

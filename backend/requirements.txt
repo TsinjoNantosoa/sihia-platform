@@ -4,5 +4,6 @@ pydantic
 PyJWT
 email-validator
 pytest
+httpx
 openpyxl
 fpdf2

@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-dev-docker-secret-minimum-32-chars}
+      ENVIRONMENT: development
+      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      DATABASE_URL: app.db
+    volumes:
+      - backend_data:/app
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+
+volumes:
+  backend_data:

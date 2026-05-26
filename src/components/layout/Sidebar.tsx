@@ -55,6 +55,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <aside
+      role="navigation"
       className={cn(
         "flex h-full w-64 shrink-0 flex-col border-border bg-sidebar",
         isRtl ? "border-l" : "border-r",

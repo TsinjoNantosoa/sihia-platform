@@ -1,9 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException, status
 
-from app.application.schemas import AppointmentCreate, MedicalVisitCreate, PatientCreate
+from app.application.schemas import AppointmentCreate, DoctorUpdate, MedicalVisitCreate, PatientCreate, PatientUpdate
 from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token, decode_access_token, verify_password
 from app.domain.models import Appointment, MedicalVisit, Patient
@@ -23,18 +23,23 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "patients:update",
         "patients:delete",
         "doctors:read",
+        "doctors:update",
         "appointments:read",
         "appointments:create",
         "appointments:update",
         "analytics:read",
         "ml:read",
         "users:read",
+        "users:create",
+        "users:update",
+        "users:delete",
         "settings:read",
     ],
     "manager": [
         "dashboard:read",
         "patients:read",
         "doctors:read",
+        "doctors:update",
         "appointments:read",
         "analytics:read",
         "ml:read",
@@ -73,6 +78,8 @@ class AuthService:
         user = self.users.find_by_email(email)
         if user is None or not verify_password(password, user.password):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identifiants invalides")
+        if getattr(user, "status", "active") == "suspended":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte suspendu")
         access_token = create_access_token(
             subject=user.id,
             claims={
@@ -188,8 +195,53 @@ class PatientsService:
         )
         return self.patients.create(patient)
 
+    def update(self, patient_id: str, data: PatientUpdate) -> Patient:
+        patient = self.get(patient_id)
+        updates = data.model_dump(exclude_unset=True)
+        if not updates:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Aucun champ à mettre à jour")
+
+        if "firstName" in updates:
+            patient.first_name = updates["firstName"]
+        if "lastName" in updates:
+            patient.last_name = updates["lastName"]
+        if "dob" in updates:
+            patient.dob = updates["dob"]
+        if "gender" in updates:
+            patient.gender = updates["gender"]
+        if "phone" in updates:
+            patient.phone = updates["phone"]
+        if "email" in updates:
+            patient.email = updates["email"]
+        if "address" in updates:
+            patient.address = updates["address"]
+        if "bloodType" in updates:
+            patient.blood_type = updates["bloodType"]
+        if "allergies" in updates:
+            patient.allergies = updates["allergies"]
+        if "insurance" in updates:
+            patient.insurance = updates["insurance"]
+        if "status" in updates:
+            patient.status = updates["status"]
+
+        return self.patients.update(patient)
+
     def delete(self, patient_id: str) -> None:
         self.patients.delete(patient_id)
+
+
+def _parse_appointment_dt(value: str) -> datetime:
+    normalized = value.replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(normalized)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Date de rendez-vous invalide") from exc
+
+
+def _appointments_overlap(start_a: datetime, duration_a: int, start_b: datetime, duration_b: int) -> bool:
+    end_a = start_a + timedelta(minutes=duration_a)
+    end_b = start_b + timedelta(minutes=duration_b)
+    return start_a < end_b and start_b < end_a
 
 
 class DoctorsService:
@@ -200,10 +252,26 @@ class DoctorsService:
         return self.doctors.list()
 
     def get(self, doctor_id: str):
-        doctor = next((d for d in self.doctors.list() if d.id == doctor_id), None)
+        doctor = self.doctors.get(doctor_id)
         if doctor is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
         return doctor
+
+    def update(self, doctor_id: str, data: DoctorUpdate):
+        doctor = self.get(doctor_id)
+        updates = data.model_dump(exclude_unset=True)
+        if not updates:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Aucun champ à mettre à jour")
+
+        if "availability" in updates:
+            doctor.availability = updates["availability"]
+        if "phone" in updates:
+            doctor.phone = updates["phone"]
+        if "schedule" in updates:
+            doctor.schedule = updates["schedule"]
+            doctor.weekly_appointments = sum(len(day.get("slots", [])) for day in doctor.schedule)
+
+        return self.doctors.update(doctor)
 
 
 class MedicalHistoryService:
@@ -236,9 +304,12 @@ class AppointmentsService:
         return self.appointments.list()
 
     def create(self, data: AppointmentCreate) -> Appointment:
-        # Basic conflict rule: same doctor and exact same datetime.
+        new_start = _parse_appointment_dt(data.date)
         for appt in self.appointments.list():
-            if appt.doctor_id == data.doctorId and appt.date == data.date and appt.status != "cancelled":
+            if appt.doctor_id != data.doctorId or appt.status == "cancelled":
+                continue
+            existing_start = _parse_appointment_dt(appt.date)
+            if _appointments_overlap(new_start, data.durationMin, existing_start, appt.duration_min):
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="CONFLICT")
         appointment = Appointment(
             id=f"a-{uuid4().hex[:10]}",

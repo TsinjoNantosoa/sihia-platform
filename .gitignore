@@ -1,3 +1,15 @@
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Python
+backend/venv/
+__pycache__/
+*.py[cod]
+*.db
+.env
+
 # Logs
 logs
 *.log

@@ -79,6 +79,7 @@ export interface RbacUser {
   name: string;
   email: string;
   role: "admin" | "doctor" | "staff" | "manager";
+  facility?: string;
   status: "active" | "suspended";
-  lastLogin: string;
+  lastLogin: string | null;
 }

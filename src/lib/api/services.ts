@@ -2,10 +2,11 @@
 // Remplace les mocks par des appels REST complets (FastAPI).
 
 import { toast } from "sonner";
-import type { Appointment, Patient } from "./types";
+import type { Appointment, Patient, RbacUser } from "./types";
 import { useAuth } from "../auth/store"; // Import the actual store instance
 import { getAuthRedirectPath } from "./httpErrors";
-import { DEFAULT_API_URL, shouldUseMocks } from "./mockPolicy";
+import { resolveApiBaseUrl } from "./baseUrl";
+import { shouldUseMocks } from "./mockPolicy";
 import {
   ALERTS,
   APPOINTMENTS,
@@ -15,7 +16,7 @@ import {
   RBAC_USERS,
 } from "./mockData";
 
-export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? DEFAULT_API_URL;
+export const API_URL = resolveApiBaseUrl();
 const USE_MOCKS = shouldUseMocks();
 
 let mockPatientsDb: Patient[] = [...PATIENTS];
@@ -185,6 +186,14 @@ export const patientsService = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  update: (
+    id: string,
+    input: Partial<Omit<Patient, "id" | "recordNumber" | "lastVisit">> & { lastVisit?: string },
+  ) =>
+    fetchWithAuth(`/api/patients/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
   remove: (id: string) =>
     fetchWithAuth(`/api/patients/${id}`, { method: "DELETE" }),
   history: (id: string) => fetchWithAuth(`/api/patients/${id}/history`),
@@ -201,6 +210,18 @@ export const patientsService = {
 export const doctorsService = {
   list: () => fetchWithAuth("/api/doctors"),
   get: (id: string) => fetchWithAuth(`/api/doctors/${id}`),
+  update: (
+    id: string,
+    input: {
+      availability?: "available" | "busy" | "off";
+      phone?: string;
+      schedule?: { day: string; slots: string[] }[];
+    },
+  ) =>
+    fetchWithAuth(`/api/doctors/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
 };
 
 export const appointmentsService = {
@@ -249,8 +270,34 @@ export const alertsService = {
   list: () => fetchWithAuth("/api/alerts"),
 };
 
+export type RbacUserCreatePayload = {
+  name: string;
+  email: string;
+  password: string;
+  role: RbacUser["role"];
+  facility?: string;
+};
+
+export type RbacUserUpdatePayload = Partial<
+  Omit<RbacUserCreatePayload, "password"> & { password?: string; status: RbacUser["status"] }
+>;
+
 export const rbacService = {
-  list: () => fetchWithAuth("/api/rbac/users"),
+  list: () => fetchWithAuth<RbacUser[]>("/api/rbac/users"),
+  create: (body: RbacUserCreatePayload) =>
+    fetchWithAuth<RbacUser>("/api/rbac/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  update: (id: string, body: RbacUserUpdatePayload) =>
+    fetchWithAuth<RbacUser>(`/api/rbac/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  remove: (id: string) =>
+    fetchWithAuth<void>(`/api/rbac/users/${id}`, { method: "DELETE" }),
 };
 
 export const authService = {

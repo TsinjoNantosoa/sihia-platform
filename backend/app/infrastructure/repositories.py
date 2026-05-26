@@ -46,6 +46,10 @@ class InMemoryPatientRepository:
         self._patients.insert(0, patient)
         return patient
 
+    def update(self, patient: Patient) -> Patient:
+        self._patients = [patient if p.id == patient.id else p for p in self._patients]
+        return patient
+
     def delete(self, patient_id: str) -> None:
         self._patients = [p for p in self._patients if p.id != patient_id]
 
@@ -83,6 +87,13 @@ class InMemoryDoctorRepository:
 
     def list(self) -> list[Doctor]:
         return self._doctors
+
+    def get(self, doctor_id: str) -> Doctor | None:
+        return next((d for d in self._doctors if d.id == doctor_id), None)
+
+    def update(self, doctor: Doctor) -> Doctor:
+        self._doctors = [doctor if d.id == doctor.id else d for d in self._doctors]
+        return doctor
 
 
 class InMemoryMedicalHistoryRepository:

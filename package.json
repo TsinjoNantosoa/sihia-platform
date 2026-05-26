@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "dev:all": "concurrently -n backend,frontend -c yellow,cyan \"cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000\" \"vite dev\"",
+    "dev:all": "concurrently -n backend,frontend -c yellow,cyan \"cd backend && .\\venv\\Scripts\\uvicorn app.main:app --reload --host 127.0.0.1 --port 8000\" \"vite dev\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test:rbac": "vitest run tests/rbac-permissions.test.ts"
+    "test:rbac": "vitest run tests/rbac-permissions.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
@@ -70,13 +72,14 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "^1.4.0",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.2.1",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",

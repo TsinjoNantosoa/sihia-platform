@@ -3,7 +3,7 @@ export type MockEnv = {
   VITE_USE_MOCKS?: string;
 };
 
-export const DEFAULT_API_URL = "http://localhost:8000";
+export const DEFAULT_API_URL = "http://127.0.0.1:8000";
 
 export const shouldUseMocks = (env: MockEnv = import.meta.env): boolean => {
   const isProd = Boolean(env.PROD);

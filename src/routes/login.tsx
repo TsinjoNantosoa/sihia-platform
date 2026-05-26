@@ -35,11 +35,18 @@ function LoginPage() {
     }
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       toast.success(t("login.submit"));
       navigate({ to: "/" });
-    } catch {
-      setError(t("login.error"));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+        setError(t("login.backendUnreachable"));
+      } else if (msg && msg !== "AUTH_FAILED") {
+        setError(msg);
+      } else {
+        setError(t("login.error"));
+      }
     } finally {
       setLoading(false);
     }
@@ -47,7 +54,6 @@ function LoginPage() {
 
   return (
     <div className="grid min-h-[100dvh] w-full lg:grid-cols-2">
-      {/* Form */}
       <div className="flex items-center justify-center bg-background p-6 sm:p-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3">
@@ -72,6 +78,7 @@ function LoginPage() {
                 <Mail className="size-4 text-muted-foreground" />
                 <input
                   id="email"
+                  data-testid="login-email"
                   type="email"
                   required
                   value={email}
@@ -90,6 +97,7 @@ function LoginPage() {
                 <Lock className="size-4 text-muted-foreground" />
                 <input
                   id="password"
+                  data-testid="login-password"
                   type="password"
                   required
                   value={password}
@@ -108,6 +116,7 @@ function LoginPage() {
 
             <button
               type="submit"
+              data-testid="login-submit"
               disabled={loading}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
@@ -116,8 +125,8 @@ function LoginPage() {
             </button>
 
             <div className="flex items-center justify-between text-xs">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => toast.info("Fonctionnalité à venir")}
                 className="text-primary hover:underline"
               >
@@ -146,12 +155,14 @@ function LoginPage() {
         </div>
       </div>
 
-      {/* Visual side */}
       <div className="relative hidden overflow-hidden bg-gradient-to-br from-primary via-primary to-accent lg:block">
-        <div className="absolute inset-0 opacity-20" style={{
-          backgroundImage:
-            "radial-gradient(circle at 20% 20%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 30%)",
-        }} />
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 20%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 30%)",
+          }}
+        />
         <div className="relative flex h-full flex-col justify-between p-12 text-primary-foreground">
           <div className="flex items-center gap-2 text-sm font-medium opacity-90">
             <span className="size-2 animate-pulse rounded-full bg-white" />

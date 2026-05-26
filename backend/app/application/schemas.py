@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class LoginRequest(BaseModel):
@@ -35,6 +35,20 @@ class PatientCreate(BaseModel):
     insurance: str | None = None
 
 
+class PatientUpdate(BaseModel):
+    firstName: str | None = None
+    lastName: str | None = None
+    dob: str | None = None
+    gender: Literal["M", "F"] | None = None
+    phone: str | None = None
+    email: str | None = None
+    address: str | None = None
+    bloodType: str | None = None
+    allergies: list[str] | None = None
+    insurance: str | None = None
+    status: Literal["active", "inactive", "admitted"] | None = None
+
+
 class MedicalVisitCreate(BaseModel):
     date: str
     reason: str
@@ -45,12 +59,43 @@ class MedicalVisitCreate(BaseModel):
     notes: str | None = None
 
 
+class DoctorScheduleDay(BaseModel):
+    day: str
+    slots: list[str]
+
+
+class DoctorUpdate(BaseModel):
+    availability: Literal["available", "busy", "off"] | None = None
+    schedule: list[DoctorScheduleDay] | None = None
+    phone: str | None = None
+
+
 class AppointmentCreate(BaseModel):
     patientId: str
     patientName: str
     doctorId: str
     doctorName: str
     date: str
-    durationMin: int
+    durationMin: int = Field(default=30, ge=15, le=240)
     reason: str
     status: Literal["scheduled", "confirmed", "completed", "cancelled", "noshow"]
+
+
+UserRole = Literal["admin", "doctor", "staff", "manager"]
+
+
+class UserCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    email: EmailStr
+    password: str = Field(min_length=6, max_length=128)
+    role: UserRole
+    facility: str = Field(default="Hopital Central", min_length=2, max_length=120)
+
+
+class UserUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    email: EmailStr | None = None
+    password: str | None = Field(default=None, min_length=6, max_length=128)
+    role: UserRole | None = None
+    status: Literal["active", "suspended"] | None = None
+    facility: str | None = Field(default=None, min_length=2, max_length=120)

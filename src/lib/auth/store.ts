@@ -1,7 +1,9 @@
-// Auth store mocké. Token bidon stocké en localStorage. Préparé pour FastAPI.
+// Session JWT (access + refresh) persistée en localStorage.
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_API_URL, shouldUseMocks } from "../api/mockPolicy";
+import { resolveApiBaseUrl } from "../api/baseUrl";
+import { shouldUseMocks } from "../api/mockPolicy";
 
 export type Role = "admin" | "doctor" | "staff" | "manager";
 
@@ -59,17 +61,26 @@ export const useAuth = create<AuthState>()(
       setSession: (token, refreshToken) => set({ token, refreshToken, isAuthenticated: true }),
       login: async (email, password) => {
         const USE_MOCKS = shouldUseMocks();
+        const normalizedEmail = email.trim().toLowerCase();
+        const normalizedPassword = password;
         try {
-          const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
+          const API_URL = resolveApiBaseUrl();
           const res = await fetch(`${API_URL}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email: normalizedEmail, password: normalizedPassword }),
           });
 
           if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.code || err.message || err.detail || "AUTH_FAILED");
+            const detail = err.detail;
+            const message =
+              (typeof err.message === "string" && err.message) ||
+              (typeof detail === "string" && detail) ||
+              (typeof detail === "object" && detail?.message) ||
+              err.code ||
+              `HTTP_${res.status}`;
+            throw new Error(message);
           }
 
           const data = await res.json();
@@ -108,8 +119,8 @@ export const useAuth = create<AuthState>()(
           const name = email.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
           
           const mockPermissions: Record<string, string[]> = {
-            admin: ["dashboard:read","patients:read","patients:create","patients:update","patients:delete","doctors:read","appointments:read","appointments:create","appointments:update","analytics:read","ml:read","users:read","settings:read"],
-            manager: ["dashboard:read","patients:read","doctors:read","appointments:read","analytics:read","ml:read","settings:read"],
+            admin: ["dashboard:read","patients:read","patients:create","patients:update","patients:delete","doctors:read","doctors:update","appointments:read","appointments:create","appointments:update","analytics:read","ml:read","users:read","users:create","users:update","users:delete","settings:read"],
+            manager: ["dashboard:read","patients:read","doctors:read","doctors:update","appointments:read","analytics:read","ml:read","settings:read"],
             doctor: ["dashboard:read","patients:read","patients:update","doctors:read","appointments:read","appointments:create","appointments:update","analytics:read","ml:read","settings:read"],
             staff: ["dashboard:read","patients:read","patients:create","doctors:read","appointments:read","appointments:create","settings:read"],
           };
@@ -139,3 +150,24 @@ export const useAuth = create<AuthState>()(
     },
   ),
 );
+
+/** Attend la réhydratation persist (client uniquement, compatible SSR). */
+export function useAuthHydrated() {
+  const storeHydrated = useAuth((s) => s.hasHydrated);
+  const [persistReady, setPersistReady] = useState(false);
+
+  useEffect(() => {
+    const persist = useAuth.persist;
+    if (!persist) {
+      setPersistReady(true);
+      return;
+    }
+    if (persist.hasHydrated()) {
+      setPersistReady(true);
+      return;
+    }
+    return persist.onFinishHydration(() => setPersistReady(true));
+  }, []);
+
+  return persistReady && storeHydrated;
+}

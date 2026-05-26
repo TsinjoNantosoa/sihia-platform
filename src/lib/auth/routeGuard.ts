@@ -24,9 +24,13 @@ const ROUTE_PERMISSION_MAP: Record<RouteAccessKey, Permission> = {
   manage_roles: "users:read",
 };
 
-function waitForAuthHydration(timeoutMs = 1500): Promise<void> {
-  const state = useAuth.getState();
-  if (state.hasHydrated) {
+function waitForAuthHydration(timeoutMs = 5000): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  const persist = useAuth.persist;
+  if (persist?.hasHydrated?.()) {
     return Promise.resolve();
   }
 
@@ -38,19 +42,17 @@ function waitForAuthHydration(timeoutMs = 1500): Promise<void> {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
-      unsubscribe();
+      unsubStore();
+      unsubPersist?.();
       resolve();
     };
 
-    const unsubscribe = useAuth.subscribe((nextState) => {
-      if (nextState.hasHydrated) {
-        finish();
-      }
+    const unsubPersist = persist?.onFinishHydration?.(finish);
+    const unsubStore = useAuth.subscribe((next) => {
+      if (next.hasHydrated) finish();
     });
 
-    timer = setTimeout(() => {
-      finish();
-    }, timeoutMs);
+    timer = setTimeout(finish, timeoutMs);
   });
 }
 

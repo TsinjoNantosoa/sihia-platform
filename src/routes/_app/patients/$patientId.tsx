@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Phone, Mail, MapPin, Droplet, ShieldCheck, Calendar, Plus, Stethoscope, FileText } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Droplet, ShieldCheck, Calendar, Plus, Stethoscope, FileText, Pencil } from "lucide-react";
+import type { Patient } from "@/lib/api/types";
 import { patientsService } from "@/lib/api/services";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { useT } from "@/lib/i18n/store";
@@ -27,6 +28,7 @@ function PatientDetailPage() {
   const qc = useQueryClient();
   const { patientId } = useParams({ from: "/_app/patients/$patientId" });
   const [showAddVisit, setShowAddVisit] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["patient", patientId],
@@ -95,6 +97,16 @@ function PatientDetailPage() {
             {age} ans · {t(`patients.gender.${data.gender.toLowerCase()}`)} · {data.bloodType}
           </p>
         </div>
+        <PermissionGuard permission="patients:update">
+          <button
+            type="button"
+            onClick={() => setShowEdit(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Pencil className="size-4" />
+            Modifier le dossier
+          </button>
+        </PermissionGuard>
       </div>
 
       {/* Infos grid */}
@@ -191,7 +203,151 @@ function PatientDetailPage() {
         onSubmit={(v) => addVisitMut.mutate(v)}
         isPending={addVisitMut.isPending}
       />
+
+      <EditPatientDialog
+        open={showEdit}
+        onOpenChange={setShowEdit}
+        patient={data}
+        onSaved={() => {
+          qc.invalidateQueries({ queryKey: ["patient", patientId] });
+          qc.invalidateQueries({ queryKey: ["patients"] });
+        }}
+      />
     </div>
+  );
+}
+
+function EditPatientDialog({
+  open,
+  onOpenChange,
+  patient,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  patient: Patient;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    firstName: patient.firstName,
+    lastName: patient.lastName,
+    dob: patient.dob,
+    gender: patient.gender,
+    phone: patient.phone,
+    email: patient.email ?? "",
+    address: patient.address,
+    bloodType: patient.bloodType,
+    allergies: patient.allergies.join(", "),
+    insurance: patient.insurance ?? "",
+    status: patient.status,
+  });
+
+  const updateMut = useMutation({
+    mutationFn: () =>
+      patientsService.update(patient.id, {
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        dob: form.dob,
+        gender: form.gender,
+        phone: form.phone.trim(),
+        email: form.email.trim() || undefined,
+        address: form.address.trim(),
+        bloodType: form.bloodType,
+        allergies: form.allergies
+          .split(",")
+          .map((a) => a.trim())
+          .filter(Boolean),
+        insurance: form.insurance.trim() || undefined,
+        status: form.status,
+      }),
+    onSuccess: () => {
+      toast.success("Dossier patient mis à jour");
+      onSaved();
+      onOpenChange(false);
+    },
+    onError: () => toast.error("Échec de la mise à jour"),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Modifier le dossier</DialogTitle>
+          <DialogDescription>{patient.recordNumber}</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            Prénom
+            <input
+              value={form.firstName}
+              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            Nom
+            <input
+              value={form.lastName}
+              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            Date de naissance
+            <input
+              type="date"
+              value={form.dob}
+              onChange={(e) => setForm((f) => ({ ...f, dob: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            Statut
+            <select
+              value={form.status}
+              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as Patient["status"] }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            >
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+              <option value="admitted">Hospitalisé</option>
+            </select>
+          </label>
+          <label className="sm:col-span-2 flex flex-col gap-1 text-xs font-medium">
+            Téléphone
+            <input
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="sm:col-span-2 flex flex-col gap-1 text-xs font-medium">
+            Adresse
+            <input
+              value={form.address}
+              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="sm:col-span-2 flex flex-col gap-1 text-xs font-medium">
+            Allergies (séparées par des virgules)
+            <input
+              value={form.allergies}
+              onChange={(e) => setForm((f) => ({ ...f, allergies: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button onClick={() => updateMut.mutate()} disabled={updateMut.isPending}>
+            {updateMut.isPending ? "Enregistrement…" : "Enregistrer"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

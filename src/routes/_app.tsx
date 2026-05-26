@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useAuth } from "@/lib/auth/store";
+import { useAuth, useAuthHydrated } from "@/lib/auth/store";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: () => {},
@@ -10,10 +10,11 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayoutRoute() {
   const isAuthenticated = useAuth((s) => s.isAuthenticated);
-  const hasHydrated = useAuth((s) => s.hasHydrated);
+  const hasHydrated = useAuthHydrated();
 
   useEffect(() => {
-    if (hasHydrated && !isAuthenticated) {
+    if (!hasHydrated) return;
+    if (!isAuthenticated) {
       window.location.replace("/login");
     }
   }, [hasHydrated, isAuthenticated]);

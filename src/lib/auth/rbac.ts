@@ -12,12 +12,16 @@ export type Permission =
   | "patients:update"
   | "patients:delete"
   | "doctors:read"
+  | "doctors:update"
   | "appointments:read"
   | "appointments:create"
   | "appointments:update"
   | "analytics:read"
   | "ml:read"
   | "users:read"
+  | "users:create"
+  | "users:update"
+  | "users:delete"
   | "settings:read";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -28,18 +32,23 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "patients:update",
     "patients:delete",
     "doctors:read",
+    "doctors:update",
     "appointments:read",
     "appointments:create",
     "appointments:update",
     "analytics:read",
     "ml:read",
     "users:read",
+    "users:create",
+    "users:update",
+    "users:delete",
     "settings:read",
   ],
   manager: [
     "dashboard:read",
     "patients:read",
     "doctors:read",
+    "doctors:update",
     "appointments:read",
     "analytics:read",
     "ml:read",

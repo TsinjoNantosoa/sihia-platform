@@ -7,6 +7,9 @@ PatientStatus = Literal["active", "inactive", "admitted"]
 AppointmentStatus = Literal["scheduled", "confirmed", "completed", "cancelled", "noshow"]
 
 
+UserStatus = Literal["active", "suspended"]
+
+
 @dataclass
 class User:
     id: str
@@ -15,6 +18,7 @@ class User:
     password: str
     role: Role
     facility: str
+    status: UserStatus = "active"
 
 
 @dataclass

@@ -3,6 +3,9 @@ from typing import Callable
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.application.analytics_service import AnalyticsService
+from app.application.ml_service import MlForecastService
+from app.application.rbac_service import RbacService
 from app.application.use_cases import AppointmentsService, AuthService, DoctorsService, MedicalHistoryService, PatientsService
 from app.core.security import decode_access_token
 from app.infrastructure.sqlite_repositories import (
@@ -29,6 +32,9 @@ patients_service = PatientsService(patients_repo)
 doctors_service = DoctorsService(doctors_repo)
 appointments_service = AppointmentsService(appointments_repo)
 medical_history_service = MedicalHistoryService(medical_history_repo)
+analytics_service = AnalyticsService()
+rbac_service = RbacService(users_repo)
+ml_service = MlForecastService(analytics_service)
 
 bearer_scheme = HTTPBearer(auto_error=True)
 
