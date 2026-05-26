@@ -3,16 +3,17 @@ from pathlib import Path
 from app.application.use_cases import AuthService
 from app.core.config import settings
 from app.core.security import decode_access_token, hash_password, verify_password
+from app.infrastructure.database import bootstrap_database, reset_engine
 from app.infrastructure.sqlite_repositories import (
     SQLiteRefreshSessionRepository,
     SQLiteUserRepository,
-    init_db,
 )
 
 
 def _setup_test_db(tmp_path: Path) -> AuthService:
     settings.database_url = str(tmp_path / "test_auth.db")
-    init_db()
+    reset_engine()
+    bootstrap_database()
     users = SQLiteUserRepository()
     sessions = SQLiteRefreshSessionRepository()
     return AuthService(users, sessions)

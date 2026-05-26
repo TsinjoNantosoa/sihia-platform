@@ -8,6 +8,7 @@ from app.application.ml_service import MlForecastService
 from app.application.rbac_service import RbacService
 from app.application.use_cases import AppointmentsService, AuthService, DoctorsService, MedicalHistoryService, PatientsService
 from app.core.security import decode_access_token
+from app.infrastructure.database import bootstrap_database
 from app.infrastructure.sqlite_repositories import (
     SQLiteAppointmentRepository,
     SQLiteDoctorRepository,
@@ -15,10 +16,9 @@ from app.infrastructure.sqlite_repositories import (
     SQLitePatientRepository,
     SQLiteRefreshSessionRepository,
     SQLiteUserRepository,
-    init_db,
 )
 
-init_db()
+bootstrap_database()
 
 users_repo = SQLiteUserRepository()
 patients_repo = SQLitePatientRepository()

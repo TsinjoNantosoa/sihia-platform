@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "SIH IA (PostgreSQL)",
+      "Group": "SIH IA",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "sihia",
+      "Username": "sihia",
+      "Password": "sihia",
+      "SSLMode": "prefer"
+    }
+  }
+}

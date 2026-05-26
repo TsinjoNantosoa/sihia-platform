@@ -1,27 +1,15 @@
-"""Agrégations analytics calculées depuis SQLite (données réelles)."""
+"""Agrégations analytics calculées depuis la base (SQLite ou PostgreSQL)."""
 
 from __future__ import annotations
 
-import json
-import sqlite3
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
-from pathlib import Path
 
-from app.core.config import settings
+from app.infrastructure.database import connect, is_postgresql
 
 DAILY_SLOT_CAPACITY = 48
 BED_CAPACITY = 320
 AVG_REVENUE_PER_APPOINTMENT = 275
-
-
-def _connect() -> sqlite3.Connection:
-    db_path = Path(settings.database_url)
-    if not db_path.is_absolute():
-        db_path = Path(__file__).resolve().parents[2] / db_path
-    conn = sqlite3.connect(db_path, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 
 def _utc_now() -> datetime:
@@ -29,7 +17,8 @@ def _utc_now() -> datetime:
 
 
 def _meta() -> dict[str, str]:
-    return {"updatedAt": _utc_now().isoformat(), "source": "sqlite"}
+    source = "postgresql" if is_postgresql() else "sqlite"
+    return {"updatedAt": _utc_now().isoformat(), "source": source}
 
 
 def _parse_appt_date(value: str) -> date | None:
@@ -43,8 +32,8 @@ def _parse_appt_date(value: str) -> date | None:
 
 
 class AnalyticsService:
-    def _active_appointments(self) -> list[sqlite3.Row]:
-        conn = _connect()
+    def _active_appointments(self) -> list[dict]:
+        conn = connect()
         rows = conn.execute(
             "SELECT * FROM appointments WHERE status != 'cancelled'",
         ).fetchall()
@@ -74,7 +63,7 @@ class AnalyticsService:
         scheduled_today = len(today_appts)
         occupancy = min(100.0, round((scheduled_today / DAILY_SLOT_CAPACITY) * 100, 1))
 
-        conn = _connect()
+        conn = connect()
         patient_total = conn.execute("SELECT COUNT(*) AS c FROM patients WHERE status='active'").fetchone()["c"]
         pending = conn.execute(
             "SELECT COUNT(*) AS c FROM appointments WHERE status='scheduled'",
@@ -124,7 +113,7 @@ class AnalyticsService:
         ]
 
     def admissions_by_dept(self) -> list[dict]:
-        conn = _connect()
+        conn = connect()
         doctors = {r["id"]: r["specialty"] for r in conn.execute("SELECT id, specialty FROM doctors").fetchall()}
         conn.close()
 
@@ -143,7 +132,7 @@ class AnalyticsService:
         return [{"label": k, "value": v} for k, v in sorted(dept_counts.items(), key=lambda x: -x[1])]
 
     def satisfaction(self) -> list[dict]:
-        conn = _connect()
+        conn = connect()
         rows = conn.execute("SELECT satisfaction FROM doctors").fetchall()
         conn.close()
         if not rows:
@@ -217,7 +206,7 @@ class AnalyticsService:
 
     def alerts(self, level_filter: str | None = None) -> list[dict]:
         occupancy = self._occupancy_rate()
-        conn = _connect()
+        conn = connect()
         pending = conn.execute(
             "SELECT COUNT(*) AS c FROM appointments WHERE status='scheduled'",
         ).fetchone()["c"]

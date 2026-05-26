@@ -1,6 +1,21 @@
 import os
+from pathlib import Path
 
 from pydantic import BaseModel, Field
+
+
+def _load_dotenv() -> None:
+    try:
+        from dotenv import load_dotenv
+
+        backend_dir = Path(__file__).resolve().parents[2]
+        load_dotenv(backend_dir / ".env", override=False)
+        load_dotenv(backend_dir.parent / ".env", override=False)
+    except ImportError:
+        pass
+
+
+_load_dotenv()
 
 
 def _env_bool(name: str, default: bool = False) -> bool:

@@ -1,9 +1,14 @@
 fastapi
 uvicorn
 pydantic
+python-dotenv
 PyJWT
 email-validator
 pytest
 httpx
 openpyxl
 fpdf2
+sqlalchemy>=2.0
+alembic>=1.13
+psycopg2-binary>=2.9
+pg8000>=1.31

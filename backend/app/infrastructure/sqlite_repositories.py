@@ -1,197 +1,31 @@
 import json
-import sqlite3
-from pathlib import Path
+from typing import Any
 
-from app.core.config import settings
-from app.core.security import hash_password, verify_password
 from app.domain.models import Appointment, Doctor, MedicalVisit, Patient, User
+from app.infrastructure.database import connect
 
 
-def _connect() -> sqlite3.Connection:
-    db_path = Path(settings.database_url)
-    if not db_path.is_absolute():
-        db_path = Path(__file__).resolve().parents[2] / db_path
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_db() -> None:
-    conn = _connect()
-    cur = conn.cursor()
-    cur.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL,
-            facility TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'active'
-        );
-        CREATE TABLE IF NOT EXISTS patients (
-            id TEXT PRIMARY KEY,
-            record_number TEXT NOT NULL UNIQUE,
-            first_name TEXT NOT NULL,
-            last_name TEXT NOT NULL,
-            dob TEXT NOT NULL,
-            gender TEXT NOT NULL,
-            phone TEXT NOT NULL,
-            email TEXT,
-            address TEXT NOT NULL,
-            blood_type TEXT NOT NULL,
-            allergies TEXT NOT NULL,
-            insurance TEXT,
-            status TEXT NOT NULL,
-            last_visit TEXT
-        );
-        CREATE TABLE IF NOT EXISTS doctors (
-            id TEXT PRIMARY KEY,
-            first_name TEXT NOT NULL,
-            last_name TEXT NOT NULL,
-            specialty TEXT NOT NULL,
-            phone TEXT NOT NULL,
-            email TEXT NOT NULL,
-            availability TEXT NOT NULL,
-            patients_count INTEGER NOT NULL,
-            weekly_appointments INTEGER NOT NULL,
-            satisfaction REAL NOT NULL,
-            schedule TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS appointments (
-            id TEXT PRIMARY KEY,
-            patient_id TEXT NOT NULL,
-            patient_name TEXT NOT NULL,
-            doctor_id TEXT NOT NULL,
-            doctor_name TEXT NOT NULL,
-            date TEXT NOT NULL,
-            duration_min INTEGER NOT NULL,
-            reason TEXT NOT NULL,
-            status TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS medical_visits (
-            id TEXT PRIMARY KEY,
-            patient_id TEXT NOT NULL,
-            date TEXT NOT NULL,
-            reason TEXT NOT NULL,
-            doctor_name TEXT NOT NULL,
-            specialty TEXT NOT NULL,
-            diagnosis TEXT NOT NULL,
-            treatment TEXT,
-            notes TEXT
-        );
-        CREATE TABLE IF NOT EXISTS refresh_sessions (
-            session_id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            expires_at_ts INTEGER NOT NULL,
-            revoked INTEGER NOT NULL DEFAULT 0
-        );
-        """
-    )
-    conn.commit()
-
-    if cur.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"] == 0:
-        cur.executemany(
-            "INSERT INTO users (id,name,email,password,role,facility) VALUES (?,?,?,?,?,?)",
-            [
-                ("u-admin", "Admin SIH", "admin@sihia.health", hash_password("admin123"), "admin", "Hopital Central"),
-                ("u-doctor", "Dr Benali", "dr.benali@sihia.health", hash_password("demo1234"), "doctor", "Hopital Central"),
-                ("u-manager", "Mme Diallo", "manager@sihia.health", hash_password("manager123"), "manager", "Hopital Central"),
-                ("u-staff", "Accueil SIH", "staff@sihia.health", hash_password("staff123"), "staff", "Hopital Central"),
-            ],
-        )
-    else:
-        # One-time migration: hash existing plaintext passwords.
-        rows = cur.execute("SELECT id, password FROM users").fetchall()
-        for row in rows:
-            pwd = row["password"]
-            if not str(pwd).startswith("pbkdf2_sha256$"):
-                cur.execute("UPDATE users SET password=? WHERE id=?", (hash_password(pwd), row["id"]))
-
-    # Ensure demo accounts exist even if the database was initialized previously.
-    demo_accounts = [
-        ("u-admin", "Admin SIH", "admin@sihia.health", "admin123", "admin"),
-        ("u-doctor", "Dr Benali", "dr.benali@sihia.health", "demo1234", "doctor"),
-        ("u-manager", "Mme Diallo", "manager@sihia.health", "manager123", "manager"),
-        ("u-staff", "Accueil SIH", "staff@sihia.health", "staff123", "staff"),
-    ]
-    for user_id, name, email, password, role in demo_accounts:
-        row = cur.execute("SELECT id, password FROM users WHERE lower(email)=lower(?)", (email,)).fetchone()
-        if not row:
-            cur.execute(
-                "INSERT INTO users (id,name,email,password,role,facility) VALUES (?,?,?,?,?,?)",
-                (user_id, name, email, hash_password(password), role, "Hopital Central"),
-            )
-        elif not verify_password(password, row["password"]):
-            cur.execute("UPDATE users SET password=? WHERE id=?", (hash_password(password), row["id"]))
-    if cur.execute("SELECT COUNT(*) AS c FROM doctors").fetchone()["c"] == 0:
-        days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
-        cur.executemany(
-            """
-            INSERT INTO doctors (id,first_name,last_name,specialty,phone,email,availability,patients_count,weekly_appointments,satisfaction,schedule)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
-            """,
-            [
-                (
-                    "d-1",
-                    "Amina",
-                    "Diallo",
-                    "Cardiologie",
-                    "+221700000001",
-                    "amina.diallo@sihia.health",
-                    "available",
-                    84,
-                    32,
-                    4.6,
-                    json.dumps([{"day": d, "slots": ["09:00", "10:00"] if d in ("Lun", "Mar", "Jeu") else []} for d in days]),
-                ),
-                (
-                    "d-2",
-                    "Youssef",
-                    "Karim",
-                    "Pediatrie",
-                    "+212600000002",
-                    "youssef.karim@sihia.health",
-                    "busy",
-                    102,
-                    40,
-                    4.4,
-                    json.dumps([{"day": d, "slots": ["11:00", "14:00"] if d in ("Lun", "Mer", "Ven") else []} for d in days]),
-                ),
-            ],
-        )
-    try:
-        cur.execute("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
-    except sqlite3.OperationalError:
-        pass
-    conn.commit()
-    conn.close()
-
-
-def _row_to_user(row: sqlite3.Row) -> User:
-    data = dict(row)
+def _row_to_user(row: dict[str, Any]) -> User:
     return User(
-        id=data["id"],
-        name=data["name"],
-        email=data["email"],
-        password=data["password"],
-        role=data["role"],
-        facility=data["facility"],
-        status=data.get("status") or "active",
+        id=row["id"],
+        name=row["name"],
+        email=row["email"],
+        password=row["password"],
+        role=row["role"],
+        facility=row["facility"],
+        status=row.get("status") or "active",
     )
 
 
 class SQLiteUserRepository:
     def list_all(self) -> list[User]:
-        conn = _connect()
+        conn = connect()
         rows = conn.execute("SELECT * FROM users ORDER BY name").fetchall()
         conn.close()
         return [_row_to_user(r) for r in rows]
 
     def find_by_email(self, email: str) -> User | None:
-        conn = _connect()
+        conn = connect()
         row = conn.execute("SELECT * FROM users WHERE lower(email)=lower(?)", (email,)).fetchone()
         conn.close()
         if not row:
@@ -199,7 +33,7 @@ class SQLiteUserRepository:
         return _row_to_user(row)
 
     def find_by_id(self, user_id: str) -> User | None:
-        conn = _connect()
+        conn = connect()
         row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
         conn.close()
         if not row:
@@ -207,7 +41,7 @@ class SQLiteUserRepository:
         return _row_to_user(row)
 
     def create(self, user: User) -> User:
-        conn = _connect()
+        conn = connect()
         conn.execute(
             "INSERT INTO users (id,name,email,password,role,facility,status) VALUES (?,?,?,?,?,?,?)",
             (user.id, user.name, user.email, user.password, user.role, user.facility, user.status),
@@ -217,7 +51,7 @@ class SQLiteUserRepository:
         return user
 
     def update(self, user: User) -> User:
-        conn = _connect()
+        conn = connect()
         conn.execute(
             "UPDATE users SET name=?, email=?, password=?, role=?, facility=?, status=? WHERE id=?",
             (user.name, user.email, user.password, user.role, user.facility, user.status, user.id),
@@ -227,13 +61,13 @@ class SQLiteUserRepository:
         return user
 
     def delete(self, user_id: str) -> None:
-        conn = _connect()
+        conn = connect()
         conn.execute("DELETE FROM users WHERE id=?", (user_id,))
         conn.commit()
         conn.close()
 
     def count_admins(self) -> int:
-        conn = _connect()
+        conn = connect()
         count = conn.execute(
             "SELECT COUNT(*) AS c FROM users WHERE role='admin' AND status='active'",
         ).fetchone()["c"]
@@ -243,7 +77,7 @@ class SQLiteUserRepository:
 
 class SQLitePatientRepository:
     def list(self, search: str | None = None, status: str | None = None) -> list[Patient]:
-        conn = _connect()
+        conn = connect()
         query = "SELECT * FROM patients"
         clauses: list[str] = []
         params: list[str] = []
@@ -255,24 +89,24 @@ class SQLitePatientRepository:
             params.append(status)
         if clauses:
             query += " WHERE " + " AND ".join(clauses)
-        query += " ORDER BY rowid DESC"
+        query += " ORDER BY id DESC"
         rows = conn.execute(query, params).fetchall()
         conn.close()
         return [
-            Patient(**{**dict(r), "allergies": json.loads(r["allergies"] or "[]")})
+            Patient(**{**r, "allergies": json.loads(r["allergies"] or "[]")})
             for r in rows
         ]
 
     def get(self, patient_id: str) -> Patient | None:
-        conn = _connect()
+        conn = connect()
         r = conn.execute("SELECT * FROM patients WHERE id=?", (patient_id,)).fetchone()
         conn.close()
         if not r:
             return None
-        return Patient(**{**dict(r), "allergies": json.loads(r["allergies"] or "[]")})
+        return Patient(**{**r, "allergies": json.loads(r["allergies"] or "[]")})
 
     def create(self, patient: Patient) -> Patient:
-        conn = _connect()
+        conn = connect()
         conn.execute(
             """
             INSERT INTO patients (id,record_number,first_name,last_name,dob,gender,phone,email,address,blood_type,allergies,insurance,status,last_visit)
@@ -300,7 +134,7 @@ class SQLitePatientRepository:
         return patient
 
     def update(self, patient: Patient) -> Patient:
-        conn = _connect()
+        conn = connect()
         conn.execute(
             """
             UPDATE patients SET
@@ -329,7 +163,7 @@ class SQLitePatientRepository:
         return patient
 
     def delete(self, patient_id: str) -> None:
-        conn = _connect()
+        conn = connect()
         conn.execute("DELETE FROM patients WHERE id=?", (patient_id,))
         conn.execute("DELETE FROM medical_visits WHERE patient_id=?", (patient_id,))
         conn.commit()
@@ -337,17 +171,17 @@ class SQLitePatientRepository:
 
 
 class SQLiteDoctorRepository:
-    def _row_to_doctor(self, r: sqlite3.Row) -> Doctor:
-        return Doctor(**{**dict(r), "schedule": json.loads(r["schedule"] or "[]")})
+    def _row_to_doctor(self, r: dict[str, Any]) -> Doctor:
+        return Doctor(**{**r, "schedule": json.loads(r["schedule"] or "[]")})
 
     def list(self) -> list[Doctor]:
-        conn = _connect()
+        conn = connect()
         rows = conn.execute("SELECT * FROM doctors ORDER BY last_name, first_name").fetchall()
         conn.close()
         return [self._row_to_doctor(r) for r in rows]
 
     def get(self, doctor_id: str) -> Doctor | None:
-        conn = _connect()
+        conn = connect()
         row = conn.execute("SELECT * FROM doctors WHERE id=?", (doctor_id,)).fetchone()
         conn.close()
         if not row:
@@ -355,7 +189,7 @@ class SQLiteDoctorRepository:
         return self._row_to_doctor(row)
 
     def update(self, doctor: Doctor) -> Doctor:
-        conn = _connect()
+        conn = connect()
         conn.execute(
             """
             UPDATE doctors SET
@@ -384,7 +218,7 @@ class SQLiteMedicalHistoryRepository:
     ]
 
     def _seed_if_empty(self, patient_id: str) -> None:
-        conn = _connect()
+        conn = connect()
         c = conn.execute("SELECT COUNT(*) AS c FROM medical_visits WHERE patient_id=?", (patient_id,)).fetchone()["c"]
         if c == 0:
             for i, v in enumerate(self._SEED, start=1):
@@ -400,13 +234,13 @@ class SQLiteMedicalHistoryRepository:
 
     def get_for_patient(self, patient_id: str) -> list[MedicalVisit]:
         self._seed_if_empty(patient_id)
-        conn = _connect()
+        conn = connect()
         rows = conn.execute("SELECT * FROM medical_visits WHERE patient_id=? ORDER BY date DESC", (patient_id,)).fetchall()
         conn.close()
-        return [MedicalVisit(**dict(r)) for r in rows]
+        return [MedicalVisit(**r) for r in rows]
 
     def add_visit(self, visit: MedicalVisit) -> MedicalVisit:
-        conn = _connect()
+        conn = connect()
         conn.execute(
             """
             INSERT INTO medical_visits (id,patient_id,date,reason,doctor_name,specialty,diagnosis,treatment,notes)
@@ -431,13 +265,13 @@ class SQLiteMedicalHistoryRepository:
 
 class SQLiteAppointmentRepository:
     def list(self) -> list[Appointment]:
-        conn = _connect()
-        rows = conn.execute("SELECT * FROM appointments ORDER BY rowid DESC").fetchall()
+        conn = connect()
+        rows = conn.execute("SELECT * FROM appointments ORDER BY date DESC").fetchall()
         conn.close()
-        return [Appointment(**dict(r)) for r in rows]
+        return [Appointment(**r) for r in rows]
 
     def create(self, appointment: Appointment) -> Appointment:
-        conn = _connect()
+        conn = connect()
         conn.execute(
             """
             INSERT INTO appointments (id,patient_id,patient_name,doctor_id,doctor_name,date,duration_min,reason,status)
@@ -460,7 +294,7 @@ class SQLiteAppointmentRepository:
         return appointment
 
     def cancel(self, appointment_id: str) -> Appointment | None:
-        conn = _connect()
+        conn = connect()
         row = conn.execute("SELECT * FROM appointments WHERE id=?", (appointment_id,)).fetchone()
         if not row:
             conn.close()
@@ -469,12 +303,12 @@ class SQLiteAppointmentRepository:
         conn.commit()
         updated = conn.execute("SELECT * FROM appointments WHERE id=?", (appointment_id,)).fetchone()
         conn.close()
-        return Appointment(**dict(updated)) if updated else None
+        return Appointment(**updated) if updated else None
 
 
 class SQLiteRefreshSessionRepository:
     def create(self, session_id: str, user_id: str, expires_at_ts: int) -> None:
-        conn = _connect()
+        conn = connect()
         conn.execute(
             "INSERT OR REPLACE INTO refresh_sessions (session_id,user_id,expires_at_ts,revoked) VALUES (?,?,?,0)",
             (session_id, user_id, expires_at_ts),
@@ -483,7 +317,7 @@ class SQLiteRefreshSessionRepository:
         conn.close()
 
     def is_active(self, session_id: str, user_id: str, now_ts: int) -> bool:
-        conn = _connect()
+        conn = connect()
         row = conn.execute(
             "SELECT session_id FROM refresh_sessions WHERE session_id=? AND user_id=? AND revoked=0 AND expires_at_ts>?",
             (session_id, user_id, now_ts),
@@ -492,25 +326,25 @@ class SQLiteRefreshSessionRepository:
         return row is not None
 
     def revoke(self, session_id: str) -> None:
-        conn = _connect()
+        conn = connect()
         conn.execute("UPDATE refresh_sessions SET revoked=1 WHERE session_id=?", (session_id,))
         conn.commit()
         conn.close()
 
     def revoke_all_for_user(self, user_id: str) -> None:
-        conn = _connect()
+        conn = connect()
         conn.execute("UPDATE refresh_sessions SET revoked=1 WHERE user_id=?", (user_id,))
         conn.commit()
         conn.close()
 
     def prune_active_sessions(self, user_id: str, max_active: int, now_ts: int) -> None:
-        conn = _connect()
+        conn = connect()
         rows = conn.execute(
             """
             SELECT session_id
             FROM refresh_sessions
             WHERE user_id=? AND revoked=0 AND expires_at_ts>?
-            ORDER BY rowid DESC
+            ORDER BY expires_at_ts DESC
             """,
             (user_id, now_ts),
         ).fetchall()

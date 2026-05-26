@@ -1,6 +1,6 @@
 # État d'implémentation — SIH IA
 
-> **Dernière mise à jour :** 26 mai 2026 (ML SQLite, Docker, CI, E2E Playwright)  
+> **Dernière mise à jour :** 26 mai 2026 (PostgreSQL + Alembic, ML, Docker, CI, E2E)  
 > **Sources :** `src/`, `backend/`, dossier `Document/`
 
 Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lorsqu'une fonctionnalité est implémentée **et** validée (tests ou vérification manuelle documentée).
@@ -74,14 +74,15 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 ### 2.1 Socle
 
 - [x] Architecture en couches (application / domain / infrastructure / presentation)
-- [x] SQLite persistant (`app.db`)
+- [x] SQLite persistant (`app.db`) — dev local
+- [x] PostgreSQL + migrations Alembic (`alembic/versions/001_initial_schema.py`)
+- [x] Couche SQL unifiée SQLAlchemy (`database.py`) — SQLite ou PostgreSQL via `DATABASE_URL`
 - [x] Erreurs HTTP normalisées `{ code, message, details }`
 - [x] Health `/health` et `/health/details`
 - [x] CORS configurable (`CORS_ORIGINS`)
 - [x] Config via variables d'environnement (`.env.example`)
 - [x] Middleware **X-Correlation-ID**
 - [x] En-têtes sécurité HTTP (nosniff, frame deny, HSTS prod)
-- [ ] PostgreSQL + migrations Alembic
 - [ ] Logs structurés + métriques
 
 ### 2.2 Auth & RBAC
@@ -149,6 +150,46 @@ cd ..
 npm run test:e2e
 ```
 
+### pgAdmin 4 (Docker)
+
+```bash
+docker compose up -d postgres pgadmin
+# ou stack complet : docker compose up -d
+```
+
+| Accès | Valeur |
+|---|---|
+| URL | http://localhost:5050 |
+| Email | `admin@sihia.health` |
+| Mot de passe | `admin` |
+| Serveur préconfiguré | **SIH IA (PostgreSQL)** → host `postgres`, DB `sihia`, user `sihia` / `sihia` |
+
+Si le port **5050** est déjà pris : `PGADMIN_PORT=5051` dans `.env` puis `docker compose up -d pgadmin`.
+
+**pgAdmin 4 installé sur Windows** (pas le conteneur) : utilise le port **5434** (pas 5432 — souvent pris par PostgreSQL Windows).
+
+| Champ | Valeur |
+|---|---|
+| Host | `localhost` |
+| Port | **5434** |
+| Database | `sihia` |
+| Username | `sihia` |
+| Password | `sihia` |
+
+### App sur PostgreSQL + migration SQLite
+
+`backend/.env` :
+
+```env
+DATABASE_URL=postgresql://sihia:sihia@localhost:5434/sihia
+```
+
+Copier les données de `app.db` vers Postgres :
+
+```bash
+npm run migrate:pg
+```
+
 ---
 
 ## 4. Backlog priorisé
@@ -159,7 +200,7 @@ npm run test:e2e
 - [x] RBAC users réels depuis la DB
 - [x] Config secrets / CORS documentée (`.env.example` backend)
 - [x] Tests E2E par rôle (Playwright `e2e/`)
-- [ ] PostgreSQL + migrations
+- [x] PostgreSQL + migrations
 - [x] Checklist OWASP MVP (`Document/SECURITY_CHECKLIST.md`) 🟡
 
 ### P1 — Valeur métier (S2)

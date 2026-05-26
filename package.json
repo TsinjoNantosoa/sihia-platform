@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "test:rbac": "vitest run tests/rbac-permissions.test.ts",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "migrate:pg": "docker compose run --rm -v ./backend/app.db:/app/app.db:ro -e DATABASE_URL=postgresql://sihia:sihia@postgres:5432/sihia backend python scripts/migrate_sqlite_to_postgres.py"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",

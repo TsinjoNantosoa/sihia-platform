@@ -1,4 +1,38 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sihia
+      POSTGRES_PASSWORD: sihia
+      POSTGRES_DB: sihia
+    ports:
+      # 5434 évite le conflit avec PostgreSQL Windows (souvent sur 5432)
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sihia -d sihia"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@sihia.health}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   backend:
     build:
       context: ./backend
@@ -9,9 +43,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-docker-secret-minimum-32-chars}
       ENVIRONMENT: development
       CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
-      DATABASE_URL: app.db
-    volumes:
-      - backend_data:/app
+      DATABASE_URL: postgresql://sihia:sihia@postgres:5432/sihia
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:
@@ -25,4 +60,5 @@ services:
       - backend
 
 volumes:
-  backend_data:
+  pg_data:
+  pgadmin_data:
