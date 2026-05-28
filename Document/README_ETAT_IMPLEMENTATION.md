@@ -1,6 +1,6 @@
 # État d'implémentation — SIH IA
 
-> **Dernière mise à jour :** 26 mai 2026 (PostgreSQL + Alembic, ML, Docker, CI, E2E)  
+> **Dernière mise à jour :** 28 mai 2026 (PostgreSQL + Alembic, rate-limit login, audit logs admin, dependency audit CI + upgrade deps)  
 > **Sources :** `src/`, `backend/`, dossier `Document/`
 
 Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lorsqu'une fonctionnalité est implémentée **et** validée (tests ou vérification manuelle documentée).
@@ -16,7 +16,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | **Production sécurisée** | 🔴 Non |
 | **Couverture fonctionnelle MVP** | **~90 %** |
 | **Couverture valeur métier réelle** | **~65 %** |
-| **Tests backend** | ✅ **27/27** (`pytest tests/`) |
+| **Tests backend** | ✅ **31/31** (`pytest tests/`) |
 | **Tests E2E** | ✅ **8/8** Playwright (`npm run test:e2e`) |
 
 ---
@@ -90,6 +90,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Login / refresh / logout / logout-all
 - [x] Rotation refresh token
 - [x] Permissions dans le JWT
+- [x] Rate limit login (`POST /api/auth/login`) — 5 échecs / 5 min / IP+email
+- [x] Audit logs admin (`rbac.user.create|update|delete`, `auth.logout_all`)
 - [x] `require_permission` sur routes métier
 - [x] Liste RBAC users depuis **table `users`** (plus de liste statique)
 - [x] CRUD utilisateurs : `POST/PATCH/DELETE /api/rbac/users` (admin)
@@ -138,6 +140,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `tests/test_doctors_update.py` | 3 | [x] |
 | `tests/test_rbac_users_crud.py` | 4 | [x] |
 | `tests/test_ml_forecast.py` | 3 | [x] **nouveau** |
+| `tests/test_auth_rate_limit.py` | 2 | [x] **nouveau** |
+| `tests/test_admin_audit_logs.py` | 2 | [x] **nouveau** |
 
 **Commandes :**
 
@@ -202,6 +206,8 @@ npm run migrate:pg
 - [x] Tests E2E par rôle (Playwright `e2e/`)
 - [x] PostgreSQL + migrations
 - [x] Checklist OWASP MVP (`Document/SECURITY_CHECKLIST.md`) 🟡
+- [x] Scan dépendances en CI (`pip-audit` + `npm audit --omit=dev --audit-level=moderate`)
+- [x] Upgrade dépendances frontend + seuil `npm audit` à `moderate` (0 vulnérabilité restante)
 
 ### P1 — Valeur métier (S2)
 
@@ -267,6 +273,8 @@ npm run migrate:pg
 | 2026-05-26 | CRUD `/api/rbac/users` + UI admin (créer / modifier / supprimer / suspendre) | `test_rbac_users_crud.py` (4) |
 | 2026-05-26 | `PATCH /api/patients/{id}` + UI édition dossier | `test_patients_update.py` |
 | 2026-05-26 | Analytics KPI / revenus / alertes depuis SQLite | `test_analytics_dynamic.py` |
+| 2026-05-28 | Hardening sécurité: rate-limit login + audit logs admin + scan dépendances CI | `test_auth_rate_limit.py`, `test_admin_audit_logs.py`, `.github/workflows/ci.yml` |
+| 2026-05-28 | Upgrade npm deps de sécurité + audit `moderate` clean (0 vulnérabilité) | `npm audit fix`, `npm run audit:deps`, `npm run test:rbac`, `npm run build` |
 | 2026-05-26 | Conflit RDV par chevauchement de durée | `test_appointment_overlap.py` |
 | 2026-05-26 | RBAC users depuis DB ; CORS + JWT env ; Correlation-ID | pytest 15/15 |
 | 2026-05-26 | `httpx` ajouté à `requirements.txt` pour TestClient | — |

@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from io import BytesIO
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from app.application.schemas import (
@@ -29,6 +29,8 @@ from app.presentation.deps import (
     require_auth,
     require_permission,
 )
+from app.presentation.audit import log_admin_action
+from app.presentation.rate_limit import check_login_allowed, register_login_failure, reset_login_limiter
 
 
 def _doctor_payload(d) -> dict:
@@ -69,8 +71,28 @@ api_router = APIRouter(prefix="/api")
 
 
 @api_router.post("/auth/login", response_model=LoginResponse)
-def login(payload: LoginRequest):
-    access_token, refresh_token = auth_service.login(payload.email, payload.password)
+def login(payload: LoginRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    limiter_key = f"{client_ip}:{payload.email.lower()}"
+    retry_after = check_login_allowed(limiter_key)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "code": "TOO_MANY_ATTEMPTS",
+                "message": "Trop de tentatives de connexion. Réessayez plus tard.",
+                "retryAfterSeconds": retry_after,
+            },
+        )
+
+    try:
+        access_token, refresh_token = auth_service.login(payload.email, payload.password)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            register_login_failure(limiter_key)
+        raise
+
+    reset_login_limiter(limiter_key)
     return LoginResponse(access_token=access_token, refresh_token=refresh_token)
 
 
@@ -87,8 +109,14 @@ def logout(payload: LogoutRequest):
 
 
 @api_router.post("/auth/logout-all")
-def logout_all(claims: dict = Depends(require_auth)):
+def logout_all(request: Request, claims: dict = Depends(require_auth)):
     auth_service.logout_all(claims.get("sub"))
+    log_admin_action(
+        request,
+        action="auth.logout_all",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+    )
     return {"success": True}
 
 
@@ -367,24 +395,52 @@ def rbac_users(_claims: dict = Depends(require_permission("users:read"))):
 
 @api_router.post("/rbac/users", status_code=201)
 def create_rbac_user(
+    request: Request,
     payload: UserCreate,
-    _claims: dict = Depends(require_permission("users:create")),
+    claims: dict = Depends(require_permission("users:create")),
 ):
-    return rbac_service.create_user(payload)
+    created = rbac_service.create_user(payload)
+    log_admin_action(
+        request,
+        action="rbac.user.create",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=created.get("id"),
+        extra={"role": created.get("role"), "status": created.get("status")},
+    )
+    return created
 
 
 @api_router.patch("/rbac/users/{user_id}")
 def update_rbac_user(
+    request: Request,
     user_id: str,
     payload: UserUpdate,
     claims: dict = Depends(require_permission("users:update")),
 ):
-    return rbac_service.update_user(user_id, payload, claims.get("sub", ""))
+    updated = rbac_service.update_user(user_id, payload, claims.get("sub", ""))
+    log_admin_action(
+        request,
+        action="rbac.user.update",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=user_id,
+        extra={"role": updated.get("role"), "status": updated.get("status")},
+    )
+    return updated
 
 
 @api_router.delete("/rbac/users/{user_id}", status_code=204)
 def delete_rbac_user(
+    request: Request,
     user_id: str,
     claims: dict = Depends(require_permission("users:delete")),
 ):
     rbac_service.delete_user(user_id, claims.get("sub", ""))
+    log_admin_action(
+        request,
+        action="rbac.user.delete",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=user_id,
+    )

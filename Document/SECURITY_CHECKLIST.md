@@ -18,7 +18,7 @@
 ## A03 — Supply chain
 
 - [x] CI : `pytest`, `eslint`, `build`, Playwright
-- [ ] Scan dépendances (`pip-audit`, `npm audit`) en CI
+- [x] Scan dépendances (`pip-audit`, `npm audit --omit=dev --audit-level=moderate`) en CI
 
 ## A04 — Cryptographie
 
@@ -35,7 +35,12 @@
 
 - [x] Login / refresh / logout / logout-all
 - [x] Comptes suspendus refusés au login
-- [ ] Limite de tentatives login (rate limit)
+- [x] Limite de tentatives login (rate limit, 5 échecs / 5 min / IP+email)
+
+## A09 — Journalisation & monitoring
+
+- [x] Audit logs actions admin (`create/update/delete user`, `logout-all`)
+- [ ] Export centralisé des logs (ELK, Loki, Datadog…)
 
 ## Headers HTTP
 
@@ -45,7 +50,6 @@
 
 ## Prochaines actions recommandées
 
-1. Rate limiting sur `/api/auth/login`
-2. PostgreSQL + chiffrement au repos
-3. Audit logs des actions admin (CRUD users)
-4. `pip-audit` / `npm audit` dans la pipeline CI
+1. PostgreSQL + chiffrement au repos
+2. Export centralisé + alerting sur logs d'audit
+3. Suivi mensuel des dépendances (`npm outdated` + `npm audit fix`)
