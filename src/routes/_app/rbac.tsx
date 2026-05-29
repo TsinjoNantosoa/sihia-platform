@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, ShieldCheck, Trash2, UserCog } from "lucide-react";
+import { Download, Pencil, Plus, ShieldCheck, Trash2, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/store";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -9,7 +9,12 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState } from "@/components/shared/States";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
-import { rbacService, type RbacUserCreatePayload, type RbacUserUpdatePayload } from "@/lib/api/services";
+import {
+  auditService,
+  rbacService,
+  type RbacUserCreatePayload,
+  type RbacUserUpdatePayload,
+} from "@/lib/api/services";
 import type { RbacUser } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth/store";
 import {
@@ -74,6 +79,12 @@ function RbacPage() {
     },
   });
 
+  const exportAuditMutation = useMutation({
+    mutationFn: () => auditService.exportJsonl(),
+    onSuccess: () => toast.success(t("rbac.exportAuditSuccess")),
+    onError: () => toast.error(t("common.error")),
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t("rbac.title")} subtitle={t("rbac.subtitle")} />
@@ -103,12 +114,26 @@ function RbacPage() {
             <UserCog className="size-4 text-primary" />
             <h2 className="text-sm font-semibold">{t("rbac.users")}</h2>
           </div>
-          <PermissionGuard permission="users:create">
-            <Button type="button" size="sm" onClick={() => setCreating(true)}>
-              <Plus className="me-1 size-4" />
-              {t("rbac.addUser")}
-            </Button>
-          </PermissionGuard>
+          <div className="flex flex-wrap gap-2">
+            <PermissionGuard permission="users:read">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={exportAuditMutation.isPending}
+                onClick={() => exportAuditMutation.mutate()}
+              >
+                <Download className="me-1 size-4" />
+                {t("rbac.exportAudit")}
+              </Button>
+            </PermissionGuard>
+            <PermissionGuard permission="users:create">
+              <Button type="button" size="sm" onClick={() => setCreating(true)}>
+                <Plus className="me-1 size-4" />
+                {t("rbac.addUser")}
+              </Button>
+            </PermissionGuard>
+          </div>
         </div>
         {isLoading ? (
           <LoadingState />

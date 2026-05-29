@@ -1,6 +1,6 @@
 # État d'implémentation — SIH IA
 
-> **Dernière mise à jour :** 28 mai 2026 (PostgreSQL + Alembic, rate-limit login, audit logs admin, dependency audit CI + upgrade deps)  
+> **Dernière mise à jour :** 29 mai 2026 (health/details réel, logs JSON structurés, métriques auth 403)  
 > **Sources :** `src/`, `backend/`, dossier `Document/`
 
 Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lorsqu'une fonctionnalité est implémentée **et** validée (tests ou vérification manuelle documentée).
@@ -16,7 +16,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | **Production sécurisée** | 🔴 Non |
 | **Couverture fonctionnelle MVP** | **~90 %** |
 | **Couverture valeur métier réelle** | **~65 %** |
-| **Tests backend** | ✅ **31/31** (`pytest tests/`) |
+| **Tests backend** | ✅ **36/36** (`pytest tests/`) |
 | **Tests E2E** | ✅ **8/8** Playwright (`npm run test:e2e`) |
 
 ---
@@ -38,6 +38,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] React + TypeScript + Vite + TanStack Router / Query
 - [x] Design system Calm Care (shadcn, tokens)
 - [x] i18n FR / EN / AR + RTL arabe
+- [x] Hydratation i18n SSR (`I18nHydrator`, `skipHydration` Zustand — plus de mismatch login)
 - [x] Page 403 + focus / labels accessibles
 - [x] Login JWT + refresh automatique sur 401
 
@@ -60,6 +61,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Paramètres — profil, langue, logout / logout-all
 - [x] Guards routes (`requireRoutePermission`)
 - [x] Guards actions (`PermissionGuard`)
+- [x] UX 401/403 centralisée (`httpErrors.ts` : toast i18n, redirection, exports blob)
 
 ### 1.3 Qualité front
 
@@ -83,7 +85,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Config via variables d'environnement (`.env.example`)
 - [x] Middleware **X-Correlation-ID**
 - [x] En-têtes sécurité HTTP (nosniff, frame deny, HSTS prod)
-- [ ] Logs structurés + métriques
+- [x] Logs structurés JSON (`logging_config.py`, requêtes HTTP + audit admin)
+- [x] Métriques pilote (`metrics.py` exposées sur `/health/details`, compteurs 401/403)
 
 ### 2.2 Auth & RBAC
 
@@ -92,6 +95,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Permissions dans le JWT
 - [x] Rate limit login (`POST /api/auth/login`) — 5 échecs / 5 min / IP+email
 - [x] Audit logs admin (`rbac.user.create|update|delete`, `auth.logout_all`)
+- [x] Export logs d'audit (`GET /api/admin/audit-logs/export`, fichier `logs/audit.jsonl`)
 - [x] `require_permission` sur routes métier
 - [x] Liste RBAC users depuis **table `users`** (plus de liste statique)
 - [x] CRUD utilisateurs : `POST/PATCH/DELETE /api/rbac/users` (admin)
@@ -142,6 +146,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `tests/test_ml_forecast.py` | 3 | [x] **nouveau** |
 | `tests/test_auth_rate_limit.py` | 2 | [x] **nouveau** |
 | `tests/test_admin_audit_logs.py` | 2 | [x] **nouveau** |
+| `tests/test_health_details.py` | 3 | [x] **nouveau** |
+| `tests/test_audit_export.py` | 2 | [x] **nouveau** |
 
 **Commandes :**
 
@@ -259,9 +265,9 @@ npm run migrate:pg
 | S6 | Dashboard + exports | [x] |
 | S7 | Airflow | [ ] |
 | S8–S9 | Prophet + ML dashboard | [ ] |
-| S10 | Hardening sécurité | 🟡 |
+| S10 | Hardening sécurité | 🟡 logs + métriques OK ; vault / ELK restants |
 | S11 | E2E | [x] |
-| S12 | Démo pilote | 🟡 |
+| S12 | Démo pilote | 🟡 procédure `README_01` + health Postgres OK |
 
 ---
 
@@ -275,6 +281,13 @@ npm run migrate:pg
 | 2026-05-26 | Analytics KPI / revenus / alertes depuis SQLite | `test_analytics_dynamic.py` |
 | 2026-05-28 | Hardening sécurité: rate-limit login + audit logs admin + scan dépendances CI | `test_auth_rate_limit.py`, `test_admin_audit_logs.py`, `.github/workflows/ci.yml` |
 | 2026-05-28 | Upgrade npm deps de sécurité + audit `moderate` clean (0 vulnérabilité) | `npm audit fix`, `npm run audit:deps`, `npm run test:rbac`, `npm run build` |
+| 2026-05-29 | `/health/details` réel (DB ping, type Postgres/SQLite, ML prophet/linear) + logs JSON + métriques 403 | `test_health_details.py` (3) |
+| 2026-05-29 | Pilote local documenté (`README_01`), script `npm run dev:pilot`, validation `/health/details` → `postgresql` | vérif manuelle |
+| 2026-05-29 | Fix hydratation React login (locale localStorage vs SSR fr) | `I18nHydrator`, `tests/i18n-hydration.test.ts` |
+| 2026-05-29 | Balayage UX 403/401 : toasts i18n, `ApiAuthError`, exports PDF/Excel, page `/403` | `httpErrors.ts`, `tests/http-errors.test.ts` |
+| 2026-05-29 | Fix login → 403 : repli permissions par rôle + resync JWT au rehydrate | `rbac.ts`, `auth/store.ts` |
+| 2026-05-29 | Fix staff login : dashboard sans appels analytics/ML ; API 403 = toast seul | `dashboard.tsx`, `httpErrors.ts` |
+| 2026-05-29 | Export logs audit JSONL + API admin + bouton RBAC | `audit_log.py`, `test_audit_export.py` |
 | 2026-05-26 | Conflit RDV par chevauchement de durée | `test_appointment_overlap.py` |
 | 2026-05-26 | RBAC users depuis DB ; CORS + JWT env ; Correlation-ID | pytest 15/15 |
 | 2026-05-26 | `httpx` ajouté à `requirements.txt` pour TestClient | — |

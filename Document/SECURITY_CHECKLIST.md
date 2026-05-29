@@ -40,7 +40,10 @@
 ## A09 — Journalisation & monitoring
 
 - [x] Audit logs actions admin (`create/update/delete user`, `logout-all`)
-- [ ] Export centralisé des logs (ELK, Loki, Datadog…)
+- [x] Logs HTTP + refus 403 en JSON structuré (`correlationId`, `sihia.security`)
+- [x] Métriques pilote sur `/health/details` (requêtes, 401, 403)
+- [x] Export fichier JSONL (`logs/audit.jsonl`, `GET /api/admin/audit-logs/export`)
+- [ ] Export centralisé distant (ELK, Loki, Datadog…)
 
 ## Headers HTTP
 

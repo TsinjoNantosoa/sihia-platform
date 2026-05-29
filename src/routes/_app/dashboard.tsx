@@ -23,6 +23,7 @@ import {
 import { format, parseISO } from "date-fns";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { useAuth } from "@/lib/auth/store";
+import { usePermission } from "@/lib/auth/usePermission";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -56,9 +57,19 @@ function DashboardPage() {
   const t = useT();
   const locale = useI18n((s) => s.locale);
   const user = useAuth((s) => s.user);
+  const canAnalytics = usePermission("analytics:read");
+  const canMl = usePermission("ml:read");
 
-  const kpis = useQuery({ queryKey: ["kpis"], queryFn: analyticsService.kpis });
-  const prediction = useQuery({ queryKey: ["pred7d"], queryFn: mlService.predict7d });
+  const kpis = useQuery({
+    queryKey: ["kpis"],
+    queryFn: analyticsService.kpis,
+    enabled: canAnalytics,
+  });
+  const prediction = useQuery({
+    queryKey: ["pred7d"],
+    queryFn: mlService.predict7d,
+    enabled: canMl,
+  });
   const alerts = useQuery({ queryKey: ["alerts"], queryFn: alertsService.list });
   const appts = useQuery({ queryKey: ["appts"], queryFn: appointmentsService.list });
 
@@ -90,17 +101,19 @@ function DashboardPage() {
           >
             <CalendarDays className="size-4" /> {t("dash.qa.newAppointment")}
           </Link>
-          <Link
-            to="/prediction"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            <Brain className="size-4" /> {t("dash.qa.viewPrediction")}
-          </Link>
+          {canMl ? (
+            <Link
+              to="/prediction"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Brain className="size-4" /> {t("dash.qa.viewPrediction")}
+            </Link>
+          ) : null}
         </div>
       </div>
 
-      {/* KPIs */}
-      {kpis.isLoading ? (
+      {/* KPIs (admin, manager, doctor) */}
+      {!canAnalytics ? null : kpis.isLoading ? (
         <LoadingState />
       ) : kpis.isError ? (
         <ErrorState onRetry={() => kpis.refetch()} />
@@ -139,8 +152,11 @@ function DashboardPage() {
       ) : null}
 
       {/* Chart + Alerts */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div
+        className={`grid grid-cols-1 gap-4 ${canMl ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}
+      >
         {/* Forecast chart */}
+        {canMl ? (
         <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:col-span-2">
           <div className="flex items-center justify-between border-b border-border p-5">
             <div className="flex items-center gap-2">
@@ -217,17 +233,22 @@ function DashboardPage() {
             ) : null}
           </div>
         </div>
+        ) : null}
 
         {/* Alerts */}
-        <div className="flex flex-col rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+        <div
+          className={`flex flex-col rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] ${canMl ? "" : "lg:col-span-1"}`}
+        >
           <div className="flex items-center justify-between border-b border-border p-5">
             <div className="flex items-center gap-2">
               <AlertTriangle className="size-4 text-destructive" />
               <h2 className="text-sm font-semibold">{t("dash.alertsTitle")}</h2>
             </div>
-            <Link to="/prediction" className="text-xs font-semibold text-primary hover:underline">
-              {t("common.viewAll")} →
-            </Link>
+            {canMl ? (
+              <Link to="/prediction" className="text-xs font-semibold text-primary hover:underline">
+                {t("common.viewAll")} →
+              </Link>
+            ) : null}
           </div>
           <div className="flex-1 divide-y divide-border overflow-y-auto">
             {alerts.isLoading ? (

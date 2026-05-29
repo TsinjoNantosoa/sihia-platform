@@ -1,10 +1,15 @@
 // Couche services API connectée.
 // Remplace les mocks par des appels REST complets (FastAPI).
 
-import { toast } from "sonner";
 import type { Appointment, Patient, RbacUser } from "./types";
 import { useAuth } from "../auth/store"; // Import the actual store instance
-import { getAuthRedirectPath } from "./httpErrors";
+import {
+  handleAuthHttpError,
+  notifyNetworkError,
+  notifyServerError,
+  parseApiError,
+} from "./httpErrors";
+import { resolveT } from "@/lib/i18n/resolveT";
 import { resolveApiBaseUrl } from "./baseUrl";
 import { shouldUseMocks } from "./mockPolicy";
 import {
@@ -90,7 +95,7 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   return [];
 };
 
-const fetchWithAuth = async (endpoint: string, options: RequestInit = {}, hasRetried = false) => {
+const buildAuthHeaders = (options: RequestInit) => {
   const token = useAuth.getState().token;
   const headers = new Headers(options.headers);
   if (token) {
@@ -99,6 +104,45 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}, hasRet
   if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
+  return headers;
+};
+
+const handleFailedResponse = async (
+  response: Response,
+  _endpoint: string,
+  _options: RequestInit,
+  hasRetried: boolean,
+  retry: () => Promise<unknown>,
+): Promise<unknown> => {
+  const parsed = await parseApiError(response);
+
+  if (response.status === 401) {
+    if (!hasRetried) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        return retry();
+      }
+    }
+    handleAuthHttpError(401, parsed);
+  }
+
+  if (response.status === 403) {
+    handleAuthHttpError(403, parsed);
+  }
+
+  const msg = parsed.message ?? parsed.code ?? "API_ERROR";
+  if (response.status >= 500) {
+    notifyServerError(msg);
+  }
+  throw new Error(msg);
+};
+
+async function fetchWithAuth<T = unknown>(
+  endpoint: string,
+  options: RequestInit = {},
+  hasRetried = false,
+): Promise<T | null> {
+  const headers = buildAuthHeaders(options);
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -111,68 +155,53 @@ const fetchWithAuth = async (endpoint: string, options: RequestInit = {}, hasRet
     }
 
     if (!response.ok) {
-      if (response.status === 401) {
-        if (!hasRetried) {
-          const newToken = await refreshAccessToken();
-          if (newToken) {
-            return fetchWithAuth(endpoint, options, true);
-          }
-        }
-        useAuth.getState().logout();
-        toast.error("Session expiree", { description: "Merci de vous reconnecter." });
-        const target = getAuthRedirectPath(401, window.location.pathname);
-        if (target) window.location.replace(target);
-      }
-      if (response.status === 403) {
-        toast.error("Acces refuse", { description: "Vous n'avez pas la permission." });
-        const target = getAuthRedirectPath(403, window.location.pathname);
-        if (target) window.location.replace(target);
-      }
-      const contentType = response.headers.get("content-type") || "";
-      const errorData = contentType.includes("application/json")
-        ? await response.json().catch(() => ({}))
-        : await response.text().catch(() => "");
-
-      const errorCode =
-        typeof errorData === "object" && errorData !== null
-          ? (errorData.code ?? errorData.detail)
-          : null;
-      const errorMessage =
-        typeof errorData === "object" && errorData !== null
-          ? (errorData.message ?? errorData.detail)
-          : errorData;
-
-      const msg = (errorCode as string) || (errorMessage as string) || "API_ERROR";
-      if (response.status >= 500) {
-        toast.error("Erreur serveur", { description: msg });
-      }
-      throw new Error(msg);
+      return (await handleFailedResponse(response, endpoint, options, hasRetried, () =>
+        fetchWithAuth<T>(endpoint, options, true),
+      )) as T | null;
     }
 
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
       return null;
     }
-    return await response.json();
+    return (await response.json()) as T;
   } catch (error) {
     const isNetworkError = error instanceof TypeError;
     if (isNetworkError) {
-      toast.error("API inaccessible", { description: "Vérifiez que le serveur backend est démarré.", id: "network-error" });
+      notifyNetworkError();
     }
     if (USE_MOCKS && isNetworkError) {
-      return getMockData(endpoint, options);
+      return getMockData(endpoint, options) as T;
     }
     throw error;
   }
-};
-const fetchBlobWithAuth = async (endpoint: string, options: RequestInit = {}) => {
-  const token = useAuth.getState().token;
-  const headers = new Headers(options.headers);
-  if (token) headers.set("Authorization", `Bearer ${token}`);
-  const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-  if (!response.ok) throw new Error("Export failed");
-  return response.blob();
-};
+}
+
+async function fetchBlobWithAuth(
+  endpoint: string,
+  options: RequestInit = {},
+  hasRetried = false,
+): Promise<Blob> {
+  const headers = buildAuthHeaders(options);
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+
+    if (!response.ok) {
+      return (await handleFailedResponse(response, endpoint, options, hasRetried, () =>
+        fetchBlobWithAuth(endpoint, options, true),
+      )) as Blob;
+    }
+
+    return response.blob();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      notifyNetworkError();
+      throw new Error(resolveT("errors.exportFailed"));
+    }
+    throw error;
+  }
+}
 export const patientsService = {
   list: (query?: { search?: string; status?: string }) => {
     const params = new URLSearchParams();
@@ -282,6 +311,20 @@ export type RbacUserUpdatePayload = Partial<
   Omit<RbacUserCreatePayload, "password"> & { password?: string; status: RbacUser["status"] }
 >;
 
+export const auditService = {
+  list: (limit = 100) => fetchWithAuth<{ items: unknown[]; count: number }>(`/api/admin/audit-logs?limit=${limit}`),
+  exportJsonl: async (limit = 5000) => {
+    const blob = await fetchBlobWithAuth(`/api/admin/audit-logs/export?limit=${limit}`);
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sihia_audit_${stamp}.jsonl`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+};
+
 export const rbacService = {
   list: () => fetchWithAuth<RbacUser[]>("/api/rbac/users"),
   create: (body: RbacUserCreatePayload) =>
@@ -297,7 +340,7 @@ export const rbacService = {
       body: JSON.stringify(body),
     }),
   remove: (id: string) =>
-    fetchWithAuth<void>(`/api/rbac/users/${id}`, { method: "DELETE" }),
+    fetchWithAuth<null>(`/api/rbac/users/${id}`, { method: "DELETE" }),
 };
 
 export const authService = {

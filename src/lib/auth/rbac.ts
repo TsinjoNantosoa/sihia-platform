@@ -86,8 +86,16 @@ export function canAccess(permissions: string[] | undefined, permission: Permiss
   return permissions.includes(permission);
 }
 
+/** Permissions JWT si présentes, sinon permissions par défaut du rôle (pilote / sessions anciennes). */
 export function resolvePermissions(state: AuthStateLike): string[] {
-  return state.permissions;
+  const explicit = state.permissions ?? [];
+  if (explicit.length > 0) {
+    return explicit;
+  }
+  if (state.user?.role) {
+    return getPermissionsForRole(state.user.role);
+  }
+  return [];
 }
 
 export function hasExplicitPermission(state: AuthStateLike, permission: Permission): boolean {

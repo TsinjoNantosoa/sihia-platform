@@ -6,6 +6,8 @@ from typing import Any
 
 from fastapi import Request
 
+from app.infrastructure.audit_log import append_audit_record
+
 logger = logging.getLogger("sihia.audit")
 
 
@@ -31,4 +33,6 @@ def log_admin_action(
     }
     if extra:
         payload["extra"] = extra
-    logger.info(json.dumps(payload, ensure_ascii=False))
+    line = json.dumps(payload, ensure_ascii=False)
+    logger.info(line)
+    append_audit_record(payload)

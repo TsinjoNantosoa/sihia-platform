@@ -16,6 +16,7 @@ Priorités & tâches
 2. Balayage 403 front-end
    - Description : Passer en revue toutes les pages et appels API côté client pour traiter proprement les réponses 401/403 (redirections, toasts, retry logique si refresh token).
    - Critères d'acceptation : UX cohérente pour accès refusé, logs d'autorisation centralisés.
+   - **État :** [x] logs 403 backend + UX front (`handleAuthHttpError`, page `/403` i18n, exports blob).
 
 3. Écrire tests E2E RBAC
    - Description : Ajouter scénarios E2E (playwright/cypress) qui valident parcours pour rôles : admin, manager, staff, médecin, patient.

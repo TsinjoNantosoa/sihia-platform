@@ -56,6 +56,20 @@ const fr: Dict = {
   "common.next": "Suivant",
   "common.previous": "Précédent",
 
+  "errors.sessionExpiredTitle": "Session expirée",
+  "errors.sessionExpiredDesc": "Merci de vous reconnecter.",
+  "errors.forbiddenTitle": "Accès refusé",
+  "errors.forbiddenDesc": "Vous n'avez pas la permission pour cette action.",
+  "errors.serverTitle": "Erreur serveur",
+  "errors.networkTitle": "API inaccessible",
+  "errors.networkDesc": "Vérifiez que le serveur backend est démarré.",
+  "errors.exportFailed": "Échec de l'export",
+
+  "forbidden.title": "Accès refusé",
+  "forbidden.subtitle":
+    "Vous n'avez pas les permissions nécessaires pour accéder à cette ressource. Contactez votre administrateur si vous pensez qu'il s'agit d'une erreur.",
+  "forbidden.backDashboard": "Retour au tableau de bord",
+
   "login.title": "Connexion à SIH IA",
   "login.subtitle": "Plateforme intelligente pour les équipes hospitalières",
   "login.email": "Adresse e-mail",
@@ -194,6 +208,8 @@ const fr: Dict = {
   "rbac.updated": "Utilisateur mis à jour",
   "rbac.deleted": "Utilisateur supprimé",
   "rbac.lastLogin.none": "Jamais",
+  "rbac.exportAudit": "Exporter les logs d'audit",
+  "rbac.exportAuditSuccess": "Export des logs d'audit téléchargé",
 
   "settings.title": "Paramètres",
   "settings.subtitle": "Préférences de l'établissement et de l'application",
@@ -251,6 +267,20 @@ const en: Dict = {
   "common.print": "Print",
   "common.next": "Next",
   "common.previous": "Previous",
+
+  "errors.sessionExpiredTitle": "Session expired",
+  "errors.sessionExpiredDesc": "Please sign in again.",
+  "errors.forbiddenTitle": "Access denied",
+  "errors.forbiddenDesc": "You do not have permission for this action.",
+  "errors.serverTitle": "Server error",
+  "errors.networkTitle": "API unreachable",
+  "errors.networkDesc": "Make sure the backend server is running.",
+  "errors.exportFailed": "Export failed",
+
+  "forbidden.title": "Access denied",
+  "forbidden.subtitle":
+    "You do not have the permissions required for this resource. Contact your administrator if you believe this is a mistake.",
+  "forbidden.backDashboard": "Back to dashboard",
 
   "login.title": "Sign in to SIH IA",
   "login.subtitle": "Smart platform for hospital teams",
@@ -390,6 +420,8 @@ const en: Dict = {
   "rbac.updated": "User updated",
   "rbac.deleted": "User deleted",
   "rbac.lastLogin.none": "Never",
+  "rbac.exportAudit": "Export audit logs",
+  "rbac.exportAuditSuccess": "Audit log export downloaded",
 
   "settings.title": "Settings",
   "settings.subtitle": "Facility and app preferences",
@@ -447,6 +479,20 @@ const ar: Dict = {
   "common.print": "طباعة",
   "common.next": "التالي",
   "common.previous": "السابق",
+
+  "errors.sessionExpiredTitle": "انتهت الجلسة",
+  "errors.sessionExpiredDesc": "يرجى تسجيل الدخول مرة أخرى.",
+  "errors.forbiddenTitle": "وصول مرفوض",
+  "errors.forbiddenDesc": "ليس لديك صلاحية لهذا الإجراء.",
+  "errors.serverTitle": "خطأ في الخادم",
+  "errors.networkTitle": "الواجهة غير متاحة",
+  "errors.networkDesc": "تأكد من تشغيل خادم الواجهة الخلفية.",
+  "errors.exportFailed": "فشل التصدير",
+
+  "forbidden.title": "وصول مرفوض",
+  "forbidden.subtitle":
+    "ليس لديك الصلاحيات اللازمة للوصول إلى هذا المورد. اتصل بالمسؤول إذا كنت تعتقد أن هذا خطأ.",
+  "forbidden.backDashboard": "العودة إلى لوحة التحكم",
 
   "login.title": "تسجيل الدخول إلى SIH IA",
   "login.subtitle": "منصة ذكية لفرق المستشفيات",
@@ -586,6 +632,8 @@ const ar: Dict = {
   "rbac.updated": "تم تحديث المستخدم",
   "rbac.deleted": "تم حذف المستخدم",
   "rbac.lastLogin.none": "أبداً",
+  "rbac.exportAudit": "تصدير سجلات التدقيق",
+  "rbac.exportAuditSuccess": "تم تنزيل سجلات التدقيق",
 
   "settings.title": "الإعدادات",
   "settings.subtitle": "تفضيلات المؤسسة والتطبيق",

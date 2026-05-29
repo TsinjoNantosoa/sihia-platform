@@ -37,7 +37,7 @@ function LoginPage() {
     try {
       await login(email.trim(), password);
       toast.success(t("login.submit"));
-      navigate({ to: "/" });
+      navigate({ to: "/dashboard" });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {

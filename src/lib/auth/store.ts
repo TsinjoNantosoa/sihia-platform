@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { resolveApiBaseUrl } from "../api/baseUrl";
 import { shouldUseMocks } from "../api/mockPolicy";
+import { getPermissionsForRole } from "./rbac";
 
 export type Role = "admin" | "doctor" | "staff" | "manager";
 
@@ -47,6 +48,39 @@ const parseJwt = (token: string) => {
   }
 };
 
+const permissionsFromClaims = (claims: Record<string, unknown>, role: Role): string[] => {
+  if (Array.isArray(claims.permissions) && claims.permissions.length > 0) {
+    return claims.permissions.filter((p): p is string => typeof p === "string");
+  }
+  return getPermissionsForRole(role);
+};
+
+const buildSessionFromToken = (
+  token: string,
+  refreshToken: string | null,
+  fallbackEmail?: string,
+): Pick<AuthState, "token" | "refreshToken" | "permissions" | "isAuthenticated" | "user"> => {
+  const claims = parseJwt(token) || {};
+  const role = (claims.role as Role) || "doctor";
+  const email =
+    (typeof claims.email === "string" && claims.email) || fallbackEmail || "user@sihia.health";
+
+  return {
+    token,
+    refreshToken,
+    permissions: permissionsFromClaims(claims, role),
+    isAuthenticated: true,
+    user: {
+      id: (claims.sub as string) || (claims.id as string) || "unknown",
+      name: (claims.name as string) || email.split("@")[0],
+      email,
+      role,
+      facility: (claims.facility as string) || "Hôpital Central",
+      avatarColor: (claims.avatarColor as string) || "var(--color-primary)",
+    },
+  };
+};
+
 export const useAuth = create<AuthState>()(
   persist(
     (set) => ({
@@ -57,8 +91,8 @@ export const useAuth = create<AuthState>()(
       isAuthenticated: false,
       hasHydrated: false,
       setHasHydrated: (value) => set({ hasHydrated: value }),
-      setToken: (token) => set({ token, isAuthenticated: true }),
-      setSession: (token, refreshToken) => set({ token, refreshToken, isAuthenticated: true }),
+      setToken: (token) => set(buildSessionFromToken(token, useAuth.getState().refreshToken)),
+      setSession: (token, refreshToken) => set(buildSessionFromToken(token, refreshToken)),
       login: async (email, password) => {
         const USE_MOCKS = shouldUseMocks();
         const normalizedEmail = email.trim().toLowerCase();
@@ -86,22 +120,7 @@ export const useAuth = create<AuthState>()(
           const data = await res.json();
           const token = data.access_token || data.token;
           const refreshToken = data.refresh_token ?? null;
-          const claims = parseJwt(token) || {};
-
-          set({
-            token,
-            refreshToken,
-            permissions: Array.isArray(claims.permissions) ? claims.permissions : [],
-            isAuthenticated: true,
-            user: {
-              id: claims.sub || claims.id || "unknown",
-              name: claims.name || email.split("@")[0],
-              email: claims.email || email,
-              role: (claims.role as Role) || "doctor",
-              facility: claims.facility || "Hôpital Central",
-              avatarColor: claims.avatarColor || "var(--color-primary)",
-            },
-          });
+          set(buildSessionFromToken(token, refreshToken, normalizedEmail));
         } catch (error) {
           const isNetworkError = error instanceof TypeError;
           if (!USE_MOCKS || !isNetworkError) {
@@ -145,6 +164,10 @@ export const useAuth = create<AuthState>()(
     {
       name: "sih-ia-auth",
       onRehydrateStorage: () => (state) => {
+        if (state?.token && (!state.permissions || state.permissions.length === 0)) {
+          const session = buildSessionFromToken(state.token, state.refreshToken, state.user?.email);
+          useAuth.setState(session);
+        }
         state?.setHasHydrated(true);
       },
     },

@@ -1,23 +1,21 @@
 import logging
-import sys
 import time
 import uuid
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.application.health_service import build_health_details
 from app.core.config import settings
+from app.core.logging_config import configure_logging, log_event
+from app.core.metrics import metrics
 from app.presentation.routes import api_router
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-    stream=sys.stdout,
-    force=True,
-)
+configure_logging()
 logger = logging.getLogger("sihia")
+security_logger = logging.getLogger("sihia.security")
 
 app = FastAPI(title=settings.app_name, version="0.1.0")
 
@@ -45,13 +43,19 @@ async def request_context_middleware(request: Request, call_next):
     request.state.correlation_id = correlation_id
     started = time.perf_counter()
     response = await call_next(request)
-    elapsed_ms = (time.perf_counter() - started) * 1000
-    logger.info(
-        "%s %s %s %.0fms",
-        request.method,
-        request.url.path,
-        response.status_code,
-        elapsed_ms,
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
+    metrics.inc("http_requests")
+    if response.status_code >= 500:
+        metrics.inc("http_errors_5xx")
+    log_event(
+        logger,
+        logging.INFO,
+        "http_request",
+        method=request.method,
+        path=request.url.path,
+        statusCode=response.status_code,
+        durationMs=elapsed_ms,
+        correlationId=correlation_id,
     )
     response.headers["X-Correlation-ID"] = correlation_id
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -66,7 +70,29 @@ app.include_router(api_router)
 
 
 @app.exception_handler(HTTPException)
-async def http_exception_handler(_request: Request, exc: HTTPException):
+async def http_exception_handler(request: Request, exc: HTTPException):
+    correlation_id = getattr(request.state, "correlation_id", None)
+    if exc.status_code == status.HTTP_403_FORBIDDEN:
+        metrics.inc("auth_forbidden")
+        log_event(
+            security_logger,
+            logging.WARNING,
+            "auth_forbidden",
+            path=str(request.url.path),
+            method=request.method,
+            correlationId=correlation_id,
+        )
+    elif exc.status_code == status.HTTP_401_UNAUTHORIZED:
+        metrics.inc("auth_unauthorized")
+        log_event(
+            security_logger,
+            logging.INFO,
+            "auth_unauthorized",
+            path=str(request.url.path),
+            method=request.method,
+            correlationId=correlation_id,
+        )
+
     detail = exc.detail
     if isinstance(detail, dict):
         code = detail.get("code", "HTTP_ERROR")
@@ -126,16 +152,6 @@ def health():
 
 @app.get("/health/details")
 def health_details():
-    from datetime import datetime, timezone
-
-    return {
-        "status": "ok",
-        "version": "0.1.0",
-        "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-        "components": {
-            "api": {"status": "ok", "latency_ms": 0},
-            "database": {"status": "ok", "type": "sqlite"},
-            "ml_engine": {"status": "ok", "model": "LSTM-v1"},
-            "auth": {"status": "ok", "algorithm": "HS256"},
-        },
-    }
+    body = build_health_details()
+    body["metrics"] = metrics.snapshot()
+    return body

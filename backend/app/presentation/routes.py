@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from datetime import datetime, timezone
 from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -29,6 +30,7 @@ from app.presentation.deps import (
     require_auth,
     require_permission,
 )
+from app.infrastructure.audit_log import export_audit_jsonl, read_audit_records
 from app.presentation.audit import log_admin_action
 from app.presentation.rate_limit import check_login_allowed, register_login_failure, reset_login_limiter
 
@@ -428,6 +430,46 @@ def update_rbac_user(
         extra={"role": updated.get("role"), "status": updated.get("status")},
     )
     return updated
+
+
+@api_router.get("/admin/audit-logs")
+def list_audit_logs(
+    request: Request,
+    limit: int = Query(default=100, ge=1, le=1000),
+    claims: dict = Depends(require_permission("users:read")),
+):
+    items = read_audit_records(limit=limit)
+    log_admin_action(
+        request,
+        action="audit.logs.list",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        extra={"limit": limit, "count": len(items)},
+    )
+    return {"items": items, "count": len(items)}
+
+
+@api_router.get("/admin/audit-logs/export")
+def export_audit_logs(
+    request: Request,
+    limit: int = Query(default=5000, ge=1, le=20000),
+    claims: dict = Depends(require_permission("users:read")),
+):
+    log_admin_action(
+        request,
+        action="audit.logs.export",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        extra={"limit": limit},
+    )
+    content = export_audit_jsonl(limit=limit)
+    stamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+    filename = f"sihia_audit_{stamp}.jsonl"
+    return StreamingResponse(
+        BytesIO(content),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @api_router.delete("/rbac/users/{user_id}", status_code=204)

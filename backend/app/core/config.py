@@ -33,6 +33,7 @@ class Settings(BaseModel):
     refresh_token_exp_days: int = 7
     max_refresh_sessions_per_user: int = 3
     database_url: str = "app.db"
+    audit_log_path: str = "logs/audit.jsonl"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
@@ -58,6 +59,7 @@ class Settings(BaseModel):
             refresh_token_exp_days=int(os.getenv("REFRESH_TOKEN_EXP_DAYS", "7")),
             max_refresh_sessions_per_user=int(os.getenv("MAX_REFRESH_SESSIONS", "3")),
             database_url=os.getenv("DATABASE_URL", "app.db"),
+            audit_log_path=os.getenv("AUDIT_LOG_PATH", "logs/audit.jsonl"),
             cors_origins=origins or ["http://localhost:5173"],
             environment=os.getenv("ENVIRONMENT", "development"),
         )

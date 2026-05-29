@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
 
-import { hasExplicitPermission, resolvePermissions } from "../src/lib/auth/rbac";
+import {
+  getPermissionsForRole,
+  hasExplicitPermission,
+  resolvePermissions,
+} from "../src/lib/auth/rbac";
 
 const adminState = {
   user: {
@@ -15,15 +19,15 @@ const adminState = {
 };
 
 describe("RBAC permission helpers", () => {
-  test("resolvePermissions returns only explicit JWT permissions", () => {
-    expect(resolvePermissions(adminState)).toEqual([]);
+  test("resolvePermissions falls back to role when JWT list is empty", () => {
+    expect(resolvePermissions(adminState)).toEqual(getPermissionsForRole("admin"));
   });
 
-  test("hasExplicitPermission denies access when the permission is missing", () => {
-    expect(hasExplicitPermission(adminState, "patients:delete")).toBe(false);
+  test("hasExplicitPermission allows dashboard for admin without JWT permissions", () => {
+    expect(hasExplicitPermission(adminState, "dashboard:read")).toBe(true);
   });
 
-  test("hasExplicitPermission allows access when the permission is present", () => {
+  test("hasExplicitPermission uses explicit JWT permissions when present", () => {
     expect(
       hasExplicitPermission(
         {
