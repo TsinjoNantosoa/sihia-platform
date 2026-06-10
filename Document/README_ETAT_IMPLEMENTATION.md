@@ -1,6 +1,6 @@
 # État d'implémentation — SIH IA
 
-> **Dernière mise à jour :** 29 mai 2026 (health/details réel, logs JSON structurés, métriques auth 403)  
+> **Dernière mise à jour :** 10 juin 2026 (Prophet, pilote Postgres, rappels RDV, Airflow, guide utilisation)  
 > **Sources :** `src/`, `backend/`, dossier `Document/`
 
 Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lorsqu'une fonctionnalité est implémentée **et** validée (tests ou vérification manuelle documentée).
@@ -14,7 +14,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | **Démo investisseur / POC UI** | ✅ Prêt |
 | **Pilote clinique limité** | 🟡 Postgres local validé (`npm run pilot:setup`) |
 | **Production sécurisée** | 🔴 Non |
-| **Couverture fonctionnelle MVP** | **~90 %** |
+| **Couverture fonctionnelle MVP** | **~92 %** |
 | **Couverture valeur métier réelle** | **~65 %** |
 | **Tests backend** | ✅ **50/50** (`pytest tests/`) |
 | **Tests E2E** | ✅ **8/8** Playwright (`npm run test:e2e`) |
@@ -52,6 +52,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Médecins — **édition planning / disponibilités** (`PATCH` + dialogue « Planning »)
 - [x] Rendez-vous — liste, calendrier, création, annulation
 - [x] Rendez-vous — détection conflit (chevauchement durée côté API)
+- [x] Rendez-vous — **rappels email/SMS** (colonne statut, bouton cloche, lot 24h)
 - [x] Analytique — graphiques + filtres période
 - [x] Analytique — export CSV (client)
 - [x] Analytique — export PDF / Excel (API)
@@ -77,7 +78,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 
 - [x] Architecture en couches (application / domain / infrastructure / presentation)
 - [x] SQLite persistant (`app.db`) — dev local
-- [x] PostgreSQL + migrations Alembic (`alembic/versions/001_initial_schema.py`)
+- [x] PostgreSQL + migrations Alembic (`001` schéma, `002` rappels RDV, `003` pipeline)
 - [x] Couche SQL unifiée SQLAlchemy (`database.py`) — SQLite ou PostgreSQL via `DATABASE_URL`
 - [x] Erreurs HTTP normalisées `{ code, message, details }`
 - [x] Health `/health` et `/health/details`
@@ -87,6 +88,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] En-têtes sécurité HTTP (nosniff, frame deny, HSTS prod)
 - [x] Logs structurés JSON (`logging_config.py`, requêtes HTTP + audit admin)
 - [x] Métriques pilote (`metrics.py` exposées sur `/health/details`, compteurs 401/403)
+- [x] État pipeline sur `/health/details` (`pipeline.freshness`, alertes DAG)
 
 ### 2.2 Auth & RBAC
 
@@ -118,9 +120,9 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `POST /api/admin/reminders/run` | [x] **nouveau** (lot J-1 / 24h) |
 | `GET /api/admin/pipeline/status` | [x] **nouveau** |
 | `POST /api/admin/pipeline/run/{dag_id}` | [x] **nouveau** |
-| `GET /api/analytics/*` | [x] données **calculées SQLite** |
+| `GET /api/analytics/*` | [x] données **calculées depuis la base SQL** (SQLite ou PostgreSQL) |
 | `GET /api/analytics/export/*` | [x] |
-| `GET /api/ml/predict-7d` / `predict-30d` | [x] 🟡 **série RDV SQLite** + régression linéaire (Prophet optionnel) |
+| `GET /api/ml/predict-7d` / `predict-30d` | [x] 🟡 **série RDV réelle** + régression linéaire (Prophet optionnel) |
 | `GET /api/alerts` | [x] **dynamiques** (seuils occupation / file RDV) |
 | `GET/POST/PATCH/DELETE /api/rbac/users` | [x] **nouveau** |
 
@@ -133,6 +135,9 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Satisfaction dérivée des médecins en base
 - [x] Prévisions 7j/30j depuis historique RDV (`ml_service.py`, `source: sqlite`)
 - [x] Prophet optionnel (`requirements-ml.txt`, `ML_USE_PROPHET`, fallback linéaire)
+- [x] Rappels RDV (`reminder_service`, migration `002`, log `reminders.jsonl`)
+- [x] Pipeline données (`pipeline_service`, migration `003`, snapshots analytics, `ml_features_daily`)
+- [x] Pilote PostgreSQL (`pilot_setup.py`, `npm run pilot:setup`, port 5435 si 5434 occupé)
 
 ---
 
@@ -166,6 +171,12 @@ cd backend
 # E2E (backend + front démarrés ou laisser Playwright les lancer)
 cd ..
 npm run test:e2e
+
+# Pilote PostgreSQL, pipeline données, Airflow
+npm run pilot:setup
+npm run dev:pilot
+npm run pipeline:run -- sihia_daily
+npm run airflow:up
 ```
 
 ### pgAdmin 4 (Docker)
@@ -184,22 +195,22 @@ docker compose up -d postgres pgadmin
 
 Si le port **5050** est déjà pris : `PGADMIN_PORT=5051` dans `.env` puis `docker compose up -d pgadmin`.
 
-**pgAdmin 4 installé sur Windows** (pas le conteneur) : utilise le port **5434** (pas 5432 — souvent pris par PostgreSQL Windows).
+**pgAdmin 4 installé sur Windows** (pas le conteneur) : port **5434** ou **5435** si 5434 occupé (`POSTGRES_PORT` dans `.env`).
 
 | Champ | Valeur |
 |---|---|
 | Host | `localhost` |
-| Port | **5434** |
+| Port | **5434** ou **5435** |
 | Database | `sihia` |
 | Username | `sihia` |
 | Password | `sihia` |
 
 ### App sur PostgreSQL + migration SQLite
 
-`backend/.env` :
+`backend/.env` (pilote local — `pilot_setup.py` utilise `pg8000`) :
 
 ```env
-DATABASE_URL=postgresql://sihia:sihia@localhost:5434/sihia
+DATABASE_URL=postgresql+pg8000://sihia:sihia@localhost:5435/sihia
 ```
 
 Copier les données de `app.db` vers Postgres :
@@ -251,7 +262,7 @@ npm run migrate:pg
 | Patients | ✅ | CRUD complet + historique |
 | Médecins | ✅ | Lecture + édition planning / dispo |
 | Rendez-vous | 🟡 | Conflits + rappels email/SMS (log dev, UI statut) |
-| Dashboard KPI | 🟡 | KPIs réels ; ML encore statique |
+| Dashboard KPI | 🟡 | KPIs réels ; prévisions ML depuis RDV (linéaire / Prophet) |
 | Analytique | 🟡 | Agrégats réels ; pas BI avancée |
 | Prédiction IA | 🟡 | Prévisions depuis RDV réels ; Prophet optionnel |
 | RBAC | ✅ | Guards + CRUD admin utilisateurs |
@@ -316,4 +327,4 @@ npm run migrate:pg
 3. Lancer `pytest tests/ -v`.
 4. Cocher `[x]` dans ce fichier et ajouter une ligne au **journal §7**.
 
-**Documents liés :** `README_00_Vision_Scope.md`, `README_FUTUR_IMPLEMENTATION.md`, `README_15_Gap_Analysis_Front_vs_Cahier.md`, `../README.md`.
+**Documents liés :** `README_00_Vision_Scope.md`, `README_FUTUR_IMPLEMENTATION.md`, `README_15_Gap_Analysis_Front_vs_Cahier.md`, `README_AIRFLOW_UTILISATION.md`, `README_01_Setup_Environnement.md`, `README_07_Data_Pipeline_Airflow.md`, `../README.md`.
