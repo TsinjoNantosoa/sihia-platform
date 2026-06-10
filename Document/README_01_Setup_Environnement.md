@@ -18,12 +18,14 @@
 ```powershell
 cd "C:\Users\HP 840 G8\Documents\projet\sihia-platform"
 docker compose up -d postgres
+# Si le port 5434 est déjà pris (autre conteneur Postgres) :
+$env:POSTGRES_PORT="5435"; docker compose up -d postgres
 ```
 
 | Paramètre | Valeur |
 |-----------|--------|
 | Host | `localhost` |
-| Port hôte | **5434** (évite conflit avec PostgreSQL Windows sur 5432) |
+| Port hôte | **5434** par défaut (`POSTGRES_PORT` dans `.env` racine si occupé, ex. **5435**) |
 | Base | `sihia` |
 | User / mot de passe | `sihia` / `sihia` |
 
@@ -36,11 +38,13 @@ DATABASE_URL=postgresql+pg8000://sihia:sihia@localhost:5434/sihia
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080
 ```
 
-> Sous **Windows**, préférer le driver **pg8000** (`postgresql+pg8000://…`) si `psycopg2` échoue.
+> Sous **Windows**, préférer le driver **pg8000** (`postgresql+pg8000://…`) si `psycopg2` échoue. Adapter le port dans `DATABASE_URL` si vous utilisez `POSTGRES_PORT=5435`.
 
 Migration des données SQLite → Postgres (une fois) :
 
 ```powershell
+npm run pilot:setup
+# ou uniquement la copie (Postgres déjà migré) :
 npm run migrate:pg
 ```
 
@@ -88,6 +92,8 @@ docker compose up -d pgadmin
 | `npm run dev:all` | Backend + frontend |
 | `npm run dev:pilot` | Postgres Docker + backend + frontend |
 | `npm run migrate:pg` | Copie `app.db` → PostgreSQL |
+| `npm run pipeline:run -- <dag>` | Lance un pipeline (ex. `patient_import`) |
+| `npm run airflow:up` | Démarre Airflow sur http://localhost:8081 |
 | `npm run test:e2e` | Tests Playwright |
 | `npm run build` | Build production frontend |
 

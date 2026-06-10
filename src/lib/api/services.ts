@@ -254,14 +254,24 @@ export const doctorsService = {
 };
 
 export const appointmentsService = {
-  list: () => fetchWithAuth("/api/appointments"),
-  create: (input: Omit<Appointment, "id">) => 
+  list: () => fetchWithAuth<Appointment[]>("/api/appointments"),
+  create: (input: Omit<Appointment, "id" | "reminderSummary">) =>
     fetchWithAuth("/api/appointments", {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  cancel: (id: string) => 
+  cancel: (id: string) =>
     fetchWithAuth(`/api/appointments/${id}/cancel`, { method: "POST" }),
+  remind: (id: string, channels: Array<"email" | "sms"> = ["email"]) =>
+    fetchWithAuth(`/api/appointments/${id}/remind`, {
+      method: "POST",
+      body: JSON.stringify({ channels }),
+    }),
+  runRemindersBatch: () =>
+    fetchWithAuth<{ processed: number; sent: number; skipped: number; failed: number }>(
+      "/api/admin/reminders/run",
+      { method: "POST" },
+    ),
 };
 
 export const analyticsService = {

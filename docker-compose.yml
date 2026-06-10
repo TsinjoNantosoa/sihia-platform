@@ -59,6 +59,32 @@ services:
     depends_on:
       - backend
 
+  airflow:
+    profiles: [airflow]
+    image: apache/airflow:2.9.3-python3.12
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      DATABASE_URL: postgresql://sihia:sihia@postgres:5432/sihia
+      SIHIA_BACKEND_DIR: /opt/sihia/backend
+      PIPELINE_IMPORT_DIR: /opt/sihia/data/imports
+      PYTHONPATH: /opt/sihia/backend
+      _PIP_ADDITIONAL_REQUIREMENTS: pg8000 psycopg2-binary sqlalchemy pydantic python-dotenv
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./backend:/opt/sihia/backend
+      - ./data:/opt/sihia/data
+      - airflow_home:/opt/airflow
+    ports:
+      - "${AIRFLOW_PORT:-8081}:8080"
+    command: standalone
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pg_data:
   pgadmin_data:
+  airflow_home:

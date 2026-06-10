@@ -18,6 +18,8 @@ def test_predict_7d_uses_sqlite_history() -> None:
     body = res.json()
     assert body["source"] == "sqlite"
     assert body["model"] in {"prophet", "linear-sqlite"}
+    assert body["engine"] in {"prophet", "linear"}
+    assert body["horizon"] == 7
     assert len(body["points"]) >= 7
     assert "peak" in body
     assert any("forecast" in p for p in body["points"])
@@ -30,6 +32,7 @@ def test_predict_30d_horizon() -> None:
     body = res.json()
     assert body["horizon"] == 30
     assert body["source"] == "sqlite"
+    assert body["engine"] in {"prophet", "linear"}
     forecast_points = [p for p in body["points"] if "forecast" in p]
     assert len(forecast_points) >= 30
 

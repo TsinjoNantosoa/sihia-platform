@@ -1,0 +1,3 @@
+record_number,first_name,last_name,dob,gender,phone,email,address,blood_type,allergies,insurance,status
+IMP-001,Salma,El Amrani,1988-03-14,F,+212612340001,salma.elamrani@mail.com,Casablanca,O+,penicilline,CNOPS,active
+IMP-002,Karim,Bennani,1975-11-02,M,+212612340002,karim.bennani@mail.com,Rabat,A+, ,CNSS,active

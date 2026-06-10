@@ -183,6 +183,9 @@ class InMemoryAppointmentRepository:
     def list(self) -> list[Appointment]:
         return self._appointments
 
+    def get(self, appointment_id: str) -> Appointment | None:
+        return next((a for a in self._appointments if a.id == appointment_id), None)
+
     def create(self, appointment: Appointment) -> Appointment:
         self._appointments.insert(0, appointment)
         return appointment

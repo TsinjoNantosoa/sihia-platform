@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 
 from app.application.schemas import (
     AppointmentCreate,
+    ReminderSendRequest,
     LoginRequest,
     LoginResponse,
     LogoutRequest,
@@ -26,7 +27,9 @@ from app.presentation.deps import (
     medical_history_service,
     patients_service,
     ml_service,
+    pipeline_service,
     rbac_service,
+    reminder_service,
     require_auth,
     require_permission,
 )
@@ -213,28 +216,8 @@ def update_doctor(
     return _doctor_payload(doctors_service.update(doctor_id, payload))
 
 
-@api_router.get("/appointments")
-def list_appointments(_claims: dict = Depends(require_permission("appointments:read"))):
-    return [
-        {
-            "id": a.id,
-            "patientId": a.patient_id,
-            "patientName": a.patient_name,
-            "doctorId": a.doctor_id,
-            "doctorName": a.doctor_name,
-            "date": a.date,
-            "durationMin": a.duration_min,
-            "reason": a.reason,
-            "status": a.status,
-        }
-        for a in appointments_service.list()
-    ]
-
-
-@api_router.post("/appointments")
-def create_appointment(payload: AppointmentCreate, _claims: dict = Depends(require_permission("appointments:create"))):
-    a = appointments_service.create(payload)
-    return {
+def _appointment_payload(a, reminder_summary: dict | None = None) -> dict:
+    payload = {
         "id": a.id,
         "patientId": a.patient_id,
         "patientName": a.patient_name,
@@ -245,12 +228,112 @@ def create_appointment(payload: AppointmentCreate, _claims: dict = Depends(requi
         "reason": a.reason,
         "status": a.status,
     }
+    if reminder_summary is not None:
+        payload["reminderSummary"] = reminder_summary
+    return payload
+
+
+@api_router.get("/appointments")
+def list_appointments(_claims: dict = Depends(require_permission("appointments:read"))):
+    appointments = appointments_service.list()
+    summaries = reminder_service.summaries_for([a.id for a in appointments])
+    return [_appointment_payload(a, summaries.get(a.id)) for a in appointments]
+
+
+@api_router.post("/appointments")
+def create_appointment(payload: AppointmentCreate, _claims: dict = Depends(require_permission("appointments:create"))):
+    a = appointments_service.create(payload)
+    return _appointment_payload(a)
 
 
 @api_router.post("/appointments/{appointment_id}/cancel")
 def cancel_appointment(appointment_id: str, _claims: dict = Depends(require_permission("appointments:update"))):
     a = appointments_service.cancel(appointment_id)
     return asdict(a)
+
+
+@api_router.get("/appointments/{appointment_id}/reminders")
+def list_appointment_reminders(
+    appointment_id: str,
+    _claims: dict = Depends(require_permission("appointments:read")),
+):
+    reminders = reminder_service.list_for_appointment(appointment_id)
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "channel": r.channel,
+                "kind": r.kind,
+                "status": r.status,
+                "recipient": r.recipient,
+                "sentAt": r.sent_at,
+                "error": r.error,
+            }
+            for r in reminders
+        ]
+    }
+
+
+@api_router.post("/appointments/{appointment_id}/remind")
+def send_appointment_reminder(
+    request: Request,
+    appointment_id: str,
+    payload: ReminderSendRequest,
+    claims: dict = Depends(require_permission("appointments:update")),
+):
+    result = reminder_service.send_manual(appointment_id, payload.channels)
+    log_admin_action(
+        request,
+        action="appointments.remind",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=appointment_id,
+        extra={"channels": payload.channels, "results": result.get("results")},
+    )
+    return result
+
+
+@api_router.post("/admin/reminders/run")
+def run_appointment_reminders_batch(
+    request: Request,
+    claims: dict = Depends(require_permission("appointments:update")),
+):
+    result = reminder_service.run_auto_batch()
+    log_admin_action(
+        request,
+        action="appointments.reminders.batch",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        extra=result,
+    )
+    return result
+
+
+@api_router.get("/admin/pipeline/status")
+def pipeline_status(_claims: dict = Depends(require_permission("analytics:read"))):
+    return pipeline_service.status()
+
+
+@api_router.post("/admin/pipeline/run/{dag_id}")
+def run_pipeline_dag(
+    request: Request,
+    dag_id: str,
+    claims: dict = Depends(require_permission("appointments:update")),
+):
+    try:
+        result = pipeline_service.run(dag_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+    log_admin_action(
+        request,
+        action="pipeline.run",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        extra={"dagId": dag_id, "result": result},
+    )
+    return result
 
 
 @api_router.get("/analytics/kpis")
@@ -374,7 +457,10 @@ def export_pdf(period: str = Query(default="6m"), _claims: dict = Depends(requir
 
 @api_router.get("/ml/predict-7d")
 def predict(_claims: dict = Depends(require_permission("ml:read"))):
-    return ml_service.predict_7d()
+    body = ml_service.predict_7d()
+    body["horizon"] = 7
+    body["model_version"] = body.get("model", "linear-sqlite")
+    return body
 
 
 @api_router.get("/ml/predict-30d")

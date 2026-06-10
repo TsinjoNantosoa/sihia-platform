@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite dev",
     "dev:all": "concurrently -n backend,frontend -c yellow,cyan \"cd backend && .\\venv\\Scripts\\uvicorn app.main:app --reload --host 127.0.0.1 --port 8000\" \"vite dev\"",
-    "dev:pilot": "docker compose up -d postgres && concurrently -n backend,frontend -c yellow,cyan \"cd backend && .\\venv\\Scripts\\uvicorn app.main:app --reload --host 127.0.0.1 --port 8000\" \"vite dev\"",
+    "dev:pilot": "docker compose up -d postgres && npm run pilot:setup && concurrently -n backend,frontend -c yellow,cyan \"cd backend && .\\venv\\Scripts\\uvicorn app.main:app --reload --host 127.0.0.1 --port 8000\" \"vite dev\"",
+    "pilot:setup": "docker compose up -d postgres && cd backend && .\\venv\\Scripts\\python.exe scripts/pilot_setup.py",
+    "pipeline:run": "cd backend && .\\venv\\Scripts\\python.exe scripts/run_pipeline.py",
+    "airflow:up": "docker compose --profile airflow up -d airflow",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
@@ -16,7 +19,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "audit:deps": "npm audit --omit=dev --audit-level=moderate",
-    "migrate:pg": "docker compose run --rm -v ./backend/app.db:/app/app.db:ro -e DATABASE_URL=postgresql://sihia:sihia@postgres:5432/sihia backend python scripts/migrate_sqlite_to_postgres.py"
+    "migrate:pg": "docker compose run --rm -v ./backend/app.db:/app/app.db:ro -e DATABASE_URL=postgresql://sihia:sihia@postgres:5432/sihia backend python scripts/migrate_sqlite_to_postgres.py",
+    "install:ml": "cd backend && .\\venv\\Scripts\\pip.exe install -r requirements-ml.txt"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",

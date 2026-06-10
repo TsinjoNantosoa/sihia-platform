@@ -70,6 +70,10 @@ class DoctorUpdate(BaseModel):
     phone: str | None = None
 
 
+class ReminderSendRequest(BaseModel):
+    channels: list[Literal["email", "sms"]] = Field(default_factory=lambda: ["email"])
+
+
 class AppointmentCreate(BaseModel):
     patientId: str
     patientName: str

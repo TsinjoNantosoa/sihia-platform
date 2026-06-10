@@ -34,6 +34,21 @@ class Settings(BaseModel):
     max_refresh_sessions_per_user: int = 3
     database_url: str = "app.db"
     audit_log_path: str = "logs/audit.jsonl"
+    ml_use_prophet: bool = True
+    reminder_email_mode: str = "log"
+    reminder_sms_mode: str = "log"
+    reminder_hours_before: int = 24
+    reminder_log_path: str = "logs/reminders.jsonl"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@sihia.health"
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+    pipeline_import_dir: str = "data/imports"
+    pipeline_stale_hours: int = 24
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
@@ -60,6 +75,21 @@ class Settings(BaseModel):
             max_refresh_sessions_per_user=int(os.getenv("MAX_REFRESH_SESSIONS", "3")),
             database_url=os.getenv("DATABASE_URL", "app.db"),
             audit_log_path=os.getenv("AUDIT_LOG_PATH", "logs/audit.jsonl"),
+            ml_use_prophet=_env_bool("ML_USE_PROPHET", True),
+            reminder_email_mode=os.getenv("REMINDER_EMAIL_MODE", "log"),
+            reminder_sms_mode=os.getenv("REMINDER_SMS_MODE", "log"),
+            reminder_hours_before=int(os.getenv("REMINDER_HOURS_BEFORE", "24")),
+            reminder_log_path=os.getenv("REMINDER_LOG_PATH", "logs/reminders.jsonl"),
+            smtp_host=os.getenv("SMTP_HOST", ""),
+            smtp_port=int(os.getenv("SMTP_PORT", "587")),
+            smtp_user=os.getenv("SMTP_USER", ""),
+            smtp_password=os.getenv("SMTP_PASSWORD", ""),
+            smtp_from=os.getenv("SMTP_FROM", "noreply@sihia.health"),
+            twilio_account_sid=os.getenv("TWILIO_ACCOUNT_SID", ""),
+            twilio_auth_token=os.getenv("TWILIO_AUTH_TOKEN", ""),
+            twilio_from_number=os.getenv("TWILIO_FROM_NUMBER", ""),
+            pipeline_import_dir=os.getenv("PIPELINE_IMPORT_DIR", "data/imports"),
+            pipeline_stale_hours=int(os.getenv("PIPELINE_STALE_HOURS", "24")),
             cors_origins=origins or ["http://localhost:5173"],
             environment=os.getenv("ENVIRONMENT", "development"),
         )

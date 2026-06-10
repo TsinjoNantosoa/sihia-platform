@@ -12,11 +12,11 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | Indicateur | Évaluation |
 |---|---|
 | **Démo investisseur / POC UI** | ✅ Prêt |
-| **Pilote clinique limité** | 🟡 En cours (données réelles partielles) |
+| **Pilote clinique limité** | 🟡 Postgres local validé (`npm run pilot:setup`) |
 | **Production sécurisée** | 🔴 Non |
 | **Couverture fonctionnelle MVP** | **~90 %** |
 | **Couverture valeur métier réelle** | **~65 %** |
-| **Tests backend** | ✅ **36/36** (`pytest tests/`) |
+| **Tests backend** | ✅ **50/50** (`pytest tests/`) |
 | **Tests E2E** | ✅ **8/8** Playwright (`npm run test:e2e`) |
 
 ---
@@ -113,6 +113,11 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `PATCH /api/doctors/{id}` | [x] **nouveau** |
 | `GET/POST /api/appointments` | [x] |
 | `POST /api/appointments/{id}/cancel` | [x] |
+| `POST /api/appointments/{id}/remind` | [x] **nouveau** |
+| `GET /api/appointments/{id}/reminders` | [x] **nouveau** |
+| `POST /api/admin/reminders/run` | [x] **nouveau** (lot J-1 / 24h) |
+| `GET /api/admin/pipeline/status` | [x] **nouveau** |
+| `POST /api/admin/pipeline/run/{dag_id}` | [x] **nouveau** |
 | `GET /api/analytics/*` | [x] données **calculées SQLite** |
 | `GET /api/analytics/export/*` | [x] |
 | `GET /api/ml/predict-7d` / `predict-30d` | [x] 🟡 **série RDV SQLite** + régression linéaire (Prophet optionnel) |
@@ -127,7 +132,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Admissions par spécialité médecin
 - [x] Satisfaction dérivée des médecins en base
 - [x] Prévisions 7j/30j depuis historique RDV (`ml_service.py`, `source: sqlite`)
-- [ ] Prophet installé en prod (`pip install -r requirements-ml.txt`)
+- [x] Prophet optionnel (`requirements-ml.txt`, `ML_USE_PROPHET`, fallback linéaire)
 
 ---
 
@@ -140,6 +145,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `tests/test_patients_update.py` | 2 | [x] **nouveau** |
 | `tests/test_analytics_dynamic.py` | 3 | [x] **nouveau** |
 | `tests/test_appointment_overlap.py` | 1 | [x] **nouveau** |
+| `tests/test_reminders.py` | 4 | [x] **nouveau** |
+| `tests/test_pipeline.py` | 7 | [x] **nouveau** |
 | `tests/test_exports.py` | 2 | [x] |
 | `tests/test_doctors_update.py` | 3 | [x] |
 | `tests/test_rbac_users_crud.py` | 4 | [x] |
@@ -148,6 +155,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `tests/test_admin_audit_logs.py` | 2 | [x] **nouveau** |
 | `tests/test_health_details.py` | 3 | [x] **nouveau** |
 | `tests/test_audit_export.py` | 2 | [x] **nouveau** |
+| `tests/test_ml_engine.py` | 3 | [x] **nouveau** |
 
 **Commandes :**
 
@@ -228,9 +236,9 @@ npm run migrate:pg
 
 - [x] Docker Compose (`docker-compose.yml` + Dockerfiles)
 - [x] CI/CD GitHub Actions (`.github/workflows/ci.yml`)
-- [ ] Airflow (DAGs import / refresh)
+- [x] Airflow (DAGs import / refresh / ML features + CLI `pipeline:run`)
 - [ ] Chatbot RAG + guardrails
-- [ ] Rappels RDV (email / SMS)
+- [x] Rappels RDV (email / SMS — mode log, SMTP/Twilio optionnels)
 - [ ] HL7 FHIR, mobile, marketplace (hors MVP)
 
 ---
@@ -242,14 +250,14 @@ npm run migrate:pg
 | Auth + session | ✅ | JWT + refresh + tests |
 | Patients | ✅ | CRUD complet + historique |
 | Médecins | ✅ | Lecture + édition planning / dispo |
-| Rendez-vous | 🟡 | Conflits durée OK ; pas de rappels |
+| Rendez-vous | 🟡 | Conflits + rappels email/SMS (log dev, UI statut) |
 | Dashboard KPI | 🟡 | KPIs réels ; ML encore statique |
 | Analytique | 🟡 | Agrégats réels ; pas BI avancée |
 | Prédiction IA | 🟡 | Prévisions depuis RDV réels ; Prophet optionnel |
 | RBAC | ✅ | Guards + CRUD admin utilisateurs |
 | i18n + a11y | ✅ | |
 | Chatbot | ❌ | |
-| Data pipeline | ❌ | |
+| Data pipeline | 🟡 | DAGs Airflow + snapshots analytics + import CSV |
 | DevOps | 🟡 | Docker + CI ; pas encore déploiement cloud |
 
 ---
@@ -263,11 +271,11 @@ npm run migrate:pg
 | S3–S4 | CRUD patients / médecins | [x] |
 | S5 | RDV + conflits | [x] |
 | S6 | Dashboard + exports | [x] |
-| S7 | Airflow | [ ] |
-| S8–S9 | Prophet + ML dashboard | [ ] |
+| S7 | Airflow | [x] DAGs + `pipeline_service` + Docker profile `airflow` |
+| S8–S9 | Prophet + ML dashboard | 🟡 Prophet activable ; dashboard partiel |
 | S10 | Hardening sécurité | 🟡 logs + métriques OK ; vault / ELK restants |
 | S11 | E2E | [x] |
-| S12 | Démo pilote | 🟡 procédure `README_01` + health Postgres OK |
+| S12 | Démo pilote | [x] `pilot:setup`, Postgres pg8000, `/health/details` → `postgresql` |
 
 ---
 
@@ -288,6 +296,11 @@ npm run migrate:pg
 | 2026-05-29 | Fix login → 403 : repli permissions par rôle + resync JWT au rehydrate | `rbac.ts`, `auth/store.ts` |
 | 2026-05-29 | Fix staff login : dashboard sans appels analytics/ML ; API 403 = toast seul | `dashboard.tsx`, `httpErrors.ts` |
 | 2026-05-29 | Export logs audit JSONL + API admin + bouton RBAC | `audit_log.py`, `test_audit_export.py` |
+| 2026-06-10 | Guide Airflow + tests navigateur (`README_AIRFLOW_UTILISATION.md`) | — |
+| 2026-06-10 | Airflow S7 (`pipeline_service`, 4 DAGs, import CSV, snapshots, `npm run pipeline:run`) | `test_pipeline.py` (7) |
+| 2026-06-10 | Rappels RDV email/SMS (`reminder_service`, lot 24h, UI rendez-vous) | `test_reminders.py` (4) |
+| 2026-06-10 | Pilote S12 PostgreSQL (`pilot_setup.py`, `npm run pilot:setup`, port 5435 si 5434 occupé) | `pilot:setup` manuel, `/health/details` postgresql, login + 501 patients |
+| 2026-06-10 | Prophet ML (`ml_engine.py`, `ML_USE_PROPHET`, Docker/CI `requirements-ml.txt`) | `test_ml_engine.py`, `test_ml_forecast.py` |
 | 2026-05-26 | Conflit RDV par chevauchement de durée | `test_appointment_overlap.py` |
 | 2026-05-26 | RBAC users depuis DB ; CORS + JWT env ; Correlation-ID | pytest 15/15 |
 | 2026-05-26 | `httpx` ajouté à `requirements.txt` pour TestClient | — |

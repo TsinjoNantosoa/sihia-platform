@@ -270,6 +270,12 @@ class SQLiteAppointmentRepository:
         conn.close()
         return [Appointment(**r) for r in rows]
 
+    def get(self, appointment_id: str) -> Appointment | None:
+        conn = connect()
+        row = conn.execute("SELECT * FROM appointments WHERE id=?", (appointment_id,)).fetchone()
+        conn.close()
+        return Appointment(**row) if row else None
+
     def create(self, appointment: Appointment) -> Appointment:
         conn = connect()
         conn.execute(

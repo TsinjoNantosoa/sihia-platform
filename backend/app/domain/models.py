@@ -5,6 +5,9 @@ from typing import Literal
 Role = Literal["admin", "doctor", "staff", "manager"]
 PatientStatus = Literal["active", "inactive", "admitted"]
 AppointmentStatus = Literal["scheduled", "confirmed", "completed", "cancelled", "noshow"]
+ReminderChannel = Literal["email", "sms"]
+ReminderKind = Literal["manual", "auto"]
+ReminderStatus = Literal["sent", "failed", "skipped"]
 
 
 UserStatus = Literal["active", "suspended"]
@@ -78,3 +81,16 @@ class Appointment:
     duration_min: int
     reason: str
     status: AppointmentStatus
+
+
+@dataclass
+class AppointmentReminder:
+    id: str
+    appointment_id: str
+    channel: ReminderChannel
+    kind: ReminderKind
+    status: ReminderStatus
+    recipient: str
+    message: str
+    sent_at: str
+    error: str | None = None

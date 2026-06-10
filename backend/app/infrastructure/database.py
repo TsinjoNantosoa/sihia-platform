@@ -126,7 +126,12 @@ class DBConnection:
             self._conn.execute(text(named_sql), named_params)
 
     def commit(self) -> None:
-        self._conn.commit()
+        if hasattr(self._conn, "commit"):
+            self._conn.commit()
+            return
+        trans = self._conn.get_transaction()
+        if trans is not None and trans.is_active:
+            trans.commit()
 
     def close(self) -> None:
         self._conn.close()

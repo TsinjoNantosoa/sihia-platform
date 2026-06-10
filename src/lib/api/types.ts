@@ -40,6 +40,14 @@ export type AppointmentStatus =
   | "cancelled"
   | "noshow";
 
+export type ReminderChannelStatus = "none" | "sent" | "failed";
+
+export interface AppointmentReminderSummary {
+  email: ReminderChannelStatus;
+  sms: ReminderChannelStatus;
+  lastSentAt: string | null;
+}
+
 export interface Appointment {
   id: string;
   patientId: string;
@@ -50,6 +58,7 @@ export interface Appointment {
   durationMin: number;
   reason: string;
   status: AppointmentStatus;
+  reminderSummary?: AppointmentReminderSummary;
 }
 
 export interface KpiPoint {

@@ -1,10 +1,11 @@
-"""Prévisions d'affluence (RDV/jour) à partir de l'historique SQLite."""
+"""Prévisions d'affluence (RDV/jour) à partir de l'historique en base."""
 
 from __future__ import annotations
 
 from datetime import date, timedelta
 
 from app.application.analytics_service import AnalyticsService, _parse_appt_date, _utc_now
+from app.application.ml_engine import ml_data_source, prophet_enabled
 
 
 def _linear_forecast(values: list[int], horizon: int) -> list[int]:
@@ -83,7 +84,7 @@ class MlForecastService:
         today = _utc_now().date()
         history = [item for item in daily if item[0] <= today][-min(7, len(daily)) :]
 
-        prophet_result = _try_prophet_forecast(daily, horizon)
+        prophet_result = _try_prophet_forecast(daily, horizon) if prophet_enabled() else None
         if prophet_result:
             forecast_values, confidence = prophet_result
             model_name = "prophet"
@@ -121,8 +122,9 @@ class MlForecastService:
             "confidence": round(confidence, 2),
             "peak": {"date": peak_date, "value": peak_value},
             "recommendation": recommendation,
-            "source": "sqlite",
+            "source": ml_data_source(),
             "historyDays": len(daily),
+            "engine": "prophet" if model_name == "prophet" else "linear",
         }
 
     def predict_7d(self) -> dict:

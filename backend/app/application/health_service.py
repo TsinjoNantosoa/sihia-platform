@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 
 from sqlalchemy import text
 
+from app.application.ml_engine import ml_engine_status
+from app.application.pipeline_service import PipelineService
 from app.core.config import settings
 from app.infrastructure.database import get_engine, is_postgresql, sqlalchemy_url
 
@@ -15,15 +17,6 @@ def database_kind() -> str:
     if is_postgresql():
         return "postgresql"
     return "sqlite"
-
-
-def ml_engine_info() -> dict[str, str]:
-    try:
-        import prophet  # noqa: F401
-
-        return {"status": "ok", "model": "prophet", "fallback": "linear-regression"}
-    except ImportError:
-        return {"status": "ok", "model": "linear-regression", "fallback": "linear-regression"}
 
 
 def check_database() -> dict:
@@ -46,8 +39,22 @@ def check_database() -> dict:
         }
 
 
+def pipeline_status() -> dict:
+    try:
+        summary = PipelineService().status()
+        return {
+            "status": "ok",
+            "freshness": summary.get("status", "ok"),
+            "mlFeaturesDays": summary.get("mlFeaturesDays", 0),
+            "alerts": summary.get("alerts", []),
+        }
+    except Exception as exc:  # noqa: BLE001 — health probe
+        return {"status": "error", "message": str(exc)}
+
+
 def build_health_details() -> dict:
     db = check_database()
+    pipeline = pipeline_status()
     overall = "ok" if db.get("status") == "ok" else "degraded"
 
     return {
@@ -58,7 +65,8 @@ def build_health_details() -> dict:
         "components": {
             "api": {"status": "ok"},
             "database": db,
-            "ml_engine": ml_engine_info(),
+            "ml_engine": ml_engine_status(),
+            "pipeline": pipeline,
             "auth": {"status": "ok", "algorithm": settings.jwt_algorithm},
         },
         "config": {

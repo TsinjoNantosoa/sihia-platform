@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, List, CalendarDays, AlertTriangle } from "lucide-react";
+import { Plus, List, CalendarDays, AlertTriangle, Bell, BellRing } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -9,25 +9,14 @@ import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, EmptyState } from "@/components/shared/States";
 import { appointmentsService, doctorsService, patientsService } from "@/lib/api/services";
+import type { Appointment as ApiAppointment } from "@/lib/api/types";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-type AppointmentStatus = "confirmed" | "scheduled" | "cancelled" | "noshow" | "neutral";
-
-type Appointment = {
-  id: string;
-  date: string;
-  patientId: string;
-  patientName: string;
-  doctorId: string;
-  doctorName: string;
-  durationMin: number;
-  reason: string;
-  status: AppointmentStatus;
-};
+type Appointment = ApiAppointment;
 
 type Patient = {
   id: string;
@@ -57,9 +46,19 @@ function AppointmentsPage() {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [showNew, setShowNew] = useState(false);
 
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery<Appointment[]>({
     queryKey: ["appts"],
     queryFn: appointmentsService.list,
+  });
+
+  const batchMut = useMutation({
+    mutationFn: appointmentsService.runRemindersBatch,
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["appts"] });
+      toast.success(t("appts.reminder.toastBatch").replace("{sent}", String(result.sent)));
+    },
+    onError: () => toast.error(t("common.error")),
   });
 
   // Build calendar grid for current week
@@ -97,6 +96,15 @@ function AppointmentsPage() {
                 <CalendarDays className="size-3.5" /> {t("appts.view.calendar")}
               </button>
             </div>
+            <PermissionGuard permission="appointments:update">
+              <button
+                onClick={() => batchMut.mutate()}
+                disabled={batchMut.isPending}
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted/50"
+              >
+                <BellRing className="size-4" /> {t("appts.reminder.batch")}
+              </button>
+            </PermissionGuard>
             <PermissionGuard permission="appointments:create">
               <button
                 onClick={() => setShowNew(true)}
@@ -121,12 +129,13 @@ function AppointmentsPage() {
                   <th className="px-4 py-3 text-start">{t("appts.col.patient")}</th>
                   <th className="px-4 py-3 text-start">{t("appts.col.doctor")}</th>
                   <th className="px-4 py-3 text-start">{t("appts.col.reason")}</th>
+                  <th className="px-4 py-3 text-start">{t("appts.col.reminder")}</th>
                   <th className="px-4 py-3 text-end">{t("appts.col.status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {data?.length === 0 ? (
-                  <tr><td colSpan={5}><EmptyState /></td></tr>
+                  <tr><td colSpan={6}><EmptyState /></td></tr>
                 ) : (
                   data?.map((a: Appointment) => (
                     <tr key={a.id} className="hover:bg-muted/30">
@@ -138,6 +147,9 @@ function AppointmentsPage() {
                       <td className="px-4 py-3 font-medium">{a.patientName}</td>
                       <td className="px-4 py-3 text-muted-foreground">{a.doctorName}</td>
                       <td className="px-4 py-3 text-muted-foreground">{a.reason}</td>
+                      <td className="px-4 py-3">
+                        <ReminderCell appointment={a} />
+                      </td>
                       <td className="px-4 py-3 text-end">
                         <StatusBadge
                           dot
@@ -212,6 +224,57 @@ function AppointmentsPage() {
       <PermissionGuard permission="appointments:create">
         <NewAppointmentDialog open={showNew} onOpenChange={setShowNew} />
       </PermissionGuard>
+    </div>
+  );
+}
+
+function reminderTone(summary: Appointment["reminderSummary"]): "success" | "destructive" | "neutral" {
+  const email = summary?.email ?? "none";
+  const sms = summary?.sms ?? "none";
+  if (email === "sent" || sms === "sent") return "success";
+  if (email === "failed" || sms === "failed") return "destructive";
+  return "neutral";
+}
+
+function reminderLabel(summary: Appointment["reminderSummary"], t: (k: string) => string): string {
+  const tone = reminderTone(summary);
+  if (tone === "success") return t("appts.reminder.sent");
+  if (tone === "destructive") return t("appts.reminder.failed");
+  return t("appts.reminder.none");
+}
+
+function ReminderCell({ appointment }: { appointment: Appointment }) {
+  const t = useT();
+  const qc = useQueryClient();
+  const active = appointment.status === "scheduled" || appointment.status === "confirmed";
+
+  const mut = useMutation({
+    mutationFn: () => appointmentsService.remind(appointment.id, ["email", "sms"]),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["appts"] });
+      toast.success(t("appts.reminder.toastOk"));
+    },
+    onError: () => toast.error(t("common.error")),
+  });
+
+  return (
+    <div className="flex items-center gap-2">
+      <StatusBadge dot tone={reminderTone(appointment.reminderSummary)}>
+        {reminderLabel(appointment.reminderSummary, t)}
+      </StatusBadge>
+      {active ? (
+        <PermissionGuard permission="appointments:update">
+          <button
+            type="button"
+            title={t("appts.reminder.send")}
+            onClick={() => mut.mutate()}
+            disabled={mut.isPending}
+            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Bell className="size-4" />
+          </button>
+        </PermissionGuard>
+      ) : null}
     </div>
   );
 }
