@@ -23,6 +23,11 @@ def test_predict_7d_uses_sqlite_history() -> None:
     assert len(body["points"]) >= 7
     assert "peak" in body
     assert any("forecast" in p for p in body["points"])
+    assert body["model_version"].endswith("-1.0")
+    assert body["historyDays"] >= 1
+    assert "generatedAt" in body
+    forecast_points = [p for p in body["points"] if "forecast" in p]
+    assert all("upper" in p and "lower" in p for p in forecast_points)
 
 
 def test_predict_30d_horizon() -> None:
@@ -35,6 +40,8 @@ def test_predict_30d_horizon() -> None:
     assert body["engine"] in {"prophet", "linear"}
     forecast_points = [p for p in body["points"] if "forecast" in p]
     assert len(forecast_points) >= 30
+    assert "generatedAt" in body
+    assert body["model_version"].endswith("-1.0")
 
 
 def test_staff_cannot_access_ml() -> None:

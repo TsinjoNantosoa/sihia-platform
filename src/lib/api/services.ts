@@ -88,7 +88,40 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   if (endpoint.includes("/api/analytics/revenue")) return ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"].map((m, i) => ({ label: m, value: 80000 + Math.round(Math.sin(i / 2) * 18000 + i * 2200) }));
   if (endpoint.includes("/api/analytics/admissions-dept")) return [ { label: "Urgences", value: 320 }, { label: "Cardio", value: 210 }, { label: "Pédiatrie", value: 180 } ];
   if (endpoint.includes("/api/analytics/satisfaction")) return [ { label: "S1", value: 82 }, { label: "S2", value: 85 }, { label: "S3", value: 88 } ];
-  if (endpoint.includes("/api/ml/predict-7d")) return { points: PREDICTION_7D, model: "LSTM-v3", confidence: 0.87, recommendation: "Renforcer l'effectif jeudi." };
+  if (endpoint.includes("/api/ml/metrics")) {
+    return {
+      model: "prophet",
+      model_version: "prophet-1.0",
+      engine: "prophet",
+      mae: 4.2,
+      mape: 11.5,
+      holdoutDays: 7,
+      samples: 7,
+      historyDays: 60,
+      source: "sqlite",
+      generatedAt: new Date().toISOString(),
+      status: "ok",
+      targetMapePercent: 15,
+      withinTarget: true,
+    };
+  }
+  if (endpoint.includes("/api/ml/predict-7d") || endpoint.includes("/api/ml/predict-30d")) {
+    const horizon = endpoint.includes("30d") ? 30 : 7;
+    return {
+      points: PREDICTION_7D,
+      model: "prophet",
+      model_version: "prophet-1.0",
+      confidence: 0.87,
+      peak: { date: new Date().toISOString().slice(0, 10), value: 78 },
+      recommendation: "Renforcer l'effectif jeudi.",
+      source: "sqlite",
+      historyDays: 45,
+      engine: "prophet",
+      horizon,
+      generatedAt: new Date().toISOString(),
+      ...(horizon === 30 ? { drift_score: 0.04 } : {}),
+    };
+  }
   if (endpoint.includes("/api/alerts")) return ALERTS;
   if (endpoint.includes("/api/rbac/users")) return RBAC_USERS;
   
@@ -303,6 +336,7 @@ export const analyticsService = {
 export const mlService = {
   predict7d: () => fetchWithAuth("/api/ml/predict-7d"),
   predict30d: () => fetchWithAuth("/api/ml/predict-30d"),
+  metrics: () => fetchWithAuth("/api/ml/metrics"),
 };
 
 export const alertsService = {

@@ -58,6 +58,34 @@ def _try_prophet_forecast(
     return values, confidence
 
 
+def _mae(actual: list[int], predicted: list[int]) -> float:
+    if not actual:
+        return 0.0
+    return sum(abs(a - p) for a, p in zip(actual, predicted, strict=False)) / len(actual)
+
+
+def _mape(actual: list[int], predicted: list[int]) -> float:
+    pairs = [(a, p) for a, p in zip(actual, predicted, strict=False) if a > 0]
+    if not pairs:
+        return 0.0
+    return sum(abs(a - p) / a for a, p in pairs) / len(pairs) * 100.0
+
+
+def _forecast_from_daily(
+    daily: list[tuple[date, int]],
+    horizon: int,
+) -> tuple[list[int], str, float]:
+    prophet_result = _try_prophet_forecast(daily, horizon) if prophet_enabled() else None
+    if prophet_result:
+        forecast_values, confidence = prophet_result
+        return forecast_values, "prophet", confidence
+
+    train = [c for _, c in daily[-21:]] or [0]
+    forecast_values = _linear_forecast(train, horizon)
+    confidence = 0.78 if len(daily) >= 14 else 0.65
+    return forecast_values, "linear-sqlite", confidence
+
+
 class MlForecastService:
     def __init__(self, analytics: AnalyticsService | None = None) -> None:
         self._analytics = analytics or AnalyticsService()
@@ -84,15 +112,7 @@ class MlForecastService:
         today = _utc_now().date()
         history = [item for item in daily if item[0] <= today][-min(7, len(daily)) :]
 
-        prophet_result = _try_prophet_forecast(daily, horizon) if prophet_enabled() else None
-        if prophet_result:
-            forecast_values, confidence = prophet_result
-            model_name = "prophet"
-        else:
-            train = [c for _, c in daily[-21:]] or [0]
-            forecast_values = _linear_forecast(train, horizon)
-            confidence = 0.78 if len(daily) >= 14 else 0.65
-            model_name = "linear-sqlite"
+        forecast_values, model_name, confidence = _forecast_from_daily(daily, horizon)
 
         points: list[dict] = []
         for d, count in history:
@@ -116,15 +136,20 @@ class MlForecastService:
                 peak_value = value
                 peak_date = d.isoformat()
 
+        now = _utc_now()
+
         return {
             "points": points,
             "model": model_name,
+            "model_version": f"{model_name}-1.0",
             "confidence": round(confidence, 2),
             "peak": {"date": peak_date, "value": peak_value},
             "recommendation": recommendation,
             "source": ml_data_source(),
             "historyDays": len(daily),
             "engine": "prophet" if model_name == "prophet" else "linear",
+            "horizon": horizon,
+            "generatedAt": now.isoformat(),
         }
 
     def predict_7d(self) -> dict:
@@ -144,3 +169,56 @@ class MlForecastService:
         )
         body["drift_score"] = round(min(0.15, len(daily) / 200), 2)
         return body
+
+    def metrics(self, holdout_days: int = 7) -> dict:
+        lookback_days = 60
+        daily = self._daily_counts(lookback_days=lookback_days)
+        now = _utc_now()
+        min_train_days = 14
+        model_name = "linear-sqlite"
+        engine = "linear"
+
+        if len(daily) < holdout_days + min_train_days:
+            if prophet_enabled():
+                model_name = "prophet"
+                engine = "prophet"
+            return {
+                "model": model_name,
+                "model_version": f"{model_name}-1.0",
+                "engine": engine,
+                "mae": None,
+                "mape": None,
+                "holdoutDays": holdout_days,
+                "samples": 0,
+                "historyDays": len(daily),
+                "source": ml_data_source(),
+                "generatedAt": now.isoformat(),
+                "status": "insufficient_data",
+                "targetMapePercent": 15,
+                "withinTarget": None,
+            }
+
+        train = daily[:-holdout_days]
+        test = daily[-holdout_days:]
+        actuals = [count for _, count in test]
+        forecast_values, model_name, _ = _forecast_from_daily(train, holdout_days)
+        engine = "prophet" if model_name == "prophet" else "linear"
+        mae = _mae(actuals, forecast_values)
+        mape = _mape(actuals, forecast_values)
+        within_target = mape <= 15.0
+
+        return {
+            "model": model_name,
+            "model_version": f"{model_name}-1.0",
+            "engine": engine,
+            "mae": round(mae, 2),
+            "mape": round(mape, 2),
+            "holdoutDays": holdout_days,
+            "samples": holdout_days,
+            "historyDays": len(daily),
+            "source": ml_data_source(),
+            "generatedAt": now.isoformat(),
+            "status": "ok" if within_target else "degraded",
+            "targetMapePercent": 15,
+            "withinTarget": within_target,
+        }

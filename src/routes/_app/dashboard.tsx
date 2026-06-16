@@ -11,8 +11,9 @@ import {
   Activity,
 } from "lucide-react";
 import {
-  AreaChart,
+  ComposedChart,
   Area,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -28,6 +29,8 @@ import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, ErrorState } from "@/components/shared/States";
+import { MlForecastMeta } from "@/components/shared/MlForecastMeta";
+import { formatMlConfidence } from "@/lib/ml/format";
 import {
   alertsService,
   analyticsService,
@@ -163,7 +166,7 @@ function DashboardPage() {
               <Activity className="size-4 text-primary" />
               <h2 className="text-sm font-semibold">{t("dash.predictionTitle")}</h2>
             </div>
-            <div className="flex items-center gap-3 text-[10px] uppercase text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span className="size-2 rounded-sm bg-muted-foreground/40" />
                 {t("dash.predictionLegendHist")}
@@ -172,22 +175,28 @@ function DashboardPage() {
                 <span className="size-2 rounded-sm bg-primary" />
                 {t("dash.predictionLegendForecast")}
               </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-sm bg-primary/30" />
+                {t("dash.predictionLegendBand")}
+              </span>
+              {prediction.data ? (
+                <span className="rounded-full bg-muted px-2 py-0.5 font-semibold normal-case text-foreground">
+                  {formatMlConfidence(prediction.data.confidence)}
+                </span>
+              ) : null}
             </div>
           </div>
+          {prediction.data ? <MlForecastMeta data={prediction.data} compact /> : null}
           <div className="h-72 p-4">
             {prediction.isLoading ? (
               <LoadingState />
             ) : prediction.data ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={prediction.data.points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <ComposedChart data={prediction.data.points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-muted-foreground)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--color-muted-foreground)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
+                    <linearGradient id="dashBandFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.18} />
+                      <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
@@ -214,24 +223,33 @@ function DashboardPage() {
                     strokeDasharray="4 4"
                     label={{ value: t("common.today"), fontSize: 10, fill: "var(--color-muted-foreground)" }}
                   />
-                  <Area
+                  <Area type="monotone" dataKey="upper" stroke="none" fill="url(#dashBandFill)" />
+                  <Area type="monotone" dataKey="lower" stroke="none" fill="var(--color-card)" />
+                  <Line
                     type="monotone"
                     dataKey="actual"
                     stroke="var(--color-muted-foreground)"
-                    strokeWidth={2}
-                    fill="url(#colorActual)"
+                    strokeWidth={2.5}
+                    dot={{ r: 2 }}
                   />
-                  <Area
+                  <Line
                     type="monotone"
                     dataKey="forecast"
                     stroke="var(--color-primary)"
-                    strokeWidth={2}
-                    fill="url(#colorForecast)"
+                    strokeWidth={2.5}
+                    strokeDasharray="6 4"
+                    dot={{ r: 2 }}
                   />
-                </AreaChart>
+                </ComposedChart>
               </ResponsiveContainer>
             ) : null}
           </div>
+          {prediction.data?.recommendation ? (
+            <div className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{t("dash.predictionRecommendation")} : </span>
+              {prediction.data.recommendation}
+            </div>
+          ) : null}
         </div>
         ) : null}
 

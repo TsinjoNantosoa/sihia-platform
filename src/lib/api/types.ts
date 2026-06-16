@@ -74,6 +74,37 @@ export interface PredictionPoint {
   lower?: number;
 }
 
+export interface MlForecastResponse {
+  points: PredictionPoint[];
+  model: string;
+  model_version: string;
+  confidence: number;
+  peak: { date: string; value: number };
+  recommendation: string;
+  source: "sqlite" | "postgresql" | string;
+  historyDays: number;
+  engine: "prophet" | "linear" | string;
+  horizon: number;
+  generatedAt: string;
+  drift_score?: number;
+}
+
+export interface MlMetricsResponse {
+  model: string;
+  model_version: string;
+  engine: "prophet" | "linear" | string;
+  mae: number | null;
+  mape: number | null;
+  holdoutDays: number;
+  samples: number;
+  historyDays: number;
+  source: "sqlite" | "postgresql" | string;
+  generatedAt: string;
+  status: "ok" | "degraded" | "insufficient_data";
+  targetMapePercent: number;
+  withinTarget: boolean | null;
+}
+
 export interface Alert {
   id: string;
   level: "critical" | "warning" | "info";

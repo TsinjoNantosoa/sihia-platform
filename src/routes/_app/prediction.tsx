@@ -10,6 +10,9 @@ import { useT } from "@/lib/i18n/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { LoadingState } from "@/components/shared/States";
+import { MlForecastMeta } from "@/components/shared/MlForecastMeta";
+import { MlMetricsPanel } from "@/components/shared/MlMetricsPanel";
+import { formatMlModelLabel } from "@/lib/ml/format";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { mlService, alertsService } from "@/lib/api/services";
 
@@ -28,6 +31,10 @@ function PredictionPage() {
   const pred = useQuery({
     queryKey: ["pred", horizon],
     queryFn: () => (horizon === "7d" ? mlService.predict7d() : mlService.predict30d()),
+  });
+  const metrics = useQuery({
+    queryKey: ["ml-metrics"],
+    queryFn: mlService.metrics,
   });
   const alerts = useQuery({ queryKey: ["alerts"], queryFn: alertsService.list });
 
@@ -55,7 +62,10 @@ function PredictionPage() {
               ))}
             </div>
             <button
-              onClick={() => pred.refetch()}
+              onClick={() => {
+                void pred.refetch();
+                void metrics.refetch();
+              }}
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
             >
               <RefreshCw className={`size-4 ${pred.isFetching ? "animate-spin" : ""}`} />
@@ -70,7 +80,7 @@ function PredictionPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <KpiCard label={t("prediction.model")} value={pred.data.model} icon={<Brain className="size-4" />} />
+            <KpiCard label={t("prediction.model")} value={formatMlModelLabel(pred.data.model)} icon={<Brain className="size-4" />} />
             <KpiCard label={t("prediction.confidence")} value={`${Math.round(pred.data.confidence * 100)}%`} variant="success" progress={pred.data.confidence * 100} />
             <KpiCard label={t("prediction.peak")} value={pred.data.peak.value} unit={`(${pred.data.peak.date.slice(5)})`} variant="warning" icon={<TrendingUp className="size-4" />} />
             <KpiCard
@@ -80,16 +90,16 @@ function PredictionPage() {
             />
           </div>
 
-          {/* Model metadata */}
-          {pred.data.model_version && (
-            <div className="flex flex-wrap gap-4 rounded-xl border border-border bg-muted/30 px-5 py-3 text-xs text-muted-foreground">
-              <span>Version modèle : <strong className="text-foreground">{pred.data.model_version}</strong></span>
-              {pred.data.drift_score !== undefined && (
-                <span>Dérive détectée : <strong className={pred.data.drift_score > 0.05 ? "text-warning" : "text-success"}>{(pred.data.drift_score * 100).toFixed(1)}%</strong></span>
-              )}
-              <span>Confiance intervalle : <strong className="text-foreground">{Math.round(pred.data.confidence * 100)}%</strong></span>
+          <MlForecastMeta data={pred.data} />
+          {metrics.data ? <MlMetricsPanel data={metrics.data} /> : metrics.isLoading ? <LoadingState /> : null}
+          {pred.data.drift_score !== undefined ? (
+            <div className="rounded-xl border border-border bg-muted/20 px-5 py-2 text-xs text-muted-foreground">
+              Dérive détectée :{" "}
+              <strong className={pred.data.drift_score > 0.05 ? "text-warning" : "text-success"}>
+                {(pred.data.drift_score * 100).toFixed(1)}%
+              </strong>
             </div>
-          )}
+          ) : null}
 
           <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
             <h2 className="mb-3 text-sm font-semibold">

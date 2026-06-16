@@ -1,6 +1,6 @@
 # État d'implémentation — SIH IA
 
-> **Dernière mise à jour :** 10 juin 2026 (Prophet, pilote Postgres, rappels RDV, Airflow, guide utilisation)  
+> **Dernière mise à jour :** 16 juin 2026 (API `/api/ml/metrics` MAE/MAPE + panneau qualité modèle)  
 > **Sources :** `src/`, `backend/`, dossier `Document/`
 
 Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lorsqu'une fonctionnalité est implémentée **et** validée (tests ou vérification manuelle documentée).
@@ -16,7 +16,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | **Production sécurisée** | 🔴 Non |
 | **Couverture fonctionnelle MVP** | **~92 %** |
 | **Couverture valeur métier réelle** | **~65 %** |
-| **Tests backend** | ✅ **50/50** (`pytest tests/`) |
+| **Tests backend** | ✅ **53/53** (`pytest tests/`) |
 | **Tests E2E** | ✅ **8/8** Playwright (`npm run test:e2e`) |
 
 ---
@@ -45,6 +45,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 ### 1.2 Modules métier
 
 - [x] Dashboard (KPIs, alertes, prochains RDV)
+- [x] Dashboard — **métadonnées ML** (modèle, version, confiance, source SQL, fraîcheur, bande intervalle, recommandation)
 - [x] Patients — liste, création, suppression, détail
 - [x] Patients — **édition dossier** (`PATCH` + dialogue « Modifier le dossier »)
 - [x] Historique médical — lecture + ajout visite
@@ -57,6 +58,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Analytique — export CSV (client)
 - [x] Analytique — export PDF / Excel (API)
 - [x] Prédiction — horizons 7j et 30j
+- [x] Prédiction — **métriques modèle** (`GET /api/ml/metrics` : MAE, MAPE, holdout 7j, cible ≤ 15 %)
 - [x] RBAC — page lecture rôles / utilisateurs
 - [x] RBAC — admin CRUD users / rôles
 - [x] Paramètres — profil, langue, logout / logout-all
@@ -122,7 +124,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `POST /api/admin/pipeline/run/{dag_id}` | [x] **nouveau** |
 | `GET /api/analytics/*` | [x] données **calculées depuis la base SQL** (SQLite ou PostgreSQL) |
 | `GET /api/analytics/export/*` | [x] |
-| `GET /api/ml/predict-7d` / `predict-30d` | [x] 🟡 **série RDV réelle** + régression linéaire (Prophet optionnel) |
+| `GET /api/ml/predict-7d` / `predict-30d` | [x] série RDV réelle + Prophet/linéaire + `generatedAt`, `model_version`, bande confiance |
+| `GET /api/ml/metrics` | [x] **nouveau** — MAE/MAPE holdout 7j, statut ok/degraded |
 | `GET /api/alerts` | [x] **dynamiques** (seuils occupation / file RDV) |
 | `GET/POST/PATCH/DELETE /api/rbac/users` | [x] **nouveau** |
 
@@ -160,7 +163,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `tests/test_admin_audit_logs.py` | 2 | [x] **nouveau** |
 | `tests/test_health_details.py` | 3 | [x] **nouveau** |
 | `tests/test_audit_export.py` | 2 | [x] **nouveau** |
-| `tests/test_ml_engine.py` | 3 | [x] **nouveau** |
+| `tests/test_ml_engine.py` | 4 | [x] |
+| `tests/test_ml_metrics.py` | 2 | [x] **nouveau** |
 
 **Commandes :**
 
@@ -262,9 +266,9 @@ npm run migrate:pg
 | Patients | ✅ | CRUD complet + historique |
 | Médecins | ✅ | Lecture + édition planning / dispo |
 | Rendez-vous | 🟡 | Conflits + rappels email/SMS (log dev, UI statut) |
-| Dashboard KPI | 🟡 | KPIs réels ; prévisions ML depuis RDV (linéaire / Prophet) |
+| Dashboard KPI | ✅ | KPIs réels ; prévisions ML 7j avec métadonnées modèle et intervalle de confiance |
 | Analytique | 🟡 | Agrégats réels ; pas BI avancée |
-| Prédiction IA | 🟡 | Prévisions depuis RDV réels ; Prophet optionnel |
+| Prédiction IA | ✅ | Prévisions 7j/30j depuis RDV réels ; Prophet optionnel ; métadonnées exposées API + UI |
 | RBAC | ✅ | Guards + CRUD admin utilisateurs |
 | i18n + a11y | ✅ | |
 | Chatbot | ❌ | |
@@ -283,7 +287,7 @@ npm run migrate:pg
 | S5 | RDV + conflits | [x] |
 | S6 | Dashboard + exports | [x] |
 | S7 | Airflow | [x] DAGs + `pipeline_service` + Docker profile `airflow` |
-| S8–S9 | Prophet + ML dashboard | 🟡 Prophet activable ; dashboard partiel |
+| S8–S9 | Prophet + ML dashboard | [x] Prophet activable ; dashboard + page prédiction avec métadonnées ML |
 | S10 | Hardening sécurité | 🟡 logs + métriques OK ; vault / ELK restants |
 | S11 | E2E | [x] |
 | S12 | Démo pilote | [x] `pilot:setup`, Postgres pg8000, `/health/details` → `postgresql` |
@@ -312,6 +316,8 @@ npm run migrate:pg
 | 2026-06-10 | Rappels RDV email/SMS (`reminder_service`, lot 24h, UI rendez-vous) | `test_reminders.py` (4) |
 | 2026-06-10 | Pilote S12 PostgreSQL (`pilot_setup.py`, `npm run pilot:setup`, port 5435 si 5434 occupé) | `pilot:setup` manuel, `/health/details` postgresql, login + 501 patients |
 | 2026-06-10 | Prophet ML (`ml_engine.py`, `ML_USE_PROPHET`, Docker/CI `requirements-ml.txt`) | `test_ml_engine.py`, `test_ml_forecast.py` |
+| 2026-06-12 | Dashboard ML enrichi : `generatedAt`, `model_version`, bande confiance, `MlForecastMeta`, i18n FR/EN/AR | `test_ml_forecast.py`, `tests/ml-format.test.ts` |
+| 2026-06-16 | API `GET /api/ml/metrics` (MAE/MAPE holdout 7j) + `MlMetricsPanel` page prédiction | `test_ml_metrics.py`, `test_ml_engine.py` |
 | 2026-05-26 | Conflit RDV par chevauchement de durée | `test_appointment_overlap.py` |
 | 2026-05-26 | RBAC users depuis DB ; CORS + JWT env ; Correlation-ID | pytest 15/15 |
 | 2026-05-26 | `httpx` ajouté à `requirements.txt` pour TestClient | — |

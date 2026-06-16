@@ -1,8 +1,8 @@
 from datetime import date, timedelta
 
 from app.application import ml_engine, ml_service
+from app.application.ml_service import _mae, _mape
 from app.core.config import settings
-
 
 def test_ml_data_source_sqlite() -> None:
     assert ml_engine.ml_data_source() == "sqlite"
@@ -50,3 +50,10 @@ def test_prophet_forecast_returns_values_when_available(monkeypatch) -> None:
     assert len(values) == 7
     assert all(v >= 0 for v in values)
     assert confidence >= 0.8
+
+
+def test_mae_mape_helpers() -> None:
+    actual = [10, 20, 30]
+    predicted = [12, 18, 33]
+    assert round(_mae(actual, predicted), 2) == 2.33
+    assert round(_mape(actual, predicted), 2) == 13.33

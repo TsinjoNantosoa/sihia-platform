@@ -457,18 +457,17 @@ def export_pdf(period: str = Query(default="6m"), _claims: dict = Depends(requir
 
 @api_router.get("/ml/predict-7d")
 def predict(_claims: dict = Depends(require_permission("ml:read"))):
-    body = ml_service.predict_7d()
-    body["horizon"] = 7
-    body["model_version"] = body.get("model", "linear-sqlite")
-    return body
+    return ml_service.predict_7d()
 
 
 @api_router.get("/ml/predict-30d")
 def predict_30d(_claims: dict = Depends(require_permission("ml:read"))):
-    body = ml_service.predict_30d()
-    body["horizon"] = 30
-    body["model_version"] = body.get("model", "linear-sqlite")
-    return body
+    return ml_service.predict_30d()
+
+
+@api_router.get("/ml/metrics")
+def ml_metrics(_claims: dict = Depends(require_permission("ml:read"))):
+    return ml_service.metrics()
 
 
 @api_router.get("/alerts")
