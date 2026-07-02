@@ -2,15 +2,21 @@ import logging
 import time
 import uuid
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.application.health_service import build_health_details
 from app.core.config import settings
 from app.core.logging_config import configure_logging, log_event
 from app.core.metrics import metrics
+from app.presentation.chatbot_rate_limit import ChatbotRateLimiter
+from app.presentation.chatbot_routes import build_chatbot_router
+from app.presentation.deps import chatbot_service, chatbot_rate_limiter
 from app.presentation.routes import api_router
 
 configure_logging()
@@ -18,6 +24,14 @@ logger = logging.getLogger("sihia")
 security_logger = logging.getLogger("sihia.security")
 
 app = FastAPI(title=settings.app_name, version="0.1.0")
+app.state.chatbot_api_token = settings.chatbot_api_token
+
+_static_dir = Path(__file__).resolve().parents[1] / "static"
+_static_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
+_chatbot_limiter = chatbot_rate_limiter
+app.include_router(build_chatbot_router(chatbot_service, chatbot_rate_limiter))
 
 if settings.is_production:
     app.add_middleware(

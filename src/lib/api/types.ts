@@ -105,6 +105,44 @@ export interface MlMetricsResponse {
   withinTarget: boolean | null;
 }
 
+export interface ReminderChannelsStatus {
+  email: {
+    mode: string;
+    configured: boolean;
+    ready: boolean;
+    smtpHost: string | null;
+    smtpPort: number | null;
+    from: string;
+  };
+  sms: {
+    mode: string;
+    configured: boolean;
+    ready: boolean;
+  };
+  hoursBefore: number;
+  logPath: string;
+}
+
+export interface PipelineDagRun {
+  id: string;
+  status: string;
+  startedAt: string;
+  finishedAt?: string | null;
+  metrics?: Record<string, unknown>;
+  error?: string | null;
+}
+
+export interface PipelineStatusResponse {
+  status: "ok" | "degraded" | string;
+  dags: Array<{
+    dagId: string;
+    lastRun: PipelineDagRun | null;
+  }>;
+  snapshots: { kpis: unknown };
+  mlFeaturesDays: number;
+  alerts: string[];
+}
+
 export interface Alert {
   id: string;
   level: "critical" | "warning" | "info";

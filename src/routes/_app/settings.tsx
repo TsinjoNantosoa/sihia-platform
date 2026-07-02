@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
+import { PipelineAdminPanel } from "@/components/shared/PipelineAdminPanel";
+import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBanner";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { useAuth } from "@/lib/auth/store";
-import { Bell, Globe, User, Building, LogOut, Shield } from "lucide-react";
+import { Bell, Globe, User, Building, LogOut, Shield, Database } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { authService } from "@/lib/api/services";
+import { appointmentsService, authService } from "@/lib/api/services";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/settings")({
@@ -20,6 +24,12 @@ function SettingsPage() {
   const { locale, setLocale } = useI18n();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const reminderStatus = useQuery({
+    queryKey: ["reminder-status"],
+    queryFn: appointmentsService.reminderStatus,
+    retry: false,
+  });
 
   const handleLogoutCurrent = async () => {
     try {
@@ -92,9 +102,9 @@ function SettingsPage() {
       <Section icon={<Bell className="size-4" />} title={t("settings.notifications")}>
         <div className="flex flex-col gap-3">
           {[
-            { label: "Alertes critiques IA", on: true },
-            { label: "Rappels de RDV (email)", on: true },
-            { label: "Rapport hebdomadaire", on: false },
+            { label: t("settings.notif.alerts"), on: true },
+            { label: t("settings.notif.reminders"), on: true },
+            { label: t("settings.notif.weekly"), on: false },
           ].map((opt) => (
             <label key={opt.label} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
               <span className="text-sm">{opt.label}</span>
@@ -102,9 +112,23 @@ function SettingsPage() {
             </label>
           ))}
         </div>
+        <PermissionGuard permission="appointments:update">
+          <div className="mt-4">
+            {reminderStatus.data ? (
+              <ReminderChannelsBanner status={reminderStatus.data} showMailhogLink />
+            ) : null}
+          </div>
+        </PermissionGuard>
       </Section>
 
-      <Section icon={<Shield className="size-4" />} title="Sécurité de session">
+      <PermissionGuard permission="analytics:read">
+        <Section icon={<Database className="size-4" />} title={t("pipeline.title")}>
+          <p className="mb-4 text-xs text-muted-foreground">{t("pipeline.subtitle")}</p>
+          <PipelineAdminPanel />
+        </Section>
+      </PermissionGuard>
+
+      <Section icon={<Shield className="size-4" />} title={t("settings.security")}>
         <div className="flex flex-wrap gap-3">
           <button
             onClick={handleLogoutCurrent}

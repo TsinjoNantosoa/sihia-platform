@@ -88,6 +88,32 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   if (endpoint.includes("/api/analytics/revenue")) return ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"].map((m, i) => ({ label: m, value: 80000 + Math.round(Math.sin(i / 2) * 18000 + i * 2200) }));
   if (endpoint.includes("/api/analytics/admissions-dept")) return [ { label: "Urgences", value: 320 }, { label: "Cardio", value: 210 }, { label: "Pédiatrie", value: 180 } ];
   if (endpoint.includes("/api/analytics/satisfaction")) return [ { label: "S1", value: 82 }, { label: "S2", value: 85 }, { label: "S3", value: 88 } ];
+  if (endpoint.includes("/api/admin/pipeline/status")) {
+    const now = new Date().toISOString();
+    return {
+      status: "ok",
+      dags: [
+        { dagId: "patient_import", lastRun: { id: "run-mock", status: "success", startedAt: now, finishedAt: now, metrics: {} } },
+        { dagId: "analytics_refresh", lastRun: { id: "run-mock2", status: "success", startedAt: now, finishedAt: now, metrics: {} } },
+        { dagId: "ml_features", lastRun: { id: "run-mock3", status: "success", startedAt: now, finishedAt: now, metrics: {} } },
+      ],
+      snapshots: { kpis: null },
+      mlFeaturesDays: 61,
+      alerts: [],
+    };
+  }
+  if (endpoint.includes("/api/admin/pipeline/run/")) {
+    const dagId = endpoint.split("/").pop() ?? "pipeline";
+    return { dagId, runId: "run-mock", status: "success", metrics: {} };
+  }
+  if (endpoint.includes("/api/admin/reminders/status")) {
+    return {
+      email: { mode: "log", configured: true, ready: true, smtpHost: null, smtpPort: null, from: "noreply@sihia.health" },
+      sms: { mode: "log", configured: true, ready: true },
+      hoursBefore: 24,
+      logPath: "logs/reminders.jsonl",
+    };
+  }
   if (endpoint.includes("/api/ml/metrics")) {
     return {
       model: "prophet",
@@ -305,6 +331,13 @@ export const appointmentsService = {
       "/api/admin/reminders/run",
       { method: "POST" },
     ),
+  reminderStatus: () => fetchWithAuth("/api/admin/reminders/status"),
+};
+
+export const pipelineService = {
+  status: () => fetchWithAuth("/api/admin/pipeline/status"),
+  run: (dagId: string) =>
+    fetchWithAuth(`/api/admin/pipeline/run/${dagId}`, { method: "POST" }),
 };
 
 export const analyticsService = {

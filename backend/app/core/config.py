@@ -9,7 +9,7 @@ def _load_dotenv() -> None:
         from dotenv import load_dotenv
 
         backend_dir = Path(__file__).resolve().parents[2]
-        load_dotenv(backend_dir / ".env", override=False)
+        load_dotenv(backend_dir / ".env", override=True)
         load_dotenv(backend_dir.parent / ".env", override=False)
     except ImportError:
         pass
@@ -44,11 +44,18 @@ class Settings(BaseModel):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from: str = "noreply@sihia.health"
+    smtp_use_tls: bool = True
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_from_number: str = ""
     pipeline_import_dir: str = "data/imports"
     pipeline_stale_hours: int = 24
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    chatbot_api_token: str = ""
+    chatbot_query_rate_limit: int = 20
+    chatbot_audit_log_path: str = "logs/chatbot.jsonl"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
@@ -85,11 +92,18 @@ class Settings(BaseModel):
             smtp_user=os.getenv("SMTP_USER", ""),
             smtp_password=os.getenv("SMTP_PASSWORD", ""),
             smtp_from=os.getenv("SMTP_FROM", "noreply@sihia.health"),
+            smtp_use_tls=_env_bool("SMTP_USE_TLS", True),
             twilio_account_sid=os.getenv("TWILIO_ACCOUNT_SID", ""),
             twilio_auth_token=os.getenv("TWILIO_AUTH_TOKEN", ""),
             twilio_from_number=os.getenv("TWILIO_FROM_NUMBER", ""),
             pipeline_import_dir=os.getenv("PIPELINE_IMPORT_DIR", "data/imports"),
             pipeline_stale_hours=int(os.getenv("PIPELINE_STALE_HOURS", "24")),
+            openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+            openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            chatbot_api_token=os.getenv("CHATBOT_API_TOKEN", ""),
+            chatbot_query_rate_limit=int(os.getenv("CHATBOT_QUERY_RATE_LIMIT", "20")),
+            chatbot_audit_log_path=os.getenv("CHATBOT_AUDIT_LOG_PATH", "logs/chatbot.jsonl"),
             cors_origins=origins or ["http://localhost:5173"],
             environment=os.getenv("ENVIRONMENT", "development"),
         )

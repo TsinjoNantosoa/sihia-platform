@@ -84,6 +84,13 @@ services:
       postgres:
         condition: service_healthy
 
+  mailhog:
+    profiles: [mailhog]
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   pg_data:
   pgadmin_data:

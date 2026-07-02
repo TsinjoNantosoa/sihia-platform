@@ -3,6 +3,7 @@ from typing import Callable
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.application.chatbot_service import ChatbotService
 from app.application.analytics_service import AnalyticsService
 from app.application.ml_service import MlForecastService
 from app.application.rbac_service import RbacService
@@ -11,6 +12,8 @@ from app.application.reminder_service import ReminderService
 from app.application.use_cases import AppointmentsService, AuthService, DoctorsService, MedicalHistoryService, PatientsService
 from app.core.config import settings
 from app.core.security import decode_access_token
+from app.infrastructure.chatbot_session_store import ChatbotSessionStore
+from app.presentation.chatbot_rate_limit import ChatbotRateLimiter
 from app.infrastructure.reminder_repository import ReminderRepository
 from app.infrastructure.database import bootstrap_database
 from app.infrastructure.sqlite_repositories import (
@@ -47,6 +50,9 @@ reminder_service = ReminderService(
     reminders_repo,
     hours_before=settings.reminder_hours_before,
 )
+chatbot_sessions = ChatbotSessionStore()
+chatbot_service = ChatbotService(settings, chatbot_sessions)
+chatbot_rate_limiter = ChatbotRateLimiter(max_per_minute=settings.chatbot_query_rate_limit)
 
 bearer_scheme = HTTPBearer(auto_error=True)
 

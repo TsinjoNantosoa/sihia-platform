@@ -25,6 +25,28 @@ def test_health_details_reports_sqlite_and_metrics():
     assert "http_requests" in body["metrics"]
 
 
+def test_reminders_status_endpoint() -> None:
+    login = client.post("/api/auth/login", json={"email": "admin@sihia.health", "password": "admin123"})
+    token = login.json()["access_token"]
+    res = client.get(
+        "/api/admin/reminders/status",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["email"]["mode"] in {"log", "smtp"}
+    assert "ready" in body["email"]
+    assert body["hoursBefore"] >= 1
+
+
+def test_health_details_includes_reminders() -> None:
+    res = client.get("/health/details")
+    assert res.status_code == 200
+    reminders = res.json()["components"]["reminders"]
+    assert reminders["email"]["mode"] in {"log", "smtp"}
+    assert reminders["sms"]["mode"] in {"log", "twilio"}
+
+
 def test_forbidden_increments_metrics() -> None:
     metrics.reset()
 

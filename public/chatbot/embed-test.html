@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test embed widget — site client fictif</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1>Page client fictive</h1>
+  <p>Le widget doit apparaître en bas à droite. Changez <code>__CHATBOT_CLIENT_ID__</code> dans la console du snippet.</p>
+
+  <script src="/widget/widget-env.js"></script>
+  <script>
+    (function () {
+      var p = new URLSearchParams(location.search);
+      window.__CHATBOT_CLIENT_ID__ = p.get('client_id') || 'victrix';
+      var api = p.get('api');
+      if (api) window.__CHATBOT_API_BASE_URL__ = api;
+      var token = p.get('token');
+      if (token) window.__CHATBOT_API_TOKEN__ = token;
+    })();
+  </script>
+  <link rel="stylesheet" href="/widget/chatbot.css" />
+  <script src="/widget/chatbot.js" defer></script>
+</body>
+</html>

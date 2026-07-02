@@ -1,0 +1,39 @@
+:root{--blue:#0b66d3;--bg:#f6f8fb}
+body{font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);margin:0}
+.chat-widget{position:fixed;right:20px;bottom:20px;width:360px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.12);overflow:hidden}
+.chat-widget.closed{height:48px}
+.chat-header{display:flex;align-items:center;padding:10px 12px;background:linear-gradient(90deg,var(--blue),#2a9df4);color:white}
+.chat-header .avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-right:8px}
+.chat-header{display:flex;align-items:center;justify-content:space-between}
+.chat-header .header-left{display:flex;align-items:center}
+.chat-header .avatar-img{width:40px;height:40px;border-radius:8px;margin-right:10px;background:#ffffff;padding:4px;object-fit:contain;box-shadow:0 4px 12px rgba(14,30,37,0.12);border:1px solid rgba(0,0,0,0.06);position:relative;z-index:45}
+
+/* Ensure avatar remains visible above the curved header and isn't clipped */
+.chat-header .avatar-img { overflow: visible; }
+.chat-header .title{font-weight:700}
+.chat-header .tagline{font-size:12px;opacity:.9}
+.chat-header .menu{background:transparent;border:none;color:white;margin-right:8px}
+.chat-header .toggle{background:transparent;border:1px solid rgba(255,255,255,.18);padding:4px 8px;color:white;border-radius:8px}
+.chat-body{background:white;padding:12px;height:420px;display:flex;flex-direction:column}
+.message-list{flex:1;overflow:auto;padding-right:6px}
+.bubble{margin:8px 0;max-width:85%;padding:10px;border-radius:10px}
+.bubble.user{margin-left:auto;background:#dcf8c6}
+.bubble.bot{background:#f1f1f1}
+.composer{border-top:1px solid #eee;padding-top:8px}
+.input-row{display:flex;gap:8px}
+.input-row input{flex:1;padding:10px;border-radius:20px;border:1px solid #ddd}
+.input-row button{background:var(--blue);color:white;border:none;padding:8px 12px;border-radius:12px}
+.quick-replies{display:flex;gap:6px;margin-bottom:6px}
+.quick{background:#eef6ff;border:1px solid #dbefff;padding:6px 8px;border-radius:16px}
+.rgpd{font-size:12px;color:#666;margin:8px 0}
+.sources a{display:inline-block;margin-right:6px;font-size:12px}
+.cta{margin-top:6px}
+
+.quick-replies-bar{display:flex;gap:8px;margin:8px 0}
+.quick-pill{background:transparent;border:1px solid #cfe6ff;padding:6px 12px;border-radius:20px;color:var(--blue)}
+.composer-row{display:flex;align-items:center;gap:8px}
+.attachment-buttons .icon{background:transparent;border:none;font-size:18px}
+.floating-send{background:var(--blue);color:white;border-radius:50%;width:44px;height:44px;border:none;font-size:18px}
+.rating{display:flex;align-items:center;gap:8px;margin-top:8px}
+.rating .thumb{background:transparent;border:none;font-size:18px}
+

@@ -19,7 +19,7 @@ Plateforme complète avec :
 - ⚙️ **Paramètres** : profil, établissement, notifications, langue
 - 🌍 **i18n FR / EN / AR** avec **mode RTL** automatique pour l'arabe
 - 🎨 Design system **Calm Care** (tokens oklch, shadcn UI customisé)
-- ♿ Focus visible, contrastes WCAG AA, labels explicites
+- 🤖 **Chatbot médical** : widget flottant (streaming SSE, guardrails, RAG, FR/EN)
 
 ## 🚀 Démarrage
 
@@ -38,8 +38,8 @@ Le projet est deja operable en local et partiellement branche au backend. La bas
 
 ## Etat du projet
 
-Ouvre http://localhost:5173 — tu seras redirigé vers `/login`.
-Identifiants démo : **n'importe quel email + mot de passe**.
+Ouvre http://localhost:8080 — tu seras redirigé vers `/login`.
+Identifiants démo : `admin@sihia.health` / `admin123`, `dr.benali@sihia.health` / `demo1234`.
 
 ### Deja fait
 
@@ -56,15 +56,14 @@ Identifiants démo : **n'importe quel email + mot de passe**.
 - i18n FR / EN / AR avec gestion RTL.
 - Design system deja en place dans le front.
 - Tests backend de securite auth deja ajoutes.
+- Chatbot medical RAG (widget H4H, OpenAI streaming, guardrails, audit JSONL).
 
 ### Encore a faire
 
 - Supprimer totalement les dependances mock dans les parcours de production.
 - Renforcer encore les parcours sensibles auth/RBAC.
-- Ajouter des exports analytics plus complets, notamment PDF et Excel.
-- Ajouter une vraie couche d’administration users / roles si besoin metier.
-- Completer l’observabilite et les traces produits.
-- Preparer le futur chatbot medical avec guardrails et disclaimer.
+- Completer l'observabilite et les traces produits (vault, ELK).
+- Deploiement cloud production.
 
 ## Ce qui est deja implemente
 
@@ -127,6 +126,8 @@ cp .env.example .env
 |---|---|
 | `VITE_API_URL` | URL du backend FastAPI (vide = mocks) |
 | `VITE_USE_MOCKS` | `true` pour utiliser les mocks intégrés |
+| `VITE_CLIENT_ID` | Slug chatbot (`sihia` par défaut) |
+| `VITE_CHATBOT_API_TOKEN` | Token chatbot (identique à `CHATBOT_API_TOKEN` backend) |
 
 ## Roadmap a suivre
 
@@ -170,7 +171,7 @@ Cette roadmap reprend la priorite logique a partir du code existant et du gap an
 | P1 | Etendre la prediction | Horizon 7j / 30j plus lisible et documente |
 | P2 | Consolider patients | Historique medical et regles metier enrichies |
 | P2 | Ameliorer observabilite | Logs, health et suivi d’erreurs exploitables |
-| P3 | Preparer chatbot V2 | UI, guardrails et disclaimer medicaux |
+| P3 | Deploiement cloud | Docker compose OK ; pas encore deploy prod |
 
 ## Architecture du projet
 

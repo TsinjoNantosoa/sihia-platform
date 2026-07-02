@@ -1,6 +1,6 @@
 # État d'implémentation — SIH IA
 
-> **Dernière mise à jour :** 16 juin 2026 (API `/api/ml/metrics` MAE/MAPE + panneau qualité modèle)  
+> **Dernière mise à jour :** 2 juillet 2026 (chatbot RAG + widget H4H intégré)  
 > **Sources :** `src/`, `backend/`, dossier `Document/`
 
 Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lorsqu'une fonctionnalité est implémentée **et** validée (tests ou vérification manuelle documentée).
@@ -14,9 +14,9 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | **Démo investisseur / POC UI** | ✅ Prêt |
 | **Pilote clinique limité** | 🟡 Postgres local validé (`npm run pilot:setup`) |
 | **Production sécurisée** | 🔴 Non |
-| **Couverture fonctionnelle MVP** | **~92 %** |
-| **Couverture valeur métier réelle** | **~65 %** |
-| **Tests backend** | ✅ **53/53** (`pytest tests/`) |
+| **Couverture fonctionnelle MVP** | **~95 %** |
+| **Couverture valeur métier réelle** | **~70 %** |
+| **Tests backend** | ✅ **68/68** (`pytest tests/`) |
 | **Tests E2E** | ✅ **8/8** Playwright (`npm run test:e2e`) |
 
 ---
@@ -53,7 +53,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Médecins — **édition planning / disponibilités** (`PATCH` + dialogue « Planning »)
 - [x] Rendez-vous — liste, calendrier, création, annulation
 - [x] Rendez-vous — détection conflit (chevauchement durée côté API)
-- [x] Rendez-vous — **rappels email/SMS** (colonne statut, bouton cloche, lot 24h)
+- [x] Rendez-vous — **rappels email/SMS** (log dev, **SMTP/Twilio configurables**, audit JSONL, UI statut canaux)
 - [x] Analytique — graphiques + filtres période
 - [x] Analytique — export CSV (client)
 - [x] Analytique — export PDF / Excel (API)
@@ -63,7 +63,9 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] RBAC — admin CRUD users / rôles
 - [x] Paramètres — profil, langue, logout / logout-all
 - [x] Guards routes (`requireRoutePermission`)
-- [x] Guards actions (`PermissionGuard`)
+- [x] Paramètres — **pipeline admin UI** (`PipelineAdminPanel`, statut DAGs, lancer runs)
+- [x] Paramètres — **statut canaux rappels** + lien MailHog
+- [x] **Chatbot médical** — widget flottant H4H (`SihiaChatbot`, streaming SSE, FR/EN, guardrails)
 - [x] UX 401/403 centralisée (`httpErrors.ts` : toast i18n, redirection, exports blob)
 
 ### 1.3 Qualité front
@@ -119,7 +121,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `POST /api/appointments/{id}/cancel` | [x] |
 | `POST /api/appointments/{id}/remind` | [x] **nouveau** |
 | `GET /api/appointments/{id}/reminders` | [x] **nouveau** |
-| `POST /api/admin/reminders/run` | [x] **nouveau** (lot J-1 / 24h) |
+| `POST /api/admin/reminders/run` | [x] (lot J-1 / 24h) |
+| `GET /api/admin/reminders/status` | [x] **nouveau** — modes email/SMS, SMTP/Twilio ready |
 | `GET /api/admin/pipeline/status` | [x] **nouveau** |
 | `POST /api/admin/pipeline/run/{dag_id}` | [x] **nouveau** |
 | `GET /api/analytics/*` | [x] données **calculées depuis la base SQL** (SQLite ou PostgreSQL) |
@@ -127,7 +130,10 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `GET /api/ml/predict-7d` / `predict-30d` | [x] série RDV réelle + Prophet/linéaire + `generatedAt`, `model_version`, bande confiance |
 | `GET /api/ml/metrics` | [x] **nouveau** — MAE/MAPE holdout 7j, statut ok/degraded |
 | `GET /api/alerts` | [x] **dynamiques** (seuils occupation / file RDV) |
-| `GET/POST/PATCH/DELETE /api/rbac/users` | [x] **nouveau** |
+| `GET/POST/PATCH/DELETE /api/rbac/users` | [x] |
+| `GET /ui-config` | [x] **chatbot** — branding widget |
+| `GET /history` | [x] **chatbot** — historique session |
+| `POST /query-stream` | [x] **chatbot** — réponses SSE OpenAI + RAG + guardrails |
 
 ### 2.4 Données & analytics
 
@@ -141,6 +147,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Rappels RDV (`reminder_service`, migration `002`, log `reminders.jsonl`)
 - [x] Pipeline données (`pipeline_service`, migration `003`, snapshots analytics, `ml_features_daily`)
 - [x] Pilote PostgreSQL (`pilot_setup.py`, `npm run pilot:setup`, port 5435 si 5434 occupé)
+- [x] Chatbot RAG (`chatbot_service`, `chatbot_knowledge.json`, audit `chatbot.jsonl`, rate limit 20/min)
 
 ---
 
@@ -153,7 +160,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `tests/test_patients_update.py` | 2 | [x] **nouveau** |
 | `tests/test_analytics_dynamic.py` | 3 | [x] **nouveau** |
 | `tests/test_appointment_overlap.py` | 1 | [x] **nouveau** |
-| `tests/test_reminders.py` | 4 | [x] **nouveau** |
+| `tests/test_reminders.py` | 4 | [x] |
+| `tests/test_notification_channels.py` | 5 | [x] **nouveau** |
 | `tests/test_pipeline.py` | 7 | [x] **nouveau** |
 | `tests/test_exports.py` | 2 | [x] |
 | `tests/test_doctors_update.py` | 3 | [x] |
@@ -164,7 +172,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | `tests/test_health_details.py` | 3 | [x] **nouveau** |
 | `tests/test_audit_export.py` | 2 | [x] **nouveau** |
 | `tests/test_ml_engine.py` | 4 | [x] |
-| `tests/test_ml_metrics.py` | 2 | [x] **nouveau** |
+| `tests/test_ml_metrics.py` | 2 | [x] |
+| `tests/test_chatbot.py` | 8 | [x] **nouveau** |
 
 **Commandes :**
 
@@ -252,8 +261,8 @@ npm run migrate:pg
 - [x] Docker Compose (`docker-compose.yml` + Dockerfiles)
 - [x] CI/CD GitHub Actions (`.github/workflows/ci.yml`)
 - [x] Airflow (DAGs import / refresh / ML features + CLI `pipeline:run`)
-- [ ] Chatbot RAG + guardrails
-- [x] Rappels RDV (email / SMS — mode log, SMTP/Twilio optionnels)
+- [x] Chatbot RAG + guardrails (widget H4H, OpenAI streaming, escalade urgence 15/112)
+- [x] Rappels RDV (email / SMS — log, **SMTP** via MailHog/prod, **Twilio** optionnel)
 - [ ] HL7 FHIR, mobile, marketplace (hors MVP)
 
 ---
@@ -265,14 +274,14 @@ npm run migrate:pg
 | Auth + session | ✅ | JWT + refresh + tests |
 | Patients | ✅ | CRUD complet + historique |
 | Médecins | ✅ | Lecture + édition planning / dispo |
-| Rendez-vous | 🟡 | Conflits + rappels email/SMS (log dev, UI statut) |
+| Rendez-vous | ✅ | Conflits + rappels email/SMS (log / SMTP / Twilio) |
 | Dashboard KPI | ✅ | KPIs réels ; prévisions ML 7j avec métadonnées modèle et intervalle de confiance |
 | Analytique | 🟡 | Agrégats réels ; pas BI avancée |
 | Prédiction IA | ✅ | Prévisions 7j/30j depuis RDV réels ; Prophet optionnel ; métadonnées exposées API + UI |
 | RBAC | ✅ | Guards + CRUD admin utilisateurs |
 | i18n + a11y | ✅ | |
-| Chatbot | ❌ | |
-| Data pipeline | 🟡 | DAGs Airflow + snapshots analytics + import CSV |
+| Chatbot | ✅ | Widget H4H intégré, RAG JSON, guardrails, audit, 8 tests |
+| Data pipeline | ✅ | DAGs Airflow + API + **UI admin Paramètres** |
 | DevOps | 🟡 | Docker + CI ; pas encore déploiement cloud |
 
 ---
@@ -318,6 +327,9 @@ npm run migrate:pg
 | 2026-06-10 | Prophet ML (`ml_engine.py`, `ML_USE_PROPHET`, Docker/CI `requirements-ml.txt`) | `test_ml_engine.py`, `test_ml_forecast.py` |
 | 2026-06-12 | Dashboard ML enrichi : `generatedAt`, `model_version`, bande confiance, `MlForecastMeta`, i18n FR/EN/AR | `test_ml_forecast.py`, `tests/ml-format.test.ts` |
 | 2026-06-16 | API `GET /api/ml/metrics` (MAE/MAPE holdout 7j) + `MlMetricsPanel` page prédiction | `test_ml_metrics.py`, `test_ml_engine.py` |
+| 2026-06-16 | SMTP rappels RDV (`notification_channels`, MailHog Docker, `/admin/reminders/status`, bannière UI) | `test_notification_channels.py`, `test_health_details.py` |
+| 2026-06-16 | MailHog activé (`backend/.env` SMTP) + UI pipeline admin (`PipelineAdminPanel` dans Paramètres) | manuel + `test_pipeline.py` |
+| 2026-07-02 | Chatbot RAG complet (`chatbot_service`, widget H4H dans `AppLayout`, `/ui-config`, `/query-stream`) | `test_chatbot.py` (8), 68/68 pytest |
 | 2026-05-26 | Conflit RDV par chevauchement de durée | `test_appointment_overlap.py` |
 | 2026-05-26 | RBAC users depuis DB ; CORS + JWT env ; Correlation-ID | pytest 15/15 |
 | 2026-05-26 | `httpx` ajouté à `requirements.txt` pour TestClient | — |

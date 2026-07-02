@@ -1,0 +1,44 @@
+[
+  {
+    "id": "welcome",
+    "topics": ["bonjour", "hello", "salut", "aide", "help"],
+    "fr": "<p>Bienvenue sur <strong>SIH IA — Hôpital Central</strong>. Je peux vous orienter vers les services, les rendez-vous et les informations pratiques. <em>Je ne pose pas de diagnostic médical.</em></p>",
+    "en": "<p>Welcome to <strong>SIH IA — Central Hospital</strong>. I can help with services, appointments and practical information. <em>I do not provide medical diagnosis.</em></p>"
+  },
+  {
+    "id": "appointments",
+    "topics": ["rendez-vous", "rdv", "appointment", "consultation", "prendre rendez-vous"],
+    "fr": "<p>Pour un rendez-vous : connectez-vous à l'application, menu <strong>Rendez-vous</strong>, puis <strong>Nouveau RDV</strong>. En cas d'urgence vitale, appelez le <strong>15</strong> (SAMU) ou le <strong>112</strong>.</p>",
+    "en": "<p>For an appointment: sign in, open <strong>Appointments</strong>, then <strong>New appointment</strong>. For life-threatening emergencies call <strong>15</strong> (SAMU) or <strong>112</strong>.</p>"
+  },
+  {
+    "id": "hours",
+    "topics": ["horaires", "ouvert", "hours", "accueil", "urgences"],
+    "fr": "<p><strong>Accueil</strong> : lun–ven 8h–18h, sam 8h–12h. <strong>Urgences</strong> : 24h/24. Consultez le tableau de bord pour les prochains créneaux disponibles.</p>",
+    "en": "<p><strong>Reception</strong>: Mon–Fri 8am–6pm, Sat 8am–12pm. <strong>Emergency</strong>: 24/7. Check the dashboard for upcoming slots.</p>"
+  },
+  {
+    "id": "departments",
+    "topics": ["service", "spécialité", "cardiologie", "pédiatrie", "department", "specialty"],
+    "fr": "<p>Services disponibles : cardiologie, pédiatrie, médecine générale, imagerie. Utilisez le menu <strong>Médecins</strong> pour voir les spécialités et disponibilités.</p>",
+    "en": "<p>Available departments: cardiology, pediatrics, general medicine, imaging. Use <strong>Doctors</strong> to browse specialties and availability.</p>"
+  },
+  {
+    "id": "patients",
+    "topics": ["dossier", "patient", "historique", "medical record", "history"],
+    "fr": "<p>Les professionnels autorisés accèdent aux dossiers via <strong>Patients</strong> → détail patient → <strong>Historique médical</strong>. Les données sont confidentielles (RGPD).</p>",
+    "en": "<p>Authorized staff access records via <strong>Patients</strong> → patient detail → <strong>Medical history</strong>. Data is confidential (GDPR).</p>"
+  },
+  {
+    "id": "reminders",
+    "topics": ["rappel", "sms", "email", "notification", "reminder"],
+    "fr": "<p>Les rappels de rendez-vous (email/SMS) sont envoyés ~24h avant. Vérifiez la colonne <strong>Rappel</strong> sur la page Rendez-vous ou contactez l'accueil.</p>",
+    "en": "<p>Appointment reminders (email/SMS) are sent ~24h before. Check the <strong>Reminder</strong> column on Appointments or contact reception.</p>"
+  },
+  {
+    "id": "contact",
+    "topics": ["contact", "téléphone", "phone", "adresse", "address"],
+    "fr": "<p><strong>Hôpital Central SIH IA</strong> — Tél. accueil : +212 5 22 00 00 00. Email : contact@sihia.health</p>",
+    "en": "<p><strong>SIH IA Central Hospital</strong> — Reception: +212 5 22 00 00 00. Email: contact@sihia.health</p>"
+  }
+]

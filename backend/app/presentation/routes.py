@@ -309,6 +309,13 @@ def run_appointment_reminders_batch(
     return result
 
 
+@api_router.get("/admin/reminders/status")
+def reminders_status(_claims: dict = Depends(require_permission("appointments:update"))):
+    from app.infrastructure.notification_channels import reminder_channels_status
+
+    return reminder_channels_status()
+
+
 @api_router.get("/admin/pipeline/status")
 def pipeline_status(_claims: dict = Depends(require_permission("analytics:read"))):
     return pipeline_service.status()

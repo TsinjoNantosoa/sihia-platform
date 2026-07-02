@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { SihiaChatbot } from "@/components/chatbot/SihiaChatbot";
 import { cn } from "@/lib/utils";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -33,6 +34,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
       </div>
+      <SihiaChatbot />
     </div>
   );
 }

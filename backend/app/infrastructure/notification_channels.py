@@ -1,4 +1,4 @@
-"""Envoi email / SMS pour les rappels RDV (mode log par défaut)."""
+"""Envoi email / SMS pour les rappels RDV (mode log par défaut, SMTP/Twilio optionnels)."""
 
 from __future__ import annotations
 
@@ -33,6 +33,38 @@ def _append_log(record: dict) -> None:
             handle.write(line)
 
 
+def reminder_channels_status() -> dict:
+    email_mode = settings.reminder_email_mode.lower()
+    sms_mode = settings.reminder_sms_mode.lower()
+    smtp_configured = bool(settings.smtp_host.strip())
+    twilio_configured = bool(
+        settings.twilio_account_sid.strip()
+        and settings.twilio_auth_token.strip()
+        and settings.twilio_from_number.strip()
+    )
+
+    email_ready = email_mode == "log" or (email_mode == "smtp" and smtp_configured)
+    sms_ready = sms_mode == "log" or (sms_mode == "twilio" and twilio_configured)
+
+    return {
+        "email": {
+            "mode": email_mode,
+            "configured": smtp_configured if email_mode == "smtp" else True,
+            "ready": email_ready,
+            "smtpHost": settings.smtp_host or None,
+            "smtpPort": settings.smtp_port if email_mode == "smtp" else None,
+            "from": settings.smtp_from,
+        },
+        "sms": {
+            "mode": sms_mode,
+            "configured": twilio_configured if sms_mode == "twilio" else True,
+            "ready": sms_ready,
+        },
+        "hoursBefore": settings.reminder_hours_before,
+        "logPath": str(reminder_log_path()),
+    }
+
+
 def normalize_phone(value: str | None) -> str | None:
     if not value:
         return None
@@ -46,51 +78,101 @@ def normalize_phone(value: str | None) -> str | None:
     return digits if _E164.match(digits) else None
 
 
+def _send_smtp(message: EmailMessage) -> None:
+    host = settings.smtp_host.strip()
+    port = settings.smtp_port
+
+    if port == 465:
+        with smtplib.SMTP_SSL(host, port, timeout=15) as smtp:
+            if settings.smtp_user:
+                smtp.login(settings.smtp_user, settings.smtp_password)
+            smtp.send_message(message)
+        return
+
+    with smtplib.SMTP(host, port, timeout=15) as smtp:
+        if settings.smtp_use_tls:
+            smtp.starttls()
+        if settings.smtp_user:
+            smtp.login(settings.smtp_user, settings.smtp_password)
+        smtp.send_message(message)
+
+
 def send_email(to: str, subject: str, body: str) -> None:
     mode = settings.reminder_email_mode.lower()
-    if mode == "smtp" and settings.smtp_host:
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    if mode == "smtp":
+        if not settings.smtp_host.strip():
+            raise RuntimeError("REMINDER_EMAIL_MODE=smtp mais SMTP_HOST est vide")
         message = EmailMessage()
         message["From"] = settings.smtp_from
         message["To"] = to
         message["Subject"] = subject
         message.set_content(body)
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as smtp:
-            if settings.smtp_user:
-                smtp.starttls()
-                smtp.login(settings.smtp_user, settings.smtp_password)
-            smtp.send_message(message)
-    else:
+        _send_smtp(message)
         _append_log(
             {
                 "type": "email",
-                "mode": mode,
+                "mode": "smtp",
+                "delivery": "sent",
                 "to": to,
                 "subject": subject,
-                "body": body,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": timestamp,
             }
         )
+        return
+
+    _append_log(
+        {
+            "type": "email",
+            "mode": mode,
+            "delivery": "log",
+            "to": to,
+            "subject": subject,
+            "body": body,
+            "timestamp": timestamp,
+        }
+    )
 
 
 def send_sms(to: str, body: str) -> None:
     mode = settings.reminder_sms_mode.lower()
-    if mode == "twilio" and settings.twilio_account_sid and settings.twilio_auth_token:
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    if mode == "twilio":
+        if not (
+            settings.twilio_account_sid.strip()
+            and settings.twilio_auth_token.strip()
+            and settings.twilio_from_number.strip()
+        ):
+            raise RuntimeError("REMINDER_SMS_MODE=twilio mais identifiants Twilio incomplets")
         try:
             from twilio.rest import Client  # type: ignore[import-untyped]
         except ImportError as exc:
             raise RuntimeError("twilio non installé — pip install twilio") from exc
         client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
         client.messages.create(body=body, from_=settings.twilio_from_number, to=to)
-    else:
         _append_log(
             {
                 "type": "sms",
-                "mode": mode,
+                "mode": "twilio",
+                "delivery": "sent",
                 "to": to,
-                "body": body,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": timestamp,
             }
         )
+        return
+
+    _append_log(
+        {
+            "type": "sms",
+            "mode": mode,
+            "delivery": "log",
+            "to": to,
+            "body": body,
+            "timestamp": timestamp,
+        }
+    )
 
 
 def channel_label(channel: Literal["email", "sms"]) -> str:

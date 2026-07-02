@@ -111,7 +111,10 @@ cd backend
 | `DATABASE_URL` | `backend/.env` | `app.db` (dev SQLite) ou URL Postgres |
 | `JWT_SECRET` | `backend/.env` | Secret JWT (obligatoire en prod) |
 | `CORS_ORIGINS` | `backend/.env` | Origines front autorisées |
-| `VITE_API_URL` | `.env` racine (optionnel) | URL API si différente de `127.0.0.1:8000` |
+| `VITE_API_URL` | `.env` racine | URL API (`http://127.0.0.1:8000`) |
+| `CHATBOT_API_TOKEN` | `backend/.env` | Auth widget chatbot |
+| `OPENAI_API_KEY` | `backend/.env` | LLM chatbot (streaming) |
+| `VITE_CHATBOT_API_TOKEN` | `.env` racine | Même token que backend |
 
 ## Critères de validation (pilote S12)
 
@@ -120,6 +123,7 @@ cd backend
 - [x] `/health` → 200
 - [x] `/health/details` → `postgresql` + métriques
 - [x] Login UI fonctionnel
+- [x] Widget chatbot visible après login (bulbe bas-droite)
 
 ## Arborescence
 

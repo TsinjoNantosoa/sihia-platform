@@ -11,6 +11,7 @@ from app.application.ml_engine import ml_engine_status
 from app.application.pipeline_service import PipelineService
 from app.core.config import settings
 from app.infrastructure.database import get_engine, is_postgresql, sqlalchemy_url
+from app.infrastructure.notification_channels import reminder_channels_status
 
 
 def database_kind() -> str:
@@ -67,6 +68,7 @@ def build_health_details() -> dict:
             "database": db,
             "ml_engine": ml_engine_status(),
             "pipeline": pipeline,
+            "reminders": reminder_channels_status(),
             "auth": {"status": "ok", "algorithm": settings.jwt_algorithm},
         },
         "config": {

@@ -6,6 +6,7 @@ import { useT, useI18n } from "@/lib/i18n/store";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
+import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBanner";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, EmptyState } from "@/components/shared/States";
 import { appointmentsService, doctorsService, patientsService } from "@/lib/api/services";
@@ -59,6 +60,12 @@ function AppointmentsPage() {
       toast.success(t("appts.reminder.toastBatch").replace("{sent}", String(result.sent)));
     },
     onError: () => toast.error(t("common.error")),
+  });
+
+  const reminderStatus = useQuery({
+    queryKey: ["reminder-status"],
+    queryFn: appointmentsService.reminderStatus,
+    retry: false,
   });
 
   // Build calendar grid for current week
@@ -116,6 +123,8 @@ function AppointmentsPage() {
           </>
         }
       />
+
+      {reminderStatus.data ? <ReminderChannelsBanner status={reminderStatus.data} /> : null}
 
       {isLoading ? (
         <LoadingState />
