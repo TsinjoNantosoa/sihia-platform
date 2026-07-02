@@ -35,8 +35,18 @@ function forceLinksToOpenInNewTab(html: string): string {
   }
 }
 
-export default function MessageBubble({ message, index = 0 }: { message: Message; index?: number; isPinned?: boolean }) {
+export default function MessageBubble({
+  message,
+  index = 0,
+  onSpeak,
+}: {
+  message: Message
+  index?: number
+  isPinned?: boolean
+  onSpeak?: (html: string) => Promise<void>
+}) {
   const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(null)
+  const [isSpeaking, setIsSpeaking] = useState(false)
   const [showDislikeModal, setShowDislikeModal] = useState(false)
   const [selectedReason, setSelectedReason] = useState('')
   const [details, setDetails] = useState('')
@@ -102,6 +112,18 @@ export default function MessageBubble({ message, index = 0 }: { message: Message
     setShowDislikeModal(false)
   }
 
+  async function handleSpeak() {
+    if (!onSpeak || isSpeaking) return
+    setIsSpeaking(true)
+    try {
+      await onSpeak(message.html)
+    } catch {
+      // ignore playback errors
+    } finally {
+      setIsSpeaking(false)
+    }
+  }
+
   return (
     <motion.div 
       className={`message-row ${message.role}`}
@@ -131,6 +153,18 @@ export default function MessageBubble({ message, index = 0 }: { message: Message
         )}
         {message.role === 'bot' && message.id !== 'b-init' && (
           <div className="message-feedback" aria-label="Feedback sur la réponse">
+            {onSpeak && (
+              <button
+                type="button"
+                className={`feedback-btn ${isSpeaking ? 'active' : ''}`}
+                onClick={() => void handleSpeak()}
+                disabled={isSpeaking}
+                title="Écouter la réponse"
+                aria-label="Écouter la réponse"
+              >
+                🔊
+              </button>
+            )}
             {feedback !== 'dislike' && (
               <button
                 type="button"

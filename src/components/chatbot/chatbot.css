@@ -643,8 +643,9 @@
 /* ====== COMPOSER (INPUT) ====== */
 .composer-row {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  align-items: flex-end;
+  align-items: stretch;
   padding: 4px 6px; /* reduced from 12px to tighten spacing with suggestions */
   gap: 6px;
   border-top: 1px solid #eef2ff;
@@ -658,6 +659,50 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 6px;
+}
+
+.composer-with-voice {
+  flex-wrap: wrap;
+}
+
+.composer-mic-btn.recording {
+  background: #fee2e2 !important;
+  color: #dc2626;
+  animation: mic-pulse 1.2s ease-in-out infinite;
+}
+
+.composer-mic-btn.transcribing {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+
+.composer-voice-error {
+  width: 100%;
+  margin: 0;
+  padding: 0 12px 4px;
+  font-size: 12px;
+  color: #dc2626;
+  text-align: center;
+}
+
+.composer-voice-hint {
+  width: 100%;
+  margin: 0;
+  padding: 0 12px 4px;
+  font-size: 12px;
+  color: #0d6e6e;
+  text-align: center;
+}
+
+.composer-with-voice .composer-input-wrap {
+  flex: 1;
+  min-width: 0;
 }
 
 /* attachment buttons group */

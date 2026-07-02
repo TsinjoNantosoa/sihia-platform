@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import uuid
 from collections.abc import AsyncIterator, Iterator
@@ -217,6 +218,78 @@ class ChatbotService:
         self._audit(session_id, query, final_html, lang, "llm")
         yield f"data: {json.dumps({'token': final_html, 'replace': True})}\n\n"
         yield "data: [DONE]\n\n"
+
+    def transcribe_audio(self, audio_bytes: bytes, filename: str, lang: str) -> str:
+        if not audio_bytes:
+            raise ValueError("Fichier audio vide")
+        if len(audio_bytes) > 25 * 1024 * 1024:
+            raise ValueError("Fichier audio trop volumineux (max 25 Mo)")
+        if not self.settings.openai_api_key:
+            raise RuntimeError("OPENAI_API_KEY non configurée")
+
+        url = f"{self.settings.openai_base_url.rstrip('/')}/audio/transcriptions"
+        headers = {"Authorization": f"Bearer {self.settings.openai_api_key}"}
+        mime = "audio/webm"
+        if filename.lower().endswith(".mp4") or filename.lower().endswith(".m4a"):
+            mime = "audio/mp4"
+        elif filename.lower().endswith(".wav"):
+            mime = "audio/wav"
+        elif filename.lower().endswith(".mpeg") or filename.lower().endswith(".mp3"):
+            mime = "audio/mpeg"
+
+        data: dict[str, str] = {"model": self.settings.openai_whisper_model}
+        if lang.lower().startswith("en"):
+            data["language"] = "en"
+        elif lang.lower().startswith("fr"):
+            data["language"] = "fr"
+
+        with httpx.Client(timeout=60.0) as client:
+            response = client.post(
+                url,
+                headers=headers,
+                data=data,
+                files={"file": (filename or "voice.webm", audio_bytes, mime)},
+            )
+            response.raise_for_status()
+            payload = response.json()
+        text = str(payload.get("text", "")).strip()
+        if not text:
+            raise ValueError("Transcription vide")
+        return text
+
+    def _html_to_speech_text(self, html: str) -> str:
+        plain = re.sub(r"<[^>]+>", " ", html or "")
+        plain = re.sub(r"\s+", " ", plain).strip()
+        return plain[:4096]
+
+    def synthesize_speech(self, text: str, lang: str) -> bytes:
+        spoken = self._html_to_speech_text(text)
+        if not spoken:
+            raise ValueError("Texte vide pour la synthèse vocale")
+        if not self.settings.openai_api_key:
+            raise RuntimeError("OPENAI_API_KEY non configurée")
+
+        url = f"{self.settings.openai_base_url.rstrip('/')}/audio/speech"
+        headers = {
+            "Authorization": f"Bearer {self.settings.openai_api_key}",
+            "Content-Type": "application/json",
+        }
+        voice = self.settings.openai_tts_voice
+        if lang.lower().startswith("en"):
+            voice = os.getenv("OPENAI_TTS_VOICE_EN", voice)
+        else:
+            voice = os.getenv("OPENAI_TTS_VOICE_FR", voice)
+
+        payload = {
+            "model": self.settings.openai_tts_model,
+            "voice": voice,
+            "input": spoken,
+            "response_format": "mp3",
+        }
+        with httpx.Client(timeout=60.0) as client:
+            response = client.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            return response.content
 
     def _fallback_from_kb(self, query: str, lang: str, context: str) -> str:
         if context.strip():

@@ -53,6 +53,9 @@ class Settings(BaseModel):
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4o-mini"
+    openai_whisper_model: str = "whisper-1"
+    openai_tts_model: str = "tts-1"
+    openai_tts_voice: str = "nova"
     chatbot_api_token: str = ""
     chatbot_query_rate_limit: int = 20
     chatbot_audit_log_path: str = "logs/chatbot.jsonl"
@@ -101,6 +104,9 @@ class Settings(BaseModel):
             openai_api_key=os.getenv("OPENAI_API_KEY", ""),
             openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            openai_whisper_model=os.getenv("OPENAI_WHISPER_MODEL", "whisper-1"),
+            openai_tts_model=os.getenv("OPENAI_TTS_MODEL", "tts-1"),
+            openai_tts_voice=os.getenv("OPENAI_TTS_VOICE", "nova"),
             chatbot_api_token=os.getenv("CHATBOT_API_TOKEN", ""),
             chatbot_query_rate_limit=int(os.getenv("CHATBOT_QUERY_RATE_LIMIT", "20")),
             chatbot_audit_log_path=os.getenv("CHATBOT_AUDIT_LOG_PATH", "logs/chatbot.jsonl"),

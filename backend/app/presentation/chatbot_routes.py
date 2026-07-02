@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.application.chatbot_service import ChatbotService
@@ -20,6 +20,11 @@ class QueryRequest(BaseModel):
     lang: str = "fr"
     user_id: str | None = None
     session_id: str | None = None
+
+
+class SpeakRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=4096)
+    lang: str = "fr"
 
 
 def _rate_limit_key(request: Request) -> str:
@@ -92,5 +97,63 @@ def build_chatbot_router(
                 "X-Accel-Buffering": "no",
             },
         )
+
+    @router.post("/transcribe")
+    async def transcribe(
+        request: Request,
+        file: UploadFile = File(...),
+        lang: str = Form(default="fr"),
+        _: None = Depends(require_chatbot_token),
+    ):
+        retry = rate_limiter.check(_rate_limit_key(request))
+        if retry is not None:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Trop de requêtes. Veuillez patienter.",
+            )
+
+        content = await file.read()
+        try:
+            text = chatbot_service.transcribe_audio(
+                content,
+                file.filename or "voice.webm",
+                lang,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Échec de la transcription vocale",
+            ) from exc
+
+        return {"text": text, "lang": lang}
+
+    @router.post("/speak")
+    def speak(
+        request: Request,
+        body: SpeakRequest,
+        _: None = Depends(require_chatbot_token),
+    ):
+        retry = rate_limiter.check(_rate_limit_key(request))
+        if retry is not None:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Trop de requêtes. Veuillez patienter.",
+            )
+        try:
+            audio = chatbot_service.synthesize_speech(body.text, body.lang)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Échec de la synthèse vocale",
+            ) from exc
+        return Response(content=audio, media_type="audio/mpeg")
 
     return router

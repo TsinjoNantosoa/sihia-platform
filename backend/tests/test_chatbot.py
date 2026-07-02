@@ -130,3 +130,77 @@ def test_query_stream_openai_mock(mock_stream, client, monkeypatch):
     )
     assert r.status_code == 200
     assert "Réponse" in r.text or "test" in r.text
+
+
+def test_transcribe_requires_token(client):
+    r = client.post("/transcribe", files={"file": ("v.webm", b"abc", "audio/webm")})
+    assert r.status_code == 401
+
+
+def test_transcribe_no_api_key(client):
+    r = client.post(
+        "/transcribe",
+        headers=auth_headers(),
+        data={"lang": "fr"},
+        files={"file": ("voice.webm", b"fake-audio", "audio/webm")},
+    )
+    assert r.status_code == 503
+
+
+@patch("app.application.chatbot_service.httpx.Client")
+def test_transcribe_success(mock_client_cls, client, monkeypatch):
+    monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"text": "  Bonjour rendez-vous  "}
+    mock_response.raise_for_status = MagicMock()
+    mock_client = MagicMock()
+    mock_client.__enter__ = MagicMock(return_value=mock_client)
+    mock_client.__exit__ = MagicMock(return_value=False)
+    mock_client.post.return_value = mock_response
+    mock_client_cls.return_value = mock_client
+
+    r = client.post(
+        "/transcribe",
+        headers=auth_headers(),
+        data={"lang": "fr"},
+        files={"file": ("voice.webm", b"audio-bytes", "audio/webm")},
+    )
+    assert r.status_code == 200
+    assert r.json()["text"] == "Bonjour rendez-vous"
+
+
+def test_speak_requires_token(client):
+    r = client.post("/speak", json={"text": "Bonjour", "lang": "fr"})
+    assert r.status_code == 401
+
+
+def test_speak_no_api_key(client):
+    r = client.post(
+        "/speak",
+        headers=auth_headers(),
+        json={"text": "Bonjour", "lang": "fr"},
+    )
+    assert r.status_code == 503
+
+
+@patch("app.application.chatbot_service.httpx.Client")
+def test_speak_success(mock_client_cls, client, monkeypatch):
+    monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+    mock_response = MagicMock()
+    mock_response.content = b"fake-mp3-bytes"
+    mock_response.raise_for_status = MagicMock()
+    mock_client = MagicMock()
+    mock_client.__enter__ = MagicMock(return_value=mock_client)
+    mock_client.__exit__ = MagicMock(return_value=False)
+    mock_client.post.return_value = mock_response
+    mock_client_cls.return_value = mock_client
+
+    r = client.post(
+        "/speak",
+        headers=auth_headers(),
+        json={"text": "<p>Bonjour rendez-vous</p>", "lang": "fr"},
+    )
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("audio/mpeg")
+    assert r.content == b"fake-mp3-bytes"
+

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 
 import { sanitizeBot, sanitizeUser } from '../lib/sanitize'
+import { fetchBotSpeech, playBotSpeechBlob, stopBotSpeech } from '../lib/voiceSpeech'
 
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -528,9 +529,14 @@ export default function ChatWidget({ apiBaseUrl, clientId, tenantId, apiToken = 
 
   }, [messages, open])
 
+  useEffect(() => () => stopBotSpeech(), [])
 
+  async function speakBotReply(html: string) {
+    const blob = await fetchBotSpeech(apiBaseUrl, html, language, authHeaders)
+    await playBotSpeechBlob(blob)
+  }
 
-  async function sendText(text: string) {
+  async function sendText(text: string, options?: { speakReply?: boolean }) {
 
     const activeSessionId = resolveActiveSessionId()
 
@@ -683,6 +689,14 @@ export default function ChatWidget({ apiBaseUrl, clientId, tenantId, apiToken = 
 
         setShowSuggestions(false)
 
+      }
+
+      if (options?.speakReply && accumulated.trim()) {
+        try {
+          await speakBotReply(accumulated)
+        } catch {
+          // La synthèse vocale est optionnelle
+        }
       }
 
     } catch (err) {
@@ -963,7 +977,15 @@ export default function ChatWidget({ apiBaseUrl, clientId, tenantId, apiToken = 
 
                   const isPinned = isLastMessage && m.role === 'user' && isTyping
 
-                  nodes.push(<MessageBubble key={m.id} message={m} index={i} isPinned={isPinned} />)
+                  nodes.push(
+                    <MessageBubble
+                      key={m.id}
+                      message={m}
+                      index={i}
+                      isPinned={isPinned}
+                      onSpeak={m.role === 'bot' && m.id !== 'b-init' ? speakBotReply : undefined}
+                    />
+                  )
 
                   if (i === insertAfter && quickRepliesVisible) {
 
@@ -1027,7 +1049,7 @@ export default function ChatWidget({ apiBaseUrl, clientId, tenantId, apiToken = 
 
               <Composer
 
-                onSend={(txt) => {
+                onSend={(txt, meta) => {
 
                   if (txt.trim().length === 0) return
 
@@ -1035,11 +1057,19 @@ export default function ChatWidget({ apiBaseUrl, clientId, tenantId, apiToken = 
 
                   setDynamicSuggestions([])
 
-                  sendText(txt)
+                  sendText(txt, { speakReply: meta?.fromVoice })
 
                 }}
 
                 placeholder={language === 'fr' ? 'Ecrivez votre message...' : 'Type your message...'}
+
+                language={language}
+
+                apiBaseUrl={apiBaseUrl}
+
+                getAuthHeaders={authHeaders}
+
+                voiceEnabled
 
               />
 
