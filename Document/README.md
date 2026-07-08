@@ -6,6 +6,11 @@ Ce dossier transforme votre cahier de charge en plan d implementation progressif
 
 - **README_ETAT_IMPLEMENTATION.md** — Inventaire **implémenté / partiel / à faire**, aligné sur le code et le cahier des charges (revue mai 2026).
 
+## Documentation AI BOS (plateforme future)
+
+- **[AI_BOS_Implementation/](AI_BOS_Implementation/README.md)** — Documentation entreprise complète pour **AI Business Operating System** (41 README + annexes, migration depuis SIH IA, roadmap 52 semaines).
+- **[PROMPT Lovable/Bolt](AI_BOS_Implementation/PROMPT_LOVABLE_BOLT_FRONTEND.md)** — Prompt prêt à copier pour générer tout le frontend AI BOS (mocks + API-ready).
+
 ## Ordre recommande
 1. README_00_Vision_Scope.md
 2. README_01_Setup_Environnement.md
