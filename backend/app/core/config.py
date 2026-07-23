@@ -39,6 +39,13 @@ class Settings(BaseModel):
     reminder_sms_mode: str = "log"
     reminder_hours_before: int = 24
     reminder_log_path: str = "logs/reminders.jsonl"
+    email_mode: str = "log"
+    password_reset_exp_minutes: int = 60
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    microsoft_client_id: str = ""
+    microsoft_client_secret: str = ""
+    microsoft_tenant_id: str = "common"
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_user: str = ""
@@ -86,10 +93,21 @@ class Settings(BaseModel):
             database_url=os.getenv("DATABASE_URL", "app.db"),
             audit_log_path=os.getenv("AUDIT_LOG_PATH", "logs/audit.jsonl"),
             ml_use_prophet=_env_bool("ML_USE_PROPHET", True),
-            reminder_email_mode=os.getenv("REMINDER_EMAIL_MODE", "log"),
+            reminder_email_mode=(
+                os.getenv("EMAIL_MODE") or os.getenv("REMINDER_EMAIL_MODE", "log")
+            ).strip().lower(),
             reminder_sms_mode=os.getenv("REMINDER_SMS_MODE", "log"),
             reminder_hours_before=int(os.getenv("REMINDER_HOURS_BEFORE", "24")),
             reminder_log_path=os.getenv("REMINDER_LOG_PATH", "logs/reminders.jsonl"),
+            email_mode=(
+                os.getenv("EMAIL_MODE") or os.getenv("REMINDER_EMAIL_MODE", "log")
+            ).strip().lower(),
+            password_reset_exp_minutes=int(os.getenv("PASSWORD_RESET_EXP_MINUTES", "60")),
+            google_client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
+            google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET", ""),
+            microsoft_client_id=os.getenv("MICROSOFT_CLIENT_ID", ""),
+            microsoft_client_secret=os.getenv("MICROSOFT_CLIENT_SECRET", ""),
+            microsoft_tenant_id=os.getenv("MICROSOFT_TENANT_ID", "common"),
             smtp_host=os.getenv("SMTP_HOST", ""),
             smtp_port=int(os.getenv("SMTP_PORT", "587")),
             smtp_user=os.getenv("SMTP_USER", ""),

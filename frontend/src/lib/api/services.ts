@@ -421,6 +421,33 @@ export const rbacService = {
 };
 
 export const authService = {
+  forgotPassword: async (email: string) => {
+    const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) throw new Error("FORGOT_PASSWORD_FAILED");
+    return res.json() as Promise<{ status: string; message: string }>;
+  },
+  verifyResetCode: async (email: string, code: string) => {
+    const res = await fetch(`${API_URL}/api/auth/verify-reset-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code }),
+    });
+    if (!res.ok) throw new Error("INVALID_RESET_CODE");
+    return res.json() as Promise<{ status: string }>;
+  },
+  resetPassword: async (email: string, code: string, newPassword: string) => {
+    const res = await fetch(`${API_URL}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code, newPassword }),
+    });
+    if (!res.ok) throw new Error("RESET_PASSWORD_FAILED");
+    return res.json() as Promise<{ status: string }>;
+  },
   logout: async () => {
     const refreshToken = useAuth.getState().refreshToken;
     if (!refreshToken) return;

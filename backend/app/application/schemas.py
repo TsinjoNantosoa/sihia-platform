@@ -22,6 +22,23 @@ class LogoutRequest(BaseModel):
     refresh_token: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyResetCodeRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=4, max_length=16)
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=4, max_length=16)
+    new_password: str = Field(min_length=6, max_length=128, alias="newPassword")
+
+    model_config = {"populate_by_name": True}
+
+
 class PatientCreate(BaseModel):
     firstName: str
     lastName: str

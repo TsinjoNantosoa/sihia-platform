@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { HeartPulse, Mail, Lock, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
@@ -125,13 +125,9 @@ function LoginPage() {
             </button>
 
             <div className="flex items-center justify-between text-xs">
-              <button
-                type="button"
-                onClick={() => toast.info("Fonctionnalité à venir")}
-                className="text-primary hover:underline"
-              >
+              <Link to="/forgot-password" className="text-primary hover:underline">
                 {t("login.forgot")}
-              </button>
+              </Link>
               <div className="flex gap-1.5 text-muted-foreground">
                 {LOCALES.map((l) => (
                   <button

@@ -90,6 +90,8 @@ Ouvre http://localhost:8080 — tu seras redirigé vers `/login`.
 - Completer l'observabilite et les traces produits (vault, ELK).
 - Deploiement cloud production.
 
+**Backlog complet (IA, UX, métier, packs Brain*) :** voir [`Document/README_FUTUR_IMPLEMENTATION.md`](Document/README_FUTUR_IMPLEMENTATION.md).
+
 ## Ce qui est deja implemente
 
 ### Frontend

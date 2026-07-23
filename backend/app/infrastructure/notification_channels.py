@@ -34,7 +34,7 @@ def _append_log(record: dict) -> None:
 
 
 def reminder_channels_status() -> dict:
-    email_mode = settings.reminder_email_mode.lower()
+    email_mode = settings.email_mode.lower()
     sms_mode = settings.reminder_sms_mode.lower()
     smtp_configured = bool(settings.smtp_host.strip())
     twilio_configured = bool(
@@ -98,12 +98,12 @@ def _send_smtp(message: EmailMessage) -> None:
 
 
 def send_email(to: str, subject: str, body: str) -> None:
-    mode = settings.reminder_email_mode.lower()
+    mode = settings.email_mode.lower()
     timestamp = datetime.now(timezone.utc).isoformat()
 
     if mode == "smtp":
         if not settings.smtp_host.strip():
-            raise RuntimeError("REMINDER_EMAIL_MODE=smtp mais SMTP_HOST est vide")
+            raise RuntimeError("EMAIL_MODE=smtp mais SMTP_HOST est vide")
         message = EmailMessage()
         message["From"] = settings.smtp_from
         message["To"] = to
@@ -133,6 +133,31 @@ def send_email(to: str, subject: str, body: str) -> None:
             "timestamp": timestamp,
         }
     )
+
+
+# Captured in log mode for tests (password reset codes).
+password_reset_outbox: list[dict] = []
+
+
+def send_password_reset_email(*, recipient: str, code: str, expires_minutes: int) -> None:
+    subject = "Votre code de réinitialisation SIH IA"
+    body = (
+        "Une demande de réinitialisation a été reçue pour votre compte SIH IA.\n\n"
+        f"Votre code de vérification : {code}\n\n"
+        "Saisissez ce code sur la page de réinitialisation pour choisir un nouveau mot de passe.\n"
+        f"Ce code expire dans {expires_minutes} minutes et ne peut être utilisé qu'une fois.\n"
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email."
+    )
+    send_email(recipient, subject, body)
+    if settings.email_mode.lower() != "smtp":
+        password_reset_outbox.append(
+            {
+                "to": recipient,
+                "code": code,
+                "subject": subject,
+                "body": body,
+            }
+        )
 
 
 def send_sms(to: str, body: str) -> None:

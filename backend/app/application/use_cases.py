@@ -5,7 +5,13 @@ from fastapi import HTTPException, status
 
 from app.application.schemas import AppointmentCreate, DoctorUpdate, MedicalVisitCreate, PatientCreate, PatientUpdate
 from app.core.config import settings
-from app.core.security import create_access_token, create_refresh_token, decode_access_token, verify_password
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
 from app.domain.models import Appointment, MedicalVisit, Patient
 from app.domain.ports import (
     AppointmentRepository,
@@ -14,6 +20,11 @@ from app.domain.ports import (
     RefreshSessionRepository,
     UserRepository,
 )
+from app.infrastructure.notification_channels import send_password_reset_email
+from app.infrastructure.password_reset_repository import PasswordResetRepository, hash_reset_token
+import logging
+
+logger = logging.getLogger("sihia.auth")
 
 ROLE_PERMISSIONS: dict[str, list[str]] = {
     "admin": [
@@ -160,6 +171,53 @@ class AuthService:
 
     def logout_all(self, user_id: str) -> None:
         self.refresh_sessions.revoke_all_for_user(user_id)
+
+    def request_password_reset(self, email: str) -> None:
+        """Send a one-use 6-digit code without revealing whether the account exists."""
+        user = self.users.find_by_email(email)
+        if user is None or getattr(user, "status", "active") == "suspended":
+            return
+
+        reset_repo = PasswordResetRepository()
+        raw_code = reset_repo.create(user.id, expires_minutes=settings.password_reset_exp_minutes)
+        try:
+            send_password_reset_email(
+                recipient=user.email,
+                code=raw_code,
+                expires_minutes=settings.password_reset_exp_minutes,
+            )
+        except Exception:
+            logger.exception("password_reset_email_failed recipient=%s", user.email)
+
+    def _get_valid_reset(self, email: str, code: str):
+        invalid = HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Code invalide ou expiré",
+        )
+        user = self.users.find_by_email(email)
+        if user is None or getattr(user, "status", "active") == "suspended":
+            raise invalid
+
+        reset_repo = PasswordResetRepository()
+        reset = reset_repo.get_active_for_user(user.id)
+        if not reset or reset_repo.is_expired(reset):
+            raise invalid
+
+        if reset["token_hash"] != hash_reset_token(code.strip()):
+            reset_repo.register_failed_attempt(reset["id"], int(reset.get("attempts") or 0))
+            raise invalid
+
+        return user, reset
+
+    def verify_reset_code(self, email: str, code: str) -> None:
+        self._get_valid_reset(email, code)
+
+    def reset_password(self, email: str, code: str, new_password: str) -> None:
+        user, reset = self._get_valid_reset(email, code)
+        user.password = hash_password(new_password)
+        self.users.update(user)
+        PasswordResetRepository().mark_used(reset["id"])
+        self.refresh_sessions.revoke_all_for_user(user.id)
 
 
 class PatientsService:

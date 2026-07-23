@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from app.application.schemas import (
     AppointmentCreate,
     ReminderSendRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     LoginResponse,
     LogoutRequest,
@@ -16,8 +17,10 @@ from app.application.schemas import (
     DoctorUpdate,
     PatientUpdate,
     RefreshTokenRequest,
+    ResetPasswordRequest,
     UserCreate,
     UserUpdate,
+    VerifyResetCodeRequest,
 )
 from app.presentation.deps import (
     analytics_service,
@@ -123,6 +126,27 @@ def logout_all(request: Request, claims: dict = Depends(require_auth)):
         actor_email=claims.get("email"),
     )
     return {"success": True}
+
+
+@api_router.post("/auth/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest):
+    auth_service.request_password_reset(str(payload.email))
+    return {
+        "status": "ok",
+        "message": "Si ce compte existe, un code de vérification a été envoyé.",
+    }
+
+
+@api_router.post("/auth/verify-reset-code")
+def verify_reset_code(payload: VerifyResetCodeRequest):
+    auth_service.verify_reset_code(str(payload.email), payload.code)
+    return {"status": "ok"}
+
+
+@api_router.post("/auth/reset-password")
+def reset_password(payload: ResetPasswordRequest):
+    auth_service.reset_password(str(payload.email), payload.code, payload.new_password)
+    return {"status": "ok"}
 
 
 @api_router.get("/patients")
