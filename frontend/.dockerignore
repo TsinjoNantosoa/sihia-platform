@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.env
+.tanstack
+.wrangler
+test-results
+playwright-report
+*.local

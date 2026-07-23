@@ -23,23 +23,48 @@ Plateforme complète avec :
 
 ## 🚀 Démarrage
 
-# SIH IA - Plateforme hospitaliere intelligente
+Structure du repo :
 
-### Frontend
+```text
+sihia-platform/
+  frontend/   # React + TypeScript + Vite
+  backend/    # FastAPI + JWT + AI/RAG
+  docker/     # pgAdmin, etc.
+```
 
-SIH IA est une plateforme web de gestion hospitaliere pour les equipes medicales et administratives. Le projet combine un frontend React moderne et un backend FastAPI, avec authentification JWT, RBAC, analytics, prediction IA et gestion des patients.
+### Lancer front + back (recommandé)
 
 ```bash
+npm install
+npm install --prefix frontend
+npm run dev:all
+```
+
+- Frontend : http://localhost:8080
+- Backend : http://127.0.0.1:8000 — Swagger : http://127.0.0.1:8000/docs
+
+### Frontend seul
+
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Le projet est deja operable en local et partiellement branche au backend. La base est solide pour une demo ou un pilote limite, mais certaines zones restent encore a durcir avant une mise en production complete.
+### Backend seul
+
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\pip install -r requirements.txt
+.\venv\Scripts\uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Identifiants démo : `admin@sihia.health` / `admin123`, `dr.benali@sihia.health` / `demo1234`.
 
 ## Etat du projet
 
 Ouvre http://localhost:8080 — tu seras redirigé vers `/login`.
-Identifiants démo : `admin@sihia.health` / `admin123`, `dr.benali@sihia.health` / `demo1234`.
 
 ### Deja fait
 

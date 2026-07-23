@@ -20,16 +20,20 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+frontend/node_modules
 dist
+frontend/dist
 dist-ssr
 .output
 .vinxi
 .tanstack/**
+frontend/.tanstack/**
 .nitro
 *.local
 
 # Wrangler / Cloudflare
 .wrangler/
+frontend/.wrangler/
 .dev.vars
 
 # Editor directories and files
