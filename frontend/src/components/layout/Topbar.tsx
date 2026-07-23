@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Bell, Search, LogOut, Menu, ChevronDown } from "lucide-react";
+import { Search, LogOut, Menu, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
 import { useAuth } from "@/lib/auth/store";
 import { authService } from "@/lib/api/services";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,14 +80,7 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Notifications */}
-        <button
-          className="relative inline-flex size-9 items-center justify-center rounded-lg border border-border bg-background hover:bg-muted"
-          aria-label="Notifications"
-        >
-          <Bell className="size-4" />
-          <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive ring-2 ring-card" />
-        </button>
+        <NotificationBell />
 
         {/* Profile */}
         {user ? (

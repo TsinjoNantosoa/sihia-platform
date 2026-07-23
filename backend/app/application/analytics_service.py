@@ -70,7 +70,7 @@ class AnalyticsService:
         ).fetchone()["c"]
         conn.close()
 
-        critical_count = sum(1 for a in self._build_alerts(occupancy, pending) if a["level"] == "critical")
+        critical_count = sum(1 for a in self._build_alerts(occupancy, pending, len(today_appts)) if a["level"] == "critical")
 
         return {
             "patientsToday": patients_today,
@@ -152,7 +152,7 @@ class AnalyticsService:
         scheduled_today = len(today_appts)
         return min(100.0, round((scheduled_today / DAILY_SLOT_CAPACITY) * 100, 1))
 
-    def _build_alerts(self, occupancy: float, pending: int) -> list[dict]:
+    def _build_alerts(self, occupancy: float, pending: int, today_count: int = 0) -> list[dict]:
         now = _utc_now().isoformat()
         alerts: list[dict] = []
 
@@ -190,6 +190,29 @@ class AnalyticsService:
                     "createdAt": now,
                 }
             )
+        elif pending > 0:
+            alerts.append(
+                {
+                    "id": "al-pending",
+                    "level": "info",
+                    "title": "Rendez-vous à confirmer",
+                    "description": f"{pending} rendez-vous encore au statut planifié.",
+                    "area": "Accueil",
+                    "createdAt": now,
+                }
+            )
+
+        if today_count > 0:
+            alerts.append(
+                {
+                    "id": "al-today-appts",
+                    "level": "info",
+                    "title": "Rendez-vous du jour",
+                    "description": f"{today_count} rendez-vous prévus aujourd'hui.",
+                    "area": "Planning",
+                    "createdAt": now,
+                }
+            )
 
         if not alerts:
             alerts.append(
@@ -206,12 +229,11 @@ class AnalyticsService:
 
     def alerts(self, level_filter: str | None = None) -> list[dict]:
         occupancy = self._occupancy_rate()
-        conn = connect()
-        pending = conn.execute(
-            "SELECT COUNT(*) AS c FROM appointments WHERE status='scheduled'",
-        ).fetchone()["c"]
-        conn.close()
-        alerts = self._build_alerts(occupancy, pending)
+        today = _utc_now().date()
+        appts = self._active_appointments()
+        pending = sum(1 for a in appts if a["status"] == "scheduled")
+        today_count = sum(1 for a in appts if _parse_appt_date(a["date"]) == today)
+        alerts = self._build_alerts(occupancy, pending, today_count)
         if level_filter:
             return [a for a in alerts if a["level"] == level_filter]
         return alerts
