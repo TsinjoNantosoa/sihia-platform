@@ -40,7 +40,13 @@ function DoctorsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t("doctors.title")} subtitle={t("doctors.subtitle")} />
+      <PageHeader
+        title={t("doctors.title")}
+        subtitle={t("doctors.subtitle")}
+      />
+      <p className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+        {t("doctors.syncHint")}
+      </p>
 
       {isLoading ? (
         <LoadingState />

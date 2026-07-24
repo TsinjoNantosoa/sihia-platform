@@ -65,7 +65,7 @@ export default function ChatHeader({ open, onToggle, language, onLanguageChange,
           />
         </div>
         <div className="chat-header-info">
-          <span className="chat-title">Chat with</span>
+          <span className="chat-title">{language === 'fr' ? 'Discuter avec' : 'Chat with'}</span>
           <span className="chat-name">{botName}</span>
           <span className="chat-header-status">
             <span className="online-dot" />{statusText}

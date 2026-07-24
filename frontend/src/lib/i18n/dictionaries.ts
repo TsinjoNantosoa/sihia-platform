@@ -164,6 +164,7 @@ const fr: Dict = {
 
   "doctors.title": "Médecins",
   "doctors.subtitle": "Annuaire et disponibilités",
+  "doctors.syncHint": "Les médecins viennent de la table annuaire. Pour en ajouter un : Contrôle d'accès → Ajouter un utilisateur avec le rôle « Médecin » (une fiche annuaire est créée automatiquement).",
   "doctors.col.name": "Médecin",
   "doctors.col.specialty": "Spécialité",
   "doctors.col.phone": "Téléphone",
@@ -459,6 +460,7 @@ const en: Dict = {
 
   "doctors.title": "Doctors",
   "doctors.subtitle": "Directory and availability",
+  "doctors.syncHint": "Doctors come from the directory. To add one: Access control → Add a user with role “Doctor” (a directory profile is created automatically).",
   "doctors.col.name": "Doctor",
   "doctors.col.specialty": "Specialty",
   "doctors.col.phone": "Phone",
@@ -754,6 +756,7 @@ const ar: Dict = {
 
   "doctors.title": "الأطباء",
   "doctors.subtitle": "الدليل والتوفر",
+  "doctors.syncHint": "الأطباء من الدليل. للإضافة: التحكم بالوصول ← مستخدم بدور طبيب (يُنشأ الملف تلقائياً).",
   "doctors.col.name": "الطبيب",
   "doctors.col.specialty": "الاختصاص",
   "doctors.col.phone": "الهاتف",

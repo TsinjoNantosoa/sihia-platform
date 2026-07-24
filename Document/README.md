@@ -6,6 +6,7 @@ Ce dossier transforme votre cahier de charge en plan d implementation progressif
 
 - **README_ETAT_IMPLEMENTATION.md** — Inventaire **implémenté / partiel / à faire**, aligné sur le code et le cahier des charges (revue mai 2026).
 - **[README_FUTUR_IMPLEMENTATION.md](./README_FUTUR_IMPLEMENTATION.md)** — Backlog **futures implémentations** (IA, UX, métier, Brain Agent/Ops/Clinical, packs validables).
+- **[README_DEPLOY.md](./README_DEPLOY.md)** — Checklist **déploiement** (prêt démo vs prod).
 
 ## Documentation AI BOS (plateforme future)
 

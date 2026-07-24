@@ -42,23 +42,25 @@ class AnalyticsService:
 
     def kpis(self) -> dict:
         today = _utc_now().date()
+        yesterday = today - timedelta(days=1)
         week_start = today - timedelta(days=today.weekday())
-        prev_week_start = week_start - timedelta(days=7)
 
         appts = self._active_appointments()
         today_appts = [a for a in appts if _parse_appt_date(a["date"]) == today]
+        yesterday_appts = [a for a in appts if _parse_appt_date(a["date"]) == yesterday]
         this_week = [
             a for a in appts
             if (d := _parse_appt_date(a["date"])) is not None and week_start <= d < week_start + timedelta(days=7)
         ]
-        prev_week = [
-            a for a in appts
-            if (d := _parse_appt_date(a["date"])) is not None and prev_week_start <= d < week_start
-        ]
 
-        patients_today = len({a["patient_id"] for a in today_appts}) or len(today_appts)
-        prev_count = len(prev_week) or 1
-        trend = round(((len(this_week) - len(prev_week)) / prev_count) * 100, 1)
+        patients_today = len({a["patient_id"] for a in today_appts})
+        patients_yesterday = len({a["patient_id"] for a in yesterday_appts})
+        if patients_yesterday > 0:
+            trend = round(((patients_today - patients_yesterday) / patients_yesterday) * 100, 1)
+        elif patients_today > 0:
+            trend = 100.0
+        else:
+            trend = 0.0
 
         scheduled_today = len(today_appts)
         occupancy = min(100.0, round((scheduled_today / DAILY_SLOT_CAPACITY) * 100, 1))
@@ -77,7 +79,7 @@ class AnalyticsService:
             "patientsTrend": trend,
             "occupancy": occupancy,
             "occupancyCapacity": BED_CAPACITY,
-            "appointments": len(appts),
+            "appointments": len(this_week),
             "appointmentsCapacity": DAILY_SLOT_CAPACITY * 7,
             "criticalAlerts": critical_count,
             "activePatients": patient_total,

@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from app.application.schemas import UserCreate, UserUpdate
 from app.core.security import hash_password
 from app.domain.models import User
+from app.infrastructure.doctor_sync import ensure_doctor_profile_for_user
 from app.infrastructure.sqlite_repositories import SQLiteUserRepository
 
 
@@ -40,6 +41,8 @@ class RbacService:
             status="active",
         )
         self.users.create(user)
+        if user.role == "doctor":
+            ensure_doctor_profile_for_user(user)
         return _user_payload(user)
 
     def update_user(self, user_id: str, data: UserUpdate, actor_id: str) -> dict:
@@ -79,6 +82,8 @@ class RbacService:
             user.password = hash_password(updates["password"])
 
         self.users.update(user)
+        if user.role == "doctor" and user.status == "active":
+            ensure_doctor_profile_for_user(user)
         return _user_payload(user)
 
     def delete_user(self, user_id: str, actor_id: str) -> None:

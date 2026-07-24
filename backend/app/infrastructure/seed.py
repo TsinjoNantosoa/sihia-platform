@@ -82,3 +82,7 @@ def seed_demo_data() -> None:
 
     conn.commit()
     conn.close()
+
+    from app.infrastructure.doctor_sync import sync_all_doctor_users
+
+    sync_all_doctor_users()

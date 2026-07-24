@@ -19,6 +19,11 @@ export function ReminderChannelsBanner({ status, showMailhogLink = false }: Remi
   const emailMode = channelModeLabel(status.email.mode, status.email.ready, t);
   const smsMode = channelModeLabel(status.sms.mode, status.sms.ready, t);
   const isSmtp = status.email.mode === "smtp" && status.email.ready;
+  const smtpHost = (status.email.smtpHost || "").toLowerCase();
+  const isLocalSmtp =
+    smtpHost.includes("localhost") ||
+    smtpHost.includes("127.0.0.1") ||
+    smtpHost.includes("mailhog");
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
@@ -28,7 +33,7 @@ export function ReminderChannelsBanner({ status, showMailhogLink = false }: Remi
       <span>{t("appts.reminder.channelSms").replace("{mode}", smsMode)}</span>
       <span>•</span>
       <span>{status.hoursBefore}h</span>
-      {showMailhogLink && isSmtp ? (
+      {showMailhogLink && isSmtp && isLocalSmtp ? (
         <a
           href="http://localhost:8025"
           target="_blank"

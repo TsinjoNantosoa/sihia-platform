@@ -126,7 +126,7 @@ function DashboardPage() {
             label={t("dash.kpi.patients")}
             value={kpis.data.patientsToday}
             icon={<Users className="size-4" />}
-            trend={{ value: kpis.data.patientsTrend, positive: true }}
+            trend={{ value: kpis.data.patientsTrend, positive: kpis.data.patientsTrend >= 0 }}
             hint="vs hier"
           />
           <KpiCard
@@ -142,7 +142,7 @@ function DashboardPage() {
             label={t("dash.kpi.appointments")}
             value={kpis.data.appointments}
             icon={<CalendarDays className="size-4" />}
-            hint={`/ ${kpis.data.appointmentsCapacity} capacité`}
+            hint={`/ ${kpis.data.appointmentsCapacity} capacité (semaine)`}
           />
           <KpiCard
             label={t("dash.kpi.alerts")}
