@@ -91,6 +91,15 @@ class AuthService:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identifiants invalides")
         if getattr(user, "status", "active") == "suspended":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte suspendu")
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+        touch = getattr(self.users, "touch_last_login", None)
+        if callable(touch):
+            touch(user.id, now_iso)
+        else:
+            user.last_login = now_iso
+            self.users.update(user)
+
         access_token = create_access_token(
             subject=user.id,
             claims={

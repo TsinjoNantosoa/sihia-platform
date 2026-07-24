@@ -14,6 +14,7 @@ def _row_to_user(row: dict[str, Any]) -> User:
         role=row["role"],
         facility=row["facility"],
         status=row.get("status") or "active",
+        last_login=row.get("last_login"),
     )
 
 
@@ -43,8 +44,17 @@ class SQLiteUserRepository:
     def create(self, user: User) -> User:
         conn = connect()
         conn.execute(
-            "INSERT INTO users (id,name,email,password,role,facility,status) VALUES (?,?,?,?,?,?,?)",
-            (user.id, user.name, user.email, user.password, user.role, user.facility, user.status),
+            "INSERT INTO users (id,name,email,password,role,facility,status,last_login) VALUES (?,?,?,?,?,?,?,?)",
+            (
+                user.id,
+                user.name,
+                user.email,
+                user.password,
+                user.role,
+                user.facility,
+                user.status,
+                user.last_login,
+            ),
         )
         conn.commit()
         conn.close()
@@ -53,12 +63,27 @@ class SQLiteUserRepository:
     def update(self, user: User) -> User:
         conn = connect()
         conn.execute(
-            "UPDATE users SET name=?, email=?, password=?, role=?, facility=?, status=? WHERE id=?",
-            (user.name, user.email, user.password, user.role, user.facility, user.status, user.id),
+            "UPDATE users SET name=?, email=?, password=?, role=?, facility=?, status=?, last_login=? WHERE id=?",
+            (
+                user.name,
+                user.email,
+                user.password,
+                user.role,
+                user.facility,
+                user.status,
+                user.last_login,
+                user.id,
+            ),
         )
         conn.commit()
         conn.close()
         return user
+
+    def touch_last_login(self, user_id: str, when_iso: str) -> None:
+        conn = connect()
+        conn.execute("UPDATE users SET last_login=? WHERE id=?", (when_iso, user_id))
+        conn.commit()
+        conn.close()
 
     def delete(self, user_id: str) -> None:
         conn = connect()

@@ -17,7 +17,7 @@ def _user_payload(user: User) -> dict:
         "role": user.role,
         "facility": user.facility,
         "status": user.status,
-        "lastLogin": None,
+        "lastLogin": user.last_login,
     }
 
 

@@ -22,6 +22,7 @@ class User:
     role: Role
     facility: str
     status: UserStatus = "active"
+    last_login: str | None = None
 
 
 @dataclass
