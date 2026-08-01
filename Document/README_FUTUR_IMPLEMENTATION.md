@@ -74,8 +74,8 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 | B2 | [x] | Notifications riches (clic → ouvrir RDV / patient / action) | Actions API explicites, deep-links internes contrôlés, lecture unitaire et clavier |
 | B3 | [ ] | Centre de notifications (lues/non lues, filtres, Settings branchés) | Inbox réelle |
 | B4 | [x] | Rappels RDV visibles dans l’UI (envoyé / échec / retry) | Statut par canal, dernière tentative, historique, erreur et retry ciblé |
-| B5 | [ ] | Workflow confirmation RDV (planifié → confirmé → arrivé → terminé) | Parcours terrain |
-| B6 | [ ] | Calendrier multi-médecins + drag & drop | Planning usable |
+| B5 | [x] | Workflow confirmation RDV (planifié → confirmé → arrivé → terminé) | Transitions API contrôlées, états terminaux protégés, actions UI et audit |
+| B6 | [x] | Calendrier multi-médecins + drag & drop | Vue journalière filtrable, créneaux 30 min, replanification contrôlée et auditée |
 | B7 | [ ] | Filtres sauvegardés / vues “Mon service” | Moins de clics |
 | B8 | [ ] | Mode offline / file d’attente si réseau faible | Contexte hôpital réel |
 | B9 | [ ] | Onboarding + tooltips premier login | Adoption |
@@ -240,6 +240,8 @@ Items historiques du plan futur — à conserver pour traçabilité.
 | 2026-08-01 | Tests automatisés | T1 | 14 tests backend + 5 tests frontend RBAC validés |
 | 2026-08-01 | Tests automatisés | B2 | 3 tests API + 4 tests frontend, lint ciblé et build validés |
 | 2026-08-01 | Tests automatisés | B4 | 7 tests backend + 3 tests frontend, lint ciblé et build validés |
+| 2026-08-01 | Tests automatisés | B5 | 10 tests backend + 3 tests frontend, lint ciblé, build et parcours HTTP réel validés |
+| 2026-08-01 | Tests automatisés | B6 | 9 tests backend + 7 tests frontend, lint ciblé, build et déplacement HTTP réel validés |
 
 Exemple :
 

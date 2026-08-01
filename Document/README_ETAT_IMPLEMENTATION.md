@@ -56,6 +56,8 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Rendez-vous — détection conflit (chevauchement durée côté API)
 - [x] Rendez-vous — **rappels email/SMS** (log dev, **SMTP/Twilio configurables**, audit JSONL, UI statut canaux)
 - [x] Rendez-vous — statut de rappel par canal, historique, erreurs et réessai ciblé
+- [x] Rendez-vous — workflow planifié → confirmé → arrivé → terminé, transitions protégées et actions UI selon permission
+- [x] Rendez-vous — calendrier journalier multi-médecins, filtre, créneaux 30 min et replanification par glisser-déposer
 - [x] Analytique — graphiques + filtres période
 - [x] Analytique — export CSV (client)
 - [x] Analytique — export PDF / Excel (API)
@@ -276,7 +278,7 @@ npm run migrate:pg
 | Auth + session | ✅ | JWT + refresh + tests |
 | Patients | ✅ | CRUD complet + historique |
 | Médecins | ✅ | Lecture + édition planning / dispo |
-| Rendez-vous | ✅ | Conflits + rappels email/SMS (log / SMTP / Twilio) |
+| Rendez-vous | ✅ | Conflits, rappels, workflow terrain et calendrier multi-médecins avec drag & drop |
 | Dashboard KPI | ✅ | KPIs réels ; prévisions ML 7j avec métadonnées modèle et intervalle de confiance |
 | Analytique | 🟡 | Agrégats réels ; pas BI avancée |
 | Prédiction IA | ✅ | Prévisions 7j/30j depuis RDV réels ; Prophet optionnel ; métadonnées exposées API + UI |
@@ -309,6 +311,8 @@ npm run migrate:pg
 
 | Date | Changement | Tests |
 |---|---|---|
+| 2026-08-01 | B6 : calendrier journalier multi-médecins, filtre, créneaux 30 min et drag & drop avec contrôle des conflits, permissions et audit | 9 tests backend + 7 tests frontend, lint ciblé, build, déplacement HTTP réel |
+| 2026-08-01 | B5 : workflow RDV planifié → confirmé → arrivé → terminé, états terminaux protégés, actions UI et audit | 10 tests backend + 3 tests frontend, lint ciblé, build, contrôle HTTP réel |
 | 2026-08-01 | B4 : rappels visibles par canal, historique des tentatives, erreurs et retry ciblé ; normalisation UTC des RDV | 7 tests backend + 3 tests frontend, lint ciblé, build |
 | 2026-08-01 | B2 : notifications actionnables vers rendez-vous, analytics, dashboard ou dossier patient ; destinations externes refusées | 3 tests API + 4 tests frontend, lint ciblé, build |
 | 2026-08-01 | T1 : permissions JWT autoritatives, suppression du repli implicite par rôle et matrice mock unifiée | 14 tests backend + 5 tests frontend RBAC |

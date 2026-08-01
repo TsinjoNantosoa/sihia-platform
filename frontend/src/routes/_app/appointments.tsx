@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type DragEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  ArrowRight,
   Bell,
   BellRing,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  GripVertical,
   History,
   List,
   Plus,
@@ -13,6 +17,7 @@ import {
 } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
+import { usePermission } from "@/lib/auth/usePermission";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBanner";
@@ -29,6 +34,16 @@ import {
   reminderActionChannels,
   reminderStatusTone,
 } from "@/lib/notifications/reminderDisplay";
+import { appointmentStatusTone, nextAppointmentStatus } from "@/lib/appointments/workflow";
+import {
+  appointmentOccursOnDay,
+  appointmentStartsInSlot,
+  buildSlotDate,
+  CALENDAR_SLOTS,
+  canRescheduleAppointment,
+  formatDateInput,
+  type CalendarSlot,
+} from "@/lib/appointments/calendar";
 import {
   Dialog,
   DialogContent,
@@ -61,9 +76,6 @@ export const Route = createFileRoute("/_app/appointments")({
   component: AppointmentsPage,
 });
 
-const HOURS = Array.from({ length: 10 }, (_, i) => 8 + i); // 08h-17h
-const DAYS_LABEL = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
 function AppointmentsPage() {
   const t = useT();
   const locale = useI18n((s) => s.locale);
@@ -74,6 +86,10 @@ function AppointmentsPage() {
   const { data, isLoading } = useQuery<Appointment[]>({
     queryKey: ["appts"],
     queryFn: appointmentsService.list,
+  });
+  const { data: doctors } = useQuery<Doctor[]>({
+    queryKey: ["doctors"],
+    queryFn: doctorsService.list,
   });
 
   const batchMut = useMutation({
@@ -89,16 +105,6 @@ function AppointmentsPage() {
     queryKey: ["reminder-status"],
     queryFn: appointmentsService.reminderStatus,
     retry: false,
-  });
-
-  // Build calendar grid for current week
-  const today = new Date();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return d;
   });
 
   return (
@@ -192,22 +198,7 @@ function AppointmentsPage() {
                         <ReminderCell appointment={a} />
                       </td>
                       <td className="px-4 py-3 text-end">
-                        <StatusBadge
-                          dot
-                          tone={
-                            a.status === "confirmed"
-                              ? "success"
-                              : a.status === "scheduled"
-                                ? "primary"
-                                : a.status === "cancelled"
-                                  ? "destructive"
-                                  : a.status === "noshow"
-                                    ? "warning"
-                                    : "neutral"
-                          }
-                        >
-                          {t(`appts.status.${a.status}`)}
-                        </StatusBadge>
+                        <AppointmentWorkflowCell appointment={a} />
                       </td>
                     </tr>
                   ))
@@ -217,65 +208,296 @@ function AppointmentsPage() {
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-          <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border bg-muted/40">
-            <div />
-            {weekDays.map((d, i) => (
-              <div
-                key={i}
-                className="px-2 py-3 text-center text-[10px] uppercase text-muted-foreground"
-              >
-                <div className="font-semibold">{DAYS_LABEL[i]}</div>
-                <div className="text-foreground">{d.getDate()}</div>
-              </div>
-            ))}
-          </div>
-          <div className="max-h-[600px] overflow-y-auto">
-            {HOURS.map((h) => (
-              <div key={h} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border">
-                <div className="border-e border-border p-2 text-end font-mono text-[10px] text-muted-foreground">
-                  {String(h).padStart(2, "0")}:00
-                </div>
-                {weekDays.map((d: Date, di: number) => {
-                  const slot =
-                    data?.filter((a: Appointment) => {
-                      const ad = new Date(a.date);
-                      return (
-                        ad.getDate() === d.getDate() &&
-                        ad.getMonth() === d.getMonth() &&
-                        ad.getHours() === h
-                      );
-                    }) ?? [];
-                  return (
-                    <div
-                      key={di}
-                      className="min-h-[56px] border-e border-border p-1 last:border-e-0"
-                    >
-                      {slot.map((a: Appointment) => (
-                        <div
-                          key={a.id}
-                          className={`mb-1 rounded-md border-s-2 p-1.5 text-[10px] ${
-                            a.status === "cancelled"
-                              ? "border-destructive bg-destructive-soft text-destructive line-through"
-                              : "border-primary bg-primary-soft text-primary"
-                          }`}
-                        >
-                          <div className="truncate font-semibold">{a.patientName}</div>
-                          <div className="truncate opacity-80">{a.doctorName}</div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
+        <MultiDoctorCalendar appointments={data ?? []} doctors={doctors ?? []} />
       )}
 
       <PermissionGuard permission="appointments:create">
         <NewAppointmentDialog open={showNew} onOpenChange={setShowNew} />
       </PermissionGuard>
+    </div>
+  );
+}
+
+function MultiDoctorCalendar({
+  appointments,
+  doctors,
+}: {
+  appointments: Appointment[];
+  doctors: Doctor[];
+}) {
+  const t = useT();
+  const locale = useI18n((state) => state.locale);
+  const canUpdate = usePermission("appointments:update");
+  const qc = useQueryClient();
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [doctorFilter, setDoctorFilter] = useState("all");
+  const [draggedAppointmentId, setDraggedAppointmentId] = useState<string | null>(null);
+  const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
+
+  const visibleDoctors =
+    doctorFilter === "all" ? doctors : doctors.filter((doctor) => doctor.id === doctorFilter);
+  const dayAppointments = appointments.filter((appointment) =>
+    appointmentOccursOnDay(appointment.date, selectedDate),
+  );
+
+  const moveMutation = useMutation({
+    mutationFn: ({
+      appointmentId,
+      doctorId,
+      date,
+    }: {
+      appointmentId: string;
+      doctorId: string;
+      date: string;
+    }) => appointmentsService.reschedule(appointmentId, { doctorId, date }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["appts"] });
+      toast.success(t("appts.calendar.moved"));
+    },
+    onError: (error: Error) => {
+      toast.error(
+        error.message.toLowerCase().includes("conflit")
+          ? t("appts.conflict")
+          : t("appts.calendar.moveFailed"),
+      );
+    },
+    onSettled: () => {
+      setDraggedAppointmentId(null);
+      setActiveDropZone(null);
+    },
+  });
+
+  const moveDay = (offset: number) => {
+    setSelectedDate((current) => {
+      const next = new Date(current);
+      next.setDate(current.getDate() + offset);
+      return next;
+    });
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>, doctor: Doctor, slot: CalendarSlot) => {
+    event.preventDefault();
+    const appointmentId =
+      draggedAppointmentId || event.dataTransfer.getData("application/x-sihia-appointment");
+    const appointment = appointments.find((item) => item.id === appointmentId);
+    if (!appointment || !canUpdate || !canRescheduleAppointment(appointment.status)) return;
+    const date = buildSlotDate(selectedDate, slot);
+    if (appointment.doctorId === doctor.id && appointment.date === date) return;
+    moveMutation.mutate({ appointmentId, doctorId: doctor.id, date });
+  };
+
+  if (doctors.length === 0) {
+    return <EmptyState />;
+  }
+
+  const columns = `72px repeat(${visibleDoctors.length}, minmax(190px, 1fr))`;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+      <div className="flex flex-col gap-3 border-b border-border p-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={t("common.previous")}
+            onClick={() => moveDay(-1)}
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+          <input
+            type="date"
+            value={formatDateInput(selectedDate)}
+            onChange={(event) => {
+              if (event.target.value) setSelectedDate(new Date(`${event.target.value}T12:00:00`));
+            }}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium"
+          />
+          <Button variant="outline" onClick={() => setSelectedDate(new Date())}>
+            {t("common.today")}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={t("common.next")}
+            onClick={() => moveDay(1)}
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+          <span className="text-sm font-semibold capitalize">
+            {selectedDate.toLocaleDateString(locale, {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="calendar-doctor" className="text-xs font-medium text-muted-foreground">
+            {t("appts.calendar.doctorFilter")}
+          </label>
+          <select
+            id="calendar-doctor"
+            value={doctorFilter}
+            onChange={(event) => setDoctorFilter(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          >
+            <option value="all">{t("appts.calendar.allDoctors")}</option>
+            {doctors.map((doctor) => (
+              <option key={doctor.id} value={doctor.id}>
+                Dr. {doctor.firstName} {doctor.lastName}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-muted-foreground">{t("appts.calendar.dragHint")}</span>
+        </div>
+      </div>
+
+      <div className="max-h-[650px] overflow-auto">
+        <div className="min-w-max">
+          <div
+            className="sticky top-0 z-20 grid border-b border-border bg-muted/90 backdrop-blur"
+            style={{ gridTemplateColumns: columns }}
+          >
+            <div className="sticky start-0 z-30 border-e border-border bg-muted/90 p-3 text-center text-xs font-semibold">
+              {t("appts.col.time")}
+            </div>
+            {visibleDoctors.map((doctor) => (
+              <div key={doctor.id} className="border-e border-border px-3 py-2 last:border-e-0">
+                <div className="truncate text-xs font-semibold">
+                  Dr. {doctor.firstName} {doctor.lastName}
+                </div>
+                <div className="truncate text-[10px] text-muted-foreground">{doctor.specialty}</div>
+              </div>
+            ))}
+          </div>
+
+          {CALENDAR_SLOTS.map((slot) => (
+            <div
+              key={`${slot.hour}-${slot.minute}`}
+              className="grid border-b border-border last:border-b-0"
+              style={{ gridTemplateColumns: columns }}
+            >
+              <div className="sticky start-0 z-10 border-e border-border bg-card p-2 text-end font-mono text-[10px] text-muted-foreground">
+                {String(slot.hour).padStart(2, "0")}:{String(slot.minute).padStart(2, "0")}
+              </div>
+              {visibleDoctors.map((doctor) => {
+                const zoneId = `${doctor.id}-${slot.hour}-${slot.minute}`;
+                const slotAppointments = dayAppointments.filter(
+                  (appointment) =>
+                    appointment.doctorId === doctor.id &&
+                    appointmentStartsInSlot(appointment.date, slot),
+                );
+                return (
+                  <div
+                    key={doctor.id}
+                    onDragOver={(event) => {
+                      if (!draggedAppointmentId) return;
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "move";
+                      setActiveDropZone(zoneId);
+                    }}
+                    onDragLeave={() =>
+                      setActiveDropZone((current) => (current === zoneId ? null : current))
+                    }
+                    onDrop={(event) => handleDrop(event, doctor, slot)}
+                    className={`min-h-16 border-e border-border p-1 transition-colors last:border-e-0 ${
+                      activeDropZone === zoneId
+                        ? "bg-primary-soft ring-1 ring-inset ring-primary"
+                        : ""
+                    }`}
+                  >
+                    {slotAppointments.map((appointment) => {
+                      const draggable = canUpdate && canRescheduleAppointment(appointment.status);
+                      return (
+                        <div
+                          key={appointment.id}
+                          draggable={draggable}
+                          onDragStart={(event) => {
+                            if (!draggable) return;
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData(
+                              "application/x-sihia-appointment",
+                              appointment.id,
+                            );
+                            setDraggedAppointmentId(appointment.id);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedAppointmentId(null);
+                            setActiveDropZone(null);
+                          }}
+                          className={`mb-1 rounded-md border-s-2 p-1.5 text-[10px] shadow-sm ${
+                            appointment.status === "cancelled"
+                              ? "border-destructive bg-destructive-soft text-destructive line-through"
+                              : appointment.status === "confirmed"
+                                ? "border-success bg-success-soft text-success"
+                                : "border-primary bg-primary-soft text-primary"
+                          } ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed opacity-75"}`}
+                          title={
+                            draggable ? t("appts.calendar.dragHint") : t("appts.calendar.locked")
+                          }
+                        >
+                          <div className="flex items-start gap-1">
+                            {draggable ? <GripVertical className="mt-0.5 size-3 shrink-0" /> : null}
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate font-semibold">
+                                {appointment.patientName}
+                              </div>
+                              <div className="truncate opacity-80">
+                                {new Date(appointment.date).toLocaleTimeString(locale, {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}{" "}
+                                · {appointment.durationMin} min
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AppointmentWorkflowCell({ appointment }: { appointment: Appointment }) {
+  const t = useT();
+  const qc = useQueryClient();
+  const nextStatus = nextAppointmentStatus(appointment.status);
+  const mutation = useMutation({
+    mutationFn: (status: Appointment["status"]) =>
+      appointmentsService.updateStatus(appointment.id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["appts"] });
+      toast.success(t("appts.workflow.updated"));
+    },
+    onError: () => toast.error(t("common.error")),
+  });
+
+  return (
+    <div className="flex min-w-36 flex-col items-end gap-1.5">
+      <StatusBadge dot tone={appointmentStatusTone(appointment.status)}>
+        {t(`appts.status.${appointment.status}`)}
+      </StatusBadge>
+      {nextStatus ? (
+        <PermissionGuard permission="appointments:update">
+          <button
+            type="button"
+            onClick={() => mutation.mutate(nextStatus)}
+            disabled={mutation.isPending}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-primary hover:bg-primary-soft disabled:opacity-50"
+          >
+            {t(`appts.workflow.action.${nextStatus}`)}
+            <ArrowRight className="size-3" aria-hidden />
+          </button>
+        </PermissionGuard>
+      ) : null}
     </div>
   );
 }

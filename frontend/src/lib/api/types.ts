@@ -33,7 +33,13 @@ export interface Doctor {
   schedule: { day: string; slots: string[] }[];
 }
 
-export type AppointmentStatus = "scheduled" | "confirmed" | "completed" | "cancelled" | "noshow";
+export type AppointmentStatus =
+  | "scheduled"
+  | "confirmed"
+  | "arrived"
+  | "completed"
+  | "cancelled"
+  | "noshow";
 
 export type ReminderChannelStatus = "none" | "sent" | "failed";
 

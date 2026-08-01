@@ -12,7 +12,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.domain.models import Appointment, MedicalVisit, Patient
+from app.domain.models import Appointment, AppointmentStatus, MedicalVisit, Patient
 from app.domain.ports import (
     AppointmentRepository,
     DoctorRepository,
@@ -395,7 +395,93 @@ class AppointmentsService:
         return self.appointments.create(appointment)
 
     def cancel(self, appointment_id: str) -> Appointment:
-        cancelled = self.appointments.cancel(appointment_id)
-        if cancelled is None:
+        return self.transition_status(appointment_id, "cancelled")
+
+    def reschedule(
+        self,
+        appointment_id: str,
+        *,
+        doctor_id: str,
+        doctor_name: str,
+        date: str,
+    ) -> Appointment:
+        appointment = self.appointments.get(appointment_id)
+        if appointment is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
-        return cancelled
+        if appointment.status not in {"scheduled", "confirmed"}:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "APPOINTMENT_NOT_RESCHEDULABLE",
+                    "message": "Ce rendez-vous ne peut plus être déplacé",
+                    "details": {"currentStatus": appointment.status},
+                },
+            )
+
+        new_start = _parse_appointment_dt(date)
+        for existing in self.appointments.list():
+            if (
+                existing.id == appointment_id
+                or existing.doctor_id != doctor_id
+                or existing.status == "cancelled"
+            ):
+                continue
+            existing_start = _parse_appointment_dt(existing.date)
+            if _appointments_overlap(
+                new_start,
+                appointment.duration_min,
+                existing_start,
+                existing.duration_min,
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "code": "APPOINTMENT_CONFLICT",
+                        "message": "Conflit horaire détecté",
+                        "details": {"appointmentId": existing.id},
+                    },
+                )
+
+        updated = self.appointments.reschedule(
+            appointment_id,
+            doctor_id=doctor_id,
+            doctor_name=doctor_name,
+            date=date,
+        )
+        if updated is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+        return updated
+
+    def transition_status(self, appointment_id: str, target: AppointmentStatus) -> Appointment:
+        appointment = self.appointments.get(appointment_id)
+        if appointment is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+        if appointment.status == target:
+            return appointment
+
+        allowed: dict[AppointmentStatus, set[AppointmentStatus]] = {
+            "scheduled": {"confirmed", "cancelled", "noshow"},
+            "confirmed": {"arrived", "cancelled", "noshow"},
+            "arrived": {"completed"},
+            "completed": set(),
+            "cancelled": set(),
+            "noshow": set(),
+        }
+        allowed_targets = allowed.get(appointment.status, set())
+        if target not in allowed_targets:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "INVALID_APPOINTMENT_TRANSITION",
+                    "message": f"Transition {appointment.status} -> {target} interdite",
+                    "details": {
+                        "currentStatus": appointment.status,
+                        "allowedStatuses": sorted(allowed_targets),
+                    },
+                },
+            )
+
+        updated = self.appointments.update_status(appointment_id, target)
+        if updated is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+        return updated

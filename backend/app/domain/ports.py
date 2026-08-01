@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.domain.models import Appointment, Doctor, Patient, User
+from app.domain.models import Appointment, AppointmentStatus, Doctor, Patient, User
 
 
 class UserRepository(Protocol):
@@ -26,6 +26,15 @@ class AppointmentRepository(Protocol):
     def list(self) -> list[Appointment]: ...
     def get(self, appointment_id: str) -> Appointment | None: ...
     def create(self, appointment: Appointment) -> Appointment: ...
+    def update_status(self, appointment_id: str, status: AppointmentStatus) -> Appointment | None: ...
+    def reschedule(
+        self,
+        appointment_id: str,
+        *,
+        doctor_id: str,
+        doctor_name: str,
+        date: str,
+    ) -> Appointment | None: ...
     def cancel(self, appointment_id: str) -> Appointment | None: ...
 
 

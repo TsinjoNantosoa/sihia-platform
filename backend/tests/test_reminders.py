@@ -58,7 +58,7 @@ def _create_future_appointment(headers: dict[str, str], patient_id: str, *, with
         json={
             "patientId": patient_id,
             "patientName": "Rappel Test",
-            "doctorId": "d-2",
+            "doctorId": f"d-reminder-{patient_id}",
             "doctorName": "Dr. Karim",
             "date": when.isoformat(),
             "durationMin": 30,

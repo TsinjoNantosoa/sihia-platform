@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from app.domain.models import Appointment, Doctor, MedicalVisit, Patient, User
+from app.domain.models import Appointment, AppointmentStatus, Doctor, MedicalVisit, Patient, User
 from app.infrastructure.database import connect
 
 
@@ -325,12 +325,37 @@ class SQLiteAppointmentRepository:
         return appointment
 
     def cancel(self, appointment_id: str) -> Appointment | None:
+        return self.update_status(appointment_id, "cancelled")
+
+    def update_status(self, appointment_id: str, status: AppointmentStatus) -> Appointment | None:
         conn = connect()
         row = conn.execute("SELECT * FROM appointments WHERE id=?", (appointment_id,)).fetchone()
         if not row:
             conn.close()
             return None
-        conn.execute("UPDATE appointments SET status='cancelled' WHERE id=?", (appointment_id,))
+        conn.execute("UPDATE appointments SET status=? WHERE id=?", (status, appointment_id))
+        conn.commit()
+        updated = conn.execute("SELECT * FROM appointments WHERE id=?", (appointment_id,)).fetchone()
+        conn.close()
+        return Appointment(**updated) if updated else None
+
+    def reschedule(
+        self,
+        appointment_id: str,
+        *,
+        doctor_id: str,
+        doctor_name: str,
+        date: str,
+    ) -> Appointment | None:
+        conn = connect()
+        row = conn.execute("SELECT id FROM appointments WHERE id=?", (appointment_id,)).fetchone()
+        if not row:
+            conn.close()
+            return None
+        conn.execute(
+            "UPDATE appointments SET doctor_id=?, doctor_name=?, date=? WHERE id=?",
+            (doctor_id, doctor_name, date, appointment_id),
+        )
         conn.commit()
         updated = conn.execute("SELECT * FROM appointments WHERE id=?", (appointment_id,)).fetchone()
         conn.close()

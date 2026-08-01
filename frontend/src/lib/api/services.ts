@@ -3,6 +3,7 @@
 
 import type {
   Appointment,
+  AppointmentStatus,
   AppointmentReminderHistoryResponse,
   AppointmentReminderSendResponse,
   Patient,
@@ -82,6 +83,30 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   }
   if (endpoint.includes("/api/doctors")) return DOCTORS;
   if (endpoint.includes("/api/appointments")) {
+    if (options.method === "PATCH" && options.body && endpoint.endsWith("/schedule")) {
+      const id = endpoint.split("/api/appointments/")[1]?.split("/")[0];
+      const input = JSON.parse(options.body as string) as { doctorId: string; date: string };
+      const index = mockAppointmentsDb.findIndex((appointment) => appointment.id === id);
+      const existing = mockAppointmentsDb[index];
+      const doctor = DOCTORS.find((item) => item.id === input.doctorId);
+      if (!existing || !doctor) return null;
+      const updated: Appointment = {
+        ...existing,
+        doctorId: doctor.id,
+        doctorName: `Dr. ${doctor.firstName} ${doctor.lastName}`,
+        date: input.date,
+      };
+      mockAppointmentsDb[index] = updated;
+      return updated;
+    }
+    if (options.method === "PATCH" && options.body && endpoint.endsWith("/status")) {
+      const id = endpoint.split("/api/appointments/")[1]?.split("/")[0];
+      const input = JSON.parse(options.body as string) as { status: AppointmentStatus };
+      const index = mockAppointmentsDb.findIndex((appointment) => appointment.id === id);
+      if (index < 0) return null;
+      mockAppointmentsDb[index] = { ...mockAppointmentsDb[index], status: input.status };
+      return mockAppointmentsDb[index];
+    }
     if (options.method === "POST" && options.body) {
       const a = { ...JSON.parse(options.body as string), id: "a-" + Date.now() };
       mockAppointmentsDb = [a, ...mockAppointmentsDb];
@@ -399,6 +424,16 @@ export const appointmentsService = {
       body: JSON.stringify(input),
     }),
   cancel: (id: string) => fetchWithAuth(`/api/appointments/${id}/cancel`, { method: "POST" }),
+  updateStatus: (id: string, status: AppointmentStatus) =>
+    fetchWithAuth<Appointment>(`/api/appointments/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+  reschedule: (id: string, input: { doctorId: string; date: string }) =>
+    fetchWithAuth<Appointment>(`/api/appointments/${id}/schedule`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
   remind: (id: string, channels: Array<"email" | "sms"> = ["email"]) =>
     fetchWithAuth<AppointmentReminderSendResponse>(`/api/appointments/${id}/remind`, {
       method: "POST",

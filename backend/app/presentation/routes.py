@@ -7,6 +7,8 @@ from fastapi.responses import StreamingResponse
 
 from app.application.schemas import (
     AppointmentCreate,
+    AppointmentReschedule,
+    AppointmentStatusUpdate,
     ReminderSendRequest,
     ForgotPasswordRequest,
     LoginRequest,
@@ -274,6 +276,58 @@ def create_appointment(payload: AppointmentCreate, _claims: dict = Depends(requi
 def cancel_appointment(appointment_id: str, _claims: dict = Depends(require_permission("appointments:update"))):
     a = appointments_service.cancel(appointment_id)
     return asdict(a)
+
+
+@api_router.patch("/appointments/{appointment_id}/status")
+def update_appointment_status(
+    request: Request,
+    appointment_id: str,
+    payload: AppointmentStatusUpdate,
+    claims: dict = Depends(require_permission("appointments:update")),
+):
+    previous = appointments_service.appointments.get(appointment_id)
+    updated = appointments_service.transition_status(appointment_id, payload.status)
+    log_admin_action(
+        request,
+        action="appointments.status.update",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=appointment_id,
+        extra={"from": previous.status if previous else None, "to": updated.status},
+    )
+    return _appointment_payload(updated)
+
+
+@api_router.patch("/appointments/{appointment_id}/schedule")
+def reschedule_appointment(
+    request: Request,
+    appointment_id: str,
+    payload: AppointmentReschedule,
+    claims: dict = Depends(require_permission("appointments:update")),
+):
+    previous = appointments_service.appointments.get(appointment_id)
+    doctor = doctors_service.get(payload.doctorId)
+    doctor_name = f"Dr. {doctor.first_name} {doctor.last_name}"
+    updated = appointments_service.reschedule(
+        appointment_id,
+        doctor_id=doctor.id,
+        doctor_name=doctor_name,
+        date=payload.date,
+    )
+    log_admin_action(
+        request,
+        action="appointments.schedule.update",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=appointment_id,
+        extra={
+            "fromDoctorId": previous.doctor_id if previous else None,
+            "toDoctorId": updated.doctor_id,
+            "fromDate": previous.date if previous else None,
+            "toDate": updated.date,
+        },
+    )
+    return _appointment_payload(updated)
 
 
 @api_router.get("/appointments/{appointment_id}/reminders")
