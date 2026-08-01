@@ -76,7 +76,7 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 | B4 | [x] | Rappels RDV visibles dans l’UI (envoyé / échec / retry) | Statut par canal, dernière tentative, historique, erreur et retry ciblé |
 | B5 | [x] | Workflow confirmation RDV (planifié → confirmé → arrivé → terminé) | Transitions API contrôlées, états terminaux protégés, actions UI et audit |
 | B6 | [x] | Calendrier multi-médecins + drag & drop | Vue journalière filtrable, créneaux 30 min, replanification contrôlée et auditée |
-| B7 | [ ] | Filtres sauvegardés / vues “Mon service” | Moins de clics |
+| B7 | [x] | Filtres sauvegardés / vues “Mon service” | Recherche et filtres combinés, vues liste/calendrier persistées par utilisateur |
 | B8 | [ ] | Mode offline / file d’attente si réseau faible | Contexte hôpital réel |
 | B9 | [ ] | Onboarding + tooltips premier login | Adoption |
 | B10 | [ ] | Accessibilité A11y (clavier, contrastes, lecteurs d’écran) | Qualité produit |
@@ -242,6 +242,7 @@ Items historiques du plan futur — à conserver pour traçabilité.
 | 2026-08-01 | Tests automatisés | B4 | 7 tests backend + 3 tests frontend, lint ciblé et build validés |
 | 2026-08-01 | Tests automatisés | B5 | 10 tests backend + 3 tests frontend, lint ciblé, build et parcours HTTP réel validés |
 | 2026-08-01 | Tests automatisés | B6 | 9 tests backend + 7 tests frontend, lint ciblé, build et déplacement HTTP réel validés |
+| 2026-08-01 | Tests automatisés | B7 | 11 tests frontend, lint ciblé, build et contrôle frontend/API réels validés |
 
 Exemple :
 

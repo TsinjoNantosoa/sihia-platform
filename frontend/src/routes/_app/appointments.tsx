@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type DragEvent } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowRight,
   Bell,
   BellRing,
+  BriefcaseBusiness,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -14,10 +15,15 @@ import {
   List,
   Plus,
   RefreshCw,
+  Save,
+  Search,
+  Trash2,
+  X,
 } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { usePermission } from "@/lib/auth/usePermission";
+import { useAuth } from "@/lib/auth/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBanner";
@@ -27,6 +33,7 @@ import { appointmentsService, doctorsService, patientsService } from "@/lib/api/
 import type {
   Appointment as ApiAppointment,
   AppointmentReminderHistoryItem,
+  AppointmentStatus,
   ReminderChannelStatus,
 } from "@/lib/api/types";
 import {
@@ -44,6 +51,17 @@ import {
   formatDateInput,
   type CalendarSlot,
 } from "@/lib/appointments/calendar";
+import {
+  EMPTY_APPOINTMENT_FILTERS,
+  filterAppointments,
+  loadMySpecialty,
+  loadSavedAppointmentViews,
+  resolveMySpecialty,
+  saveAppointmentViews,
+  saveMySpecialty,
+  type AppointmentFilters,
+  type SavedAppointmentView,
+} from "@/lib/appointments/savedViews";
 import {
   Dialog,
   DialogContent,
@@ -67,7 +85,8 @@ type Doctor = {
   id: string;
   firstName: string;
   lastName: string;
-  specialty?: string;
+  specialty: string;
+  email: string;
 };
 
 export const Route = createFileRoute("/_app/appointments")({
@@ -79,8 +98,12 @@ export const Route = createFileRoute("/_app/appointments")({
 function AppointmentsPage() {
   const t = useT();
   const locale = useI18n((s) => s.locale);
+  const user = useAuth((state) => state.user);
   const [view, setView] = useState<"list" | "calendar">("list");
   const [showNew, setShowNew] = useState(false);
+  const [filters, setFilters] = useState<AppointmentFilters>(EMPTY_APPOINTMENT_FILTERS);
+  const [savedViews, setSavedViews] = useState<SavedAppointmentView[]>([]);
+  const [mySpecialty, setMySpecialty] = useState("");
 
   const qc = useQueryClient();
   const { data, isLoading } = useQuery<Appointment[]>({
@@ -106,6 +129,61 @@ function AppointmentsPage() {
     queryFn: appointmentsService.reminderStatus,
     retry: false,
   });
+
+  const userKey = user?.id || user?.email || "anonymous";
+  const specialties = [...new Set((doctors ?? []).map((doctor) => doctor.specialty))].sort();
+  const filteredAppointments = filterAppointments(data ?? [], doctors ?? [], filters);
+  const filteredDoctors = (doctors ?? []).filter(
+    (doctor) =>
+      (!filters.specialty || doctor.specialty === filters.specialty) &&
+      (!filters.doctorId || doctor.id === filters.doctorId),
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !doctors?.length) return;
+    setSavedViews(loadSavedAppointmentViews(window.localStorage, userKey));
+    setMySpecialty(
+      resolveMySpecialty(user?.email, doctors, loadMySpecialty(window.localStorage, userKey)),
+    );
+  }, [doctors, user?.email, userKey]);
+
+  const persistViews = (next: SavedAppointmentView[]) => {
+    setSavedViews(next);
+    if (typeof window !== "undefined") {
+      saveAppointmentViews(window.localStorage, userKey, next);
+    }
+  };
+
+  const saveCurrentView = (name: string) => {
+    const normalizedName = name.trim();
+    if (!normalizedName) return;
+    const existing = savedViews.find(
+      (saved) => saved.name.toLowerCase() === normalizedName.toLowerCase(),
+    );
+    const saved: SavedAppointmentView = {
+      id: existing?.id ?? `view-${Date.now()}`,
+      name: normalizedName,
+      display: view,
+      filters: { ...filters },
+    };
+    const next = existing
+      ? savedViews.map((item) => (item.id === existing.id ? saved : item))
+      : [...savedViews, saved];
+    persistViews(next);
+    toast.success(t("appts.filters.savedToast"));
+  };
+
+  const deleteSavedView = (id: string) => {
+    persistViews(savedViews.filter((saved) => saved.id !== id));
+    toast.success(t("appts.filters.deletedToast"));
+  };
+
+  const updateMySpecialty = (specialty: string) => {
+    setMySpecialty(specialty);
+    if (typeof window !== "undefined") {
+      saveMySpecialty(window.localStorage, userKey, specialty);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -157,6 +235,23 @@ function AppointmentsPage() {
 
       {reminderStatus.data ? <ReminderChannelsBanner status={reminderStatus.data} /> : null}
 
+      <AppointmentFiltersBar
+        filters={filters}
+        onFiltersChange={setFilters}
+        doctors={doctors ?? []}
+        specialties={specialties}
+        mySpecialty={mySpecialty}
+        onMySpecialtyChange={updateMySpecialty}
+        savedViews={savedViews}
+        onSaveView={saveCurrentView}
+        onApplyView={(saved) => {
+          setFilters({ ...saved.filters });
+          setView(saved.display);
+        }}
+        onDeleteView={deleteSavedView}
+        resultCount={filteredAppointments.length}
+      />
+
       {isLoading ? (
         <LoadingState />
       ) : view === "list" ? (
@@ -174,14 +269,14 @@ function AppointmentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {data?.length === 0 ? (
+                {filteredAppointments.length === 0 ? (
                   <tr>
                     <td colSpan={6}>
                       <EmptyState />
                     </td>
                   </tr>
                 ) : (
-                  data?.map((a: Appointment) => (
+                  filteredAppointments.map((a: Appointment) => (
                     <tr key={a.id} className="hover:bg-muted/30">
                       <td className="px-4 py-3 font-mono text-xs">
                         {new Date(a.date).toLocaleString(locale, {
@@ -208,12 +303,204 @@ function AppointmentsPage() {
           </div>
         </div>
       ) : (
-        <MultiDoctorCalendar appointments={data ?? []} doctors={doctors ?? []} />
+        <MultiDoctorCalendar appointments={filteredAppointments} doctors={filteredDoctors} />
       )}
 
       <PermissionGuard permission="appointments:create">
         <NewAppointmentDialog open={showNew} onOpenChange={setShowNew} />
       </PermissionGuard>
+    </div>
+  );
+}
+
+const FILTER_STATUSES: Array<AppointmentStatus | "all"> = [
+  "all",
+  "scheduled",
+  "confirmed",
+  "arrived",
+  "completed",
+  "cancelled",
+  "noshow",
+];
+
+function AppointmentFiltersBar({
+  filters,
+  onFiltersChange,
+  doctors,
+  specialties,
+  mySpecialty,
+  onMySpecialtyChange,
+  savedViews,
+  onSaveView,
+  onApplyView,
+  onDeleteView,
+  resultCount,
+}: {
+  filters: AppointmentFilters;
+  onFiltersChange: (filters: AppointmentFilters) => void;
+  doctors: Doctor[];
+  specialties: string[];
+  mySpecialty: string;
+  onMySpecialtyChange: (specialty: string) => void;
+  savedViews: SavedAppointmentView[];
+  onSaveView: (name: string) => void;
+  onApplyView: (view: SavedAppointmentView) => void;
+  onDeleteView: (id: string) => void;
+  resultCount: number;
+}) {
+  const t = useT();
+  const [viewName, setViewName] = useState("");
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-56 flex-1">
+          <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={filters.search}
+            onChange={(event) => onFiltersChange({ ...filters, search: event.target.value })}
+            placeholder={t("appts.filters.searchPlaceholder")}
+            className="w-full rounded-lg border border-border bg-background py-2 pe-3 ps-9 text-sm"
+          />
+        </div>
+        <select
+          value={filters.status}
+          onChange={(event) =>
+            onFiltersChange({
+              ...filters,
+              status: event.target.value as AppointmentFilters["status"],
+            })
+          }
+          aria-label={t("appts.col.status")}
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+        >
+          {FILTER_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status === "all" ? t("appts.filters.allStatuses") : t(`appts.status.${status}`)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.specialty}
+          onChange={(event) =>
+            onFiltersChange({ ...filters, specialty: event.target.value, doctorId: "" })
+          }
+          aria-label={t("appts.filters.specialty")}
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+        >
+          <option value="">{t("appts.filters.allSpecialties")}</option>
+          {specialties.map((specialty) => (
+            <option key={specialty} value={specialty}>
+              {specialty}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.doctorId}
+          onChange={(event) => onFiltersChange({ ...filters, doctorId: event.target.value })}
+          aria-label={t("appts.col.doctor")}
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+        >
+          <option value="">{t("appts.calendar.allDoctors")}</option>
+          {doctors
+            .filter((doctor) => !filters.specialty || doctor.specialty === filters.specialty)
+            .map((doctor) => (
+              <option key={doctor.id} value={doctor.id}>
+                Dr. {doctor.firstName} {doctor.lastName}
+              </option>
+            ))}
+        </select>
+        <Button
+          variant={filters.specialty === mySpecialty && mySpecialty ? "default" : "outline"}
+          disabled={!mySpecialty}
+          onClick={() => onFiltersChange({ ...filters, specialty: mySpecialty, doctorId: "" })}
+        >
+          <BriefcaseBusiness className="size-4" />
+          {t("appts.filters.myService")}
+        </Button>
+        <Button variant="ghost" onClick={() => onFiltersChange({ ...EMPTY_APPOINTMENT_FILTERS })}>
+          <X className="size-4" />
+          {t("appts.filters.clear")}
+        </Button>
+        <span className="ms-auto text-xs font-medium text-muted-foreground">
+          {t("appts.filters.results").replace("{count}", String(resultCount))}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+        <label htmlFor="my-service" className="text-xs font-medium text-muted-foreground">
+          {t("appts.filters.defineService")}
+        </label>
+        <select
+          id="my-service"
+          value={mySpecialty}
+          onChange={(event) => onMySpecialtyChange(event.target.value)}
+          className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+        >
+          {specialties.map((specialty) => (
+            <option key={specialty} value={specialty}>
+              {specialty}
+            </option>
+          ))}
+        </select>
+
+        <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
+
+        <select
+          defaultValue=""
+          onChange={(event) => {
+            const saved = savedViews.find((item) => item.id === event.target.value);
+            if (saved) onApplyView(saved);
+            event.target.value = "";
+          }}
+          aria-label={t("appts.filters.savedViews")}
+          className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+        >
+          <option value="">{t("appts.filters.savedViews")}</option>
+          {savedViews.map((saved) => (
+            <option key={saved.id} value={saved.id}>
+              {saved.name}
+            </option>
+          ))}
+        </select>
+        <input
+          value={viewName}
+          onChange={(event) => setViewName(event.target.value)}
+          placeholder={t("appts.filters.viewName")}
+          className="min-w-40 rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!viewName.trim()}
+          onClick={() => {
+            onSaveView(viewName);
+            setViewName("");
+          }}
+        >
+          <Save className="size-3.5" />
+          {t("appts.filters.saveView")}
+        </Button>
+
+        {savedViews.map((saved) => (
+          <span
+            key={saved.id}
+            className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[11px]"
+          >
+            <button type="button" onClick={() => onApplyView(saved)} className="font-medium">
+              {saved.name}
+            </button>
+            <button
+              type="button"
+              onClick={() => onDeleteView(saved.id)}
+              aria-label={`${t("common.delete")} ${saved.name}`}
+              className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
+            >
+              <Trash2 className="size-3" />
+            </button>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
