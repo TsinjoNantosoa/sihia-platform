@@ -3,7 +3,7 @@
 > **Statut :** backlog produit (non implémenté, sauf mentions `[x]`)  
 > **Objectif :** rendre la plateforme **plus intelligente** et **très utilisable** (clinique, ops, agent IA, prod).  
 > **Stack cible :** `frontend/` (React) + `backend/` (FastAPI)  
-> **Dernière mise à jour :** 23 juillet 2026
+> **Dernière mise à jour :** 1er août 2026
 
 Ce document regroupe **toutes** les améliorations futures validables.  
 Cocher `[x]` uniquement quand la feature est livrée **et** testée.  
@@ -71,9 +71,9 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 | ID | Statut | Fonctionnalité | Intérêt |
 |---|---|---|---|
 | B1 | [ ] | Recherche globale ⌘K (patient / médecin / RDV / dossier) | Barre de recherche réellement utile |
-| B2 | 🟡 | Notifications riches (clic → ouvrir RDV / patient / action) | Cloche branchée sur alertes ; actions deep-link à compléter |
+| B2 | [x] | Notifications riches (clic → ouvrir RDV / patient / action) | Actions API explicites, deep-links internes contrôlés, lecture unitaire et clavier |
 | B3 | [ ] | Centre de notifications (lues/non lues, filtres, Settings branchés) | Inbox réelle |
-| B4 | [ ] | Rappels RDV visibles dans l’UI (envoyé / échec / retry) | Backend partiel déjà présent |
+| B4 | [x] | Rappels RDV visibles dans l’UI (envoyé / échec / retry) | Statut par canal, dernière tentative, historique, erreur et retry ciblé |
 | B5 | [ ] | Workflow confirmation RDV (planifié → confirmé → arrivé → terminé) | Parcours terrain |
 | B6 | [ ] | Calendrier multi-médecins + drag & drop | Planning usable |
 | B7 | [ ] | Filtres sauvegardés / vues “Mon service” | Moins de clics |
@@ -213,7 +213,7 @@ Items historiques du plan futur — à conserver pour traçabilité.
 
 | # | Statut | Tâche | Notes |
 |---|---|---|---|
-| T1 | [ ] | Réconcilier permissions JWT (`permissions` claim vs mapping rôles) | Guards sans faux positifs |
+| T1 | [x] | Réconcilier permissions JWT (`permissions` claim vs mapping rôles) | Claim JWT autoritatif, liste vide restrictive, matrices et guards testés |
 | T2 | [x] | Balayage 403 front-end | `handleAuthHttpError`, page `/403` |
 | T3 | [x] | Tests E2E RBAC (Playwright) | Voir `frontend/e2e/` |
 | T4 | [x] | UI gestion users & rôles | CRUD RBAC admin |
@@ -237,7 +237,9 @@ Items historiques du plan futur — à conserver pour traçabilité.
 
 | Date | Validé par | Pack / IDs choisis | Commentaire |
 |---|---|---|---|
-| _à compléter_ | | | |
+| 2026-08-01 | Tests automatisés | T1 | 14 tests backend + 5 tests frontend RBAC validés |
+| 2026-08-01 | Tests automatisés | B2 | 3 tests API + 4 tests frontend, lint ciblé et build validés |
+| 2026-08-01 | Tests automatisés | B4 | 7 tests backend + 3 tests frontend, lint ciblé et build validés |
 
 Exemple :
 

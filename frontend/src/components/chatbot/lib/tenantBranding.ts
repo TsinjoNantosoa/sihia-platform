@@ -47,7 +47,7 @@ export function resolveApiBaseUrl(): string {
   if (fromSihia) return fromSihia.replace(/\/$/, '')
   const fromEnv = import.meta.env.VITE_API_BASE_URL?.trim()
   if (fromEnv) return fromEnv.replace(/\/$/, '')
-  if (import.meta.env.DEV) return 'http://127.0.0.1:8000'
+  if (import.meta.env.DEV) return 'http://127.0.0.1:8001'
   return 'https://dev.victrix.fr'
 }
 

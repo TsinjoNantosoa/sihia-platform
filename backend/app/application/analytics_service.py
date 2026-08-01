@@ -167,6 +167,7 @@ class AnalyticsService:
                     "description": f"Le taux d'occupation atteint {occupancy}% (seuil 85%).",
                     "area": "Hospitalisation",
                     "createdAt": now,
+                    "action": {"href": "/analytics", "label": "Analyser l'occupation"},
                 }
             )
         elif occupancy >= 70:
@@ -178,6 +179,7 @@ class AnalyticsService:
                     "description": f"Occupation à {occupancy}% — surveillance recommandée.",
                     "area": "Hospitalisation",
                     "createdAt": now,
+                    "action": {"href": "/analytics", "label": "Voir les indicateurs"},
                 }
             )
 
@@ -190,6 +192,7 @@ class AnalyticsService:
                     "description": f"{pending} rendez-vous planifiés en attente de confirmation.",
                     "area": "Accueil",
                     "createdAt": now,
+                    "action": {"href": "/appointments", "label": "Confirmer les rendez-vous"},
                 }
             )
         elif pending > 0:
@@ -201,6 +204,7 @@ class AnalyticsService:
                     "description": f"{pending} rendez-vous encore au statut planifié.",
                     "area": "Accueil",
                     "createdAt": now,
+                    "action": {"href": "/appointments", "label": "Voir les rendez-vous"},
                 }
             )
 
@@ -213,6 +217,7 @@ class AnalyticsService:
                     "description": f"{today_count} rendez-vous prévus aujourd'hui.",
                     "area": "Planning",
                     "createdAt": now,
+                    "action": {"href": "/appointments", "label": "Ouvrir le planning"},
                 }
             )
 
@@ -225,6 +230,7 @@ class AnalyticsService:
                     "description": "Aucune alerte critique détectée sur les indicateurs actuels.",
                     "area": "Général",
                     "createdAt": now,
+                    "action": {"href": "/", "label": "Voir le tableau de bord"},
                 }
             )
         return alerts

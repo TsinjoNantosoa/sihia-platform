@@ -88,14 +88,9 @@ export function canAccess(permissions: string[] | undefined, permission: Permiss
 
 /** Permissions JWT si présentes, sinon permissions par défaut du rôle (pilote / sessions anciennes). */
 export function resolvePermissions(state: AuthStateLike): string[] {
-  const explicit = state.permissions ?? [];
-  if (explicit.length > 0) {
-    return explicit;
-  }
-  if (state.user?.role) {
-    return getPermissionsForRole(state.user.role);
-  }
-  return [];
+  // The JWT permission list is authoritative, including an explicit empty list.
+  // Legacy-token fallback is handled once while decoding the token in the store.
+  return state.permissions ?? [];
 }
 
 export function hasExplicitPermission(state: AuthStateLike, permission: Permission): boolean {

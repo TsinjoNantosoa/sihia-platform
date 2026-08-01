@@ -36,3 +36,6 @@ def test_alerts_is_non_empty_list() -> None:
     alerts = res.json()
     assert len(alerts) >= 1
     assert "level" in alerts[0]
+    assert "action" in alerts[0]
+    assert alerts[0]["action"]["href"].startswith("/")
+    assert not alerts[0]["action"]["href"].startswith("//")

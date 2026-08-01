@@ -118,6 +118,41 @@ def test_reminder_rejected_for_cancelled_appointment() -> None:
     assert res.status_code == 400
 
 
+def test_failed_email_reminder_can_be_retried(monkeypatch) -> None:
+    headers = _admin_headers()
+    patient_id = _create_patient_with_contact(headers)
+    appt_id = _create_future_appointment(headers, patient_id)
+
+    monkeypatch.setattr(
+        "app.application.reminder_service.send_email",
+        lambda *_args: (_ for _ in ()).throw(RuntimeError("SMTP temporairement indisponible")),
+    )
+    failed = client.post(
+        f"/api/appointments/{appt_id}/remind",
+        headers=headers,
+        json={"channels": ["email"]},
+    )
+    assert failed.status_code == 200
+    assert failed.json()["results"][0]["status"] == "failed"
+    assert "SMTP" in failed.json()["results"][0]["error"]
+
+    listed_after_failure = client.get("/api/appointments", headers=headers)
+    failed_row = next(item for item in listed_after_failure.json() if item["id"] == appt_id)
+    assert failed_row["reminderSummary"]["email"] == "failed"
+
+    monkeypatch.setattr("app.application.reminder_service.send_email", lambda *_args: None)
+    retried = client.post(
+        f"/api/appointments/{appt_id}/remind",
+        headers=headers,
+        json={"channels": ["email"]},
+    )
+    assert retried.status_code == 200
+    assert retried.json()["results"][0]["status"] == "sent"
+
+    history = client.get(f"/api/appointments/{appt_id}/reminders", headers=headers).json()["items"]
+    assert [item["status"] for item in history[:2]] == ["sent", "failed"]
+
+
 def test_staff_cannot_send_reminder() -> None:
     headers = _admin_headers()
     patient_id = _create_patient_with_contact(headers)

@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, List, CalendarDays, AlertTriangle, Bell, BellRing } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  BellRing,
+  CalendarDays,
+  History,
+  List,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -10,9 +19,23 @@ import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBann
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState, EmptyState } from "@/components/shared/States";
 import { appointmentsService, doctorsService, patientsService } from "@/lib/api/services";
-import type { Appointment as ApiAppointment } from "@/lib/api/types";
+import type {
+  Appointment as ApiAppointment,
+  AppointmentReminderHistoryItem,
+  ReminderChannelStatus,
+} from "@/lib/api/types";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  failedReminderChannels,
+  reminderActionChannels,
+  reminderStatusTone,
+} from "@/lib/notifications/reminderDisplay";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -97,7 +120,9 @@ function AppointmentsPage() {
               <button
                 onClick={() => setView("calendar")}
                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
-                  view === "calendar" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  view === "calendar"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground"
                 }`}
               >
                 <CalendarDays className="size-3.5" /> {t("appts.view.calendar")}
@@ -144,13 +169,20 @@ function AppointmentsPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {data?.length === 0 ? (
-                  <tr><td colSpan={6}><EmptyState /></td></tr>
+                  <tr>
+                    <td colSpan={6}>
+                      <EmptyState />
+                    </td>
+                  </tr>
                 ) : (
                   data?.map((a: Appointment) => (
                     <tr key={a.id} className="hover:bg-muted/30">
                       <td className="px-4 py-3 font-mono text-xs">
                         {new Date(a.date).toLocaleString(locale, {
-                          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </td>
                       <td className="px-4 py-3 font-medium">{a.patientName}</td>
@@ -163,11 +195,15 @@ function AppointmentsPage() {
                         <StatusBadge
                           dot
                           tone={
-                            a.status === "confirmed" ? "success"
-                              : a.status === "scheduled" ? "primary"
-                              : a.status === "cancelled" ? "destructive"
-                              : a.status === "noshow" ? "warning"
-                              : "neutral"
+                            a.status === "confirmed"
+                              ? "success"
+                              : a.status === "scheduled"
+                                ? "primary"
+                                : a.status === "cancelled"
+                                  ? "destructive"
+                                  : a.status === "noshow"
+                                    ? "warning"
+                                    : "neutral"
                           }
                         >
                           {t(`appts.status.${a.status}`)}
@@ -185,7 +221,10 @@ function AppointmentsPage() {
           <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border bg-muted/40">
             <div />
             {weekDays.map((d, i) => (
-              <div key={i} className="px-2 py-3 text-center text-[10px] uppercase text-muted-foreground">
+              <div
+                key={i}
+                className="px-2 py-3 text-center text-[10px] uppercase text-muted-foreground"
+              >
                 <div className="font-semibold">{DAYS_LABEL[i]}</div>
                 <div className="text-foreground">{d.getDate()}</div>
               </div>
@@ -198,16 +237,20 @@ function AppointmentsPage() {
                   {String(h).padStart(2, "0")}:00
                 </div>
                 {weekDays.map((d: Date, di: number) => {
-                  const slot = data?.filter((a: Appointment) => {
-                    const ad = new Date(a.date);
-                    return (
-                      ad.getDate() === d.getDate() &&
-                      ad.getMonth() === d.getMonth() &&
-                      ad.getHours() === h
-                    );
-                  }) ?? [];
+                  const slot =
+                    data?.filter((a: Appointment) => {
+                      const ad = new Date(a.date);
+                      return (
+                        ad.getDate() === d.getDate() &&
+                        ad.getMonth() === d.getMonth() &&
+                        ad.getHours() === h
+                      );
+                    }) ?? [];
                   return (
-                    <div key={di} className="min-h-[56px] border-e border-border p-1 last:border-e-0">
+                    <div
+                      key={di}
+                      className="min-h-[56px] border-e border-border p-1 last:border-e-0"
+                    >
                       {slot.map((a: Appointment) => (
                         <div
                           key={a.id}
@@ -237,58 +280,185 @@ function AppointmentsPage() {
   );
 }
 
-function reminderTone(summary: Appointment["reminderSummary"]): "success" | "destructive" | "neutral" {
-  const email = summary?.email ?? "none";
-  const sms = summary?.sms ?? "none";
-  if (email === "sent" || sms === "sent") return "success";
-  if (email === "failed" || sms === "failed") return "destructive";
-  return "neutral";
+function reminderStatusLabel(status: ReminderChannelStatus, t: (key: string) => string) {
+  return t(`appts.reminder.${status}`);
 }
 
-function reminderLabel(summary: Appointment["reminderSummary"], t: (k: string) => string): string {
-  const tone = reminderTone(summary);
-  if (tone === "success") return t("appts.reminder.sent");
-  if (tone === "destructive") return t("appts.reminder.failed");
-  return t("appts.reminder.none");
+function ReminderChannelBadge({
+  channel,
+  status,
+}: {
+  channel: "Email" | "SMS";
+  status: ReminderChannelStatus;
+}) {
+  const t = useT();
+  return (
+    <StatusBadge dot tone={reminderStatusTone(status)}>
+      {channel}: {reminderStatusLabel(status, t)}
+    </StatusBadge>
+  );
 }
 
 function ReminderCell({ appointment }: { appointment: Appointment }) {
   const t = useT();
+  const locale = useI18n((state) => state.locale);
   const qc = useQueryClient();
+  const [historyOpen, setHistoryOpen] = useState(false);
   const active = appointment.status === "scheduled" || appointment.status === "confirmed";
+  const failedChannels = failedReminderChannels(appointment.reminderSummary);
+  const actionChannels = reminderActionChannels(appointment.reminderSummary);
 
   const mut = useMutation({
-    mutationFn: () => appointmentsService.remind(appointment.id, ["email", "sms"]),
-    onSuccess: () => {
+    mutationFn: () => appointmentsService.remind(appointment.id, actionChannels),
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["appts"] });
-      toast.success(t("appts.reminder.toastOk"));
+      qc.invalidateQueries({ queryKey: ["appt-reminders", appointment.id] });
+      const failed = result?.results.some(
+        (item) => item.status === "failed" || item.status === "skipped",
+      );
+      if (failed) toast.error(t("appts.reminder.toastFailed"));
+      else
+        toast.success(
+          t(failedChannels.length > 0 ? "appts.reminder.toastRetryOk" : "appts.reminder.toastOk"),
+        );
     },
     onError: () => toast.error(t("common.error")),
   });
 
   return (
-    <div className="flex items-center gap-2">
-      <StatusBadge dot tone={reminderTone(appointment.reminderSummary)}>
-        {reminderLabel(appointment.reminderSummary, t)}
-      </StatusBadge>
-      {active ? (
-        <PermissionGuard permission="appointments:update">
+    <>
+      <div className="flex min-w-56 flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ReminderChannelBadge
+            channel="Email"
+            status={appointment.reminderSummary?.email ?? "none"}
+          />
+          <ReminderChannelBadge channel="SMS" status={appointment.reminderSummary?.sms ?? "none"} />
+        </div>
+        {appointment.reminderSummary?.lastSentAt ? (
+          <span className="text-[10px] text-muted-foreground">
+            {t("appts.reminder.lastAttempt")}:{" "}
+            {new Date(appointment.reminderSummary.lastSentAt).toLocaleString(locale)}
+          </span>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-1">
           <button
             type="button"
-            title={t("appts.reminder.send")}
-            onClick={() => mut.mutate()}
-            disabled={mut.isPending}
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={() => setHistoryOpen(true)}
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <Bell className="size-4" />
+            <History className="size-3.5" />
+            {t("appts.reminder.history")}
           </button>
-        </PermissionGuard>
-      ) : null}
-    </div>
+          {active ? (
+            <PermissionGuard permission="appointments:update">
+              <button
+                type="button"
+                onClick={() => mut.mutate()}
+                disabled={mut.isPending}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-semibold text-primary hover:bg-primary-soft disabled:opacity-50"
+              >
+                {failedChannels.length > 0 ? (
+                  <RefreshCw className={`size-3.5 ${mut.isPending ? "animate-spin" : ""}`} />
+                ) : (
+                  <Bell className="size-3.5" />
+                )}
+                {t(failedChannels.length > 0 ? "appts.reminder.retry" : "appts.reminder.send")}
+              </button>
+            </PermissionGuard>
+          ) : null}
+        </div>
+      </div>
+      <ReminderHistoryDialog
+        appointment={appointment}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+      />
+    </>
   );
 }
 
-function NewAppointmentDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+function historyStatusTone(status: AppointmentReminderHistoryItem["status"]) {
+  if (status === "sent") return "success" as const;
+  if (status === "failed") return "destructive" as const;
+  return "warning" as const;
+}
+
+function ReminderHistoryDialog({
+  appointment,
+  open,
+  onOpenChange,
+}: {
+  appointment: Appointment;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const t = useT();
+  const locale = useI18n((state) => state.locale);
+  const history = useQuery({
+    queryKey: ["appt-reminders", appointment.id],
+    queryFn: () => appointmentsService.reminderHistory(appointment.id),
+    enabled: open,
+  });
+  const items = history.data?.items ?? [];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>{t("appts.reminder.historyTitle")}</DialogTitle>
+          <DialogDescription>
+            {appointment.patientName} — {new Date(appointment.date).toLocaleString(locale)}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-80 overflow-y-auto">
+          {history.isLoading ? (
+            <LoadingState />
+          ) : items.length === 0 ? (
+            <EmptyState title={t("appts.reminder.historyEmpty")} />
+          ) : (
+            <ul className="divide-y divide-border rounded-xl border border-border">
+              {items.map((item) => (
+                <li key={item.id} className="flex items-start justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold">
+                        {item.channel === "email" ? "Email" : "SMS"}
+                      </span>
+                      <StatusBadge dot tone={historyStatusTone(item.status)}>
+                        {t(`appts.reminder.${item.status}`)}
+                      </StatusBadge>
+                      <span className="text-[10px] uppercase text-muted-foreground">
+                        {t(`appts.reminder.kind.${item.kind}`)}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{item.recipient}</p>
+                    {item.error ? (
+                      <p className="mt-1 text-xs text-destructive" role="alert">
+                        {item.error}
+                      </p>
+                    ) : null}
+                  </div>
+                  <time className="shrink-0 text-[10px] text-muted-foreground">
+                    {new Date(item.sentAt).toLocaleString(locale)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NewAppointmentDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
   const t = useT();
   const qc = useQueryClient();
   const { data: patients } = useQuery<Patient[]>({
@@ -299,7 +469,13 @@ function NewAppointmentDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     queryKey: ["doctors"],
     queryFn: doctorsService.list,
   });
-  const [form, setForm] = useState({ patientId: "", doctorId: "", date: "", time: "09:00", reason: "" });
+  const [form, setForm] = useState({
+    patientId: "",
+    doctorId: "",
+    date: "",
+    time: "09:00",
+    reason: "",
+  });
   const [conflict, setConflict] = useState(false);
 
   const mut = useMutation({
@@ -344,38 +520,60 @@ function NewAppointmentDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         <div className="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
           <div className="sm:col-span-2 flex flex-col gap-1.5">
             <label className="text-xs font-medium">{t("appts.col.patient")}</label>
-            <select value={form.patientId} onChange={(e) => setForm((f) => ({ ...f, patientId: e.target.value }))}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
+            <select
+              value={form.patientId}
+              onChange={(e) => setForm((f) => ({ ...f, patientId: e.target.value }))}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            >
               <option value="">— Choisir —</option>
               {patients?.slice(0, 30).map((p: Patient) => (
-                <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
+                <option key={p.id} value={p.id}>
+                  {p.firstName} {p.lastName}
+                </option>
               ))}
             </select>
           </div>
           <div className="sm:col-span-2 flex flex-col gap-1.5">
             <label className="text-xs font-medium">{t("appts.col.doctor")}</label>
-            <select value={form.doctorId} onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value }))}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
+            <select
+              value={form.doctorId}
+              onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value }))}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            >
               <option value="">— Choisir —</option>
               {doctors?.map((d: Doctor) => (
-                <option key={d.id} value={d.id}>Dr. {d.firstName} {d.lastName} — {d.specialty}</option>
+                <option key={d.id} value={d.id}>
+                  Dr. {d.firstName} {d.lastName} — {d.specialty}
+                </option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium">Date</label>
-            <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+            <input
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium">Heure</label>
-            <input type="time" value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+            <input
+              type="time"
+              value={form.time}
+              onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
           </div>
           <div className="sm:col-span-2 flex flex-col gap-1.5">
             <label className="text-xs font-medium">{t("appts.col.reason")}</label>
-            <input value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm" placeholder="Consultation de routine" />
+            <input
+              value={form.reason}
+              onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              placeholder="Consultation de routine"
+            />
           </div>
           {conflict ? (
             <div className="sm:col-span-2 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-xs text-destructive">
@@ -384,8 +582,12 @@ function NewAppointmentDialog({ open, onOpenChange }: { open: boolean; onOpenCha
           ) : null}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
-          <Button onClick={submit} disabled={mut.isPending}>{t("common.save")}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={submit} disabled={mut.isPending}>
+            {t("common.save")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

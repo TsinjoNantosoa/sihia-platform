@@ -5,5 +5,5 @@ export function resolveApiBaseUrl(): string {
   if (raw) {
     return raw.replace(/\/$/, "");
   }
-  return import.meta.env.DEV ? "http://127.0.0.1:8000" : DEFAULT_API_URL;
+  return import.meta.env.DEV ? "http://127.0.0.1:8001" : DEFAULT_API_URL;
 }

@@ -68,8 +68,8 @@ class Settings(BaseModel):
     chatbot_audit_log_path: str = "logs/chatbot.jsonl"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
             "http://localhost:8080",
             "http://127.0.0.1:8080",
         ],
@@ -80,7 +80,7 @@ class Settings(BaseModel):
     def from_env(cls) -> "Settings":
         cors_raw = os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080",
+            "http://localhost:5174,http://127.0.0.1:5174,http://localhost:8080,http://127.0.0.1:8080",
         )
         origins = [o.strip() for o in cors_raw.split(",") if o.strip()]
         return cls(
@@ -128,7 +128,7 @@ class Settings(BaseModel):
             chatbot_api_token=os.getenv("CHATBOT_API_TOKEN", ""),
             chatbot_query_rate_limit=int(os.getenv("CHATBOT_QUERY_RATE_LIMIT", "20")),
             chatbot_audit_log_path=os.getenv("CHATBOT_AUDIT_LOG_PATH", "logs/chatbot.jsonl"),
-            cors_origins=origins or ["http://localhost:5173"],
+            cors_origins=origins or ["http://localhost:5174"],
             environment=os.getenv("ENVIRONMENT", "development"),
         )
 

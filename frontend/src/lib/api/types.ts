@@ -33,12 +33,7 @@ export interface Doctor {
   schedule: { day: string; slots: string[] }[];
 }
 
-export type AppointmentStatus =
-  | "scheduled"
-  | "confirmed"
-  | "completed"
-  | "cancelled"
-  | "noshow";
+export type AppointmentStatus = "scheduled" | "confirmed" | "completed" | "cancelled" | "noshow";
 
 export type ReminderChannelStatus = "none" | "sent" | "failed";
 
@@ -46,6 +41,27 @@ export interface AppointmentReminderSummary {
   email: ReminderChannelStatus;
   sms: ReminderChannelStatus;
   lastSentAt: string | null;
+}
+
+export type AppointmentReminderStatus = "sent" | "failed" | "skipped";
+
+export interface AppointmentReminderHistoryItem {
+  id: string;
+  channel: "email" | "sms";
+  kind: "manual" | "auto";
+  status: AppointmentReminderStatus;
+  recipient: string;
+  sentAt: string;
+  error: string | null;
+}
+
+export interface AppointmentReminderHistoryResponse {
+  items: AppointmentReminderHistoryItem[];
+}
+
+export interface AppointmentReminderSendResponse {
+  appointmentId: string;
+  results: AppointmentReminderHistoryItem[];
 }
 
 export interface Appointment {
@@ -150,6 +166,10 @@ export interface Alert {
   description: string;
   area: string;
   createdAt: string;
+  action?: {
+    href: string;
+    label: string;
+  };
 }
 
 export interface RbacUser {

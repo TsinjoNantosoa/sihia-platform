@@ -1,6 +1,6 @@
 # État d'implémentation — SIH IA
 
-> **Dernière mise à jour :** 2 juillet 2026 (chatbot RAG + widget H4H intégré)  
+> **Dernière mise à jour :** 1er août 2026 (T1 permissions JWT autoritatives)  
 > **Sources :** `src/`, `backend/`, dossier `Document/`
 
 Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lorsqu'une fonctionnalité est implémentée **et** validée (tests ou vérification manuelle documentée).
@@ -41,6 +41,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Hydratation i18n SSR (`I18nHydrator`, `skipHydration` Zustand — plus de mismatch login)
 - [x] Page 403 + focus / labels accessibles
 - [x] Login JWT + refresh automatique sur 401
+- [x] Notifications riches : actions API, deep-links sûrs et statut lu au clic
 
 ### 1.2 Modules métier
 
@@ -54,6 +55,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Rendez-vous — liste, calendrier, création, annulation
 - [x] Rendez-vous — détection conflit (chevauchement durée côté API)
 - [x] Rendez-vous — **rappels email/SMS** (log dev, **SMTP/Twilio configurables**, audit JSONL, UI statut canaux)
+- [x] Rendez-vous — statut de rappel par canal, historique, erreurs et réessai ciblé
 - [x] Analytique — graphiques + filtres période
 - [x] Analytique — export CSV (client)
 - [x] Analytique — export PDF / Excel (API)
@@ -98,7 +100,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 
 - [x] Login / refresh / logout / logout-all
 - [x] Rotation refresh token
-- [x] Permissions dans le JWT
+- [x] Permissions dans le JWT, claim autoritatif (une liste vide reste restrictive)
 - [x] Rate limit login (`POST /api/auth/login`) — 5 échecs / 5 min / IP+email
 - [x] Audit logs admin (`rbac.user.create|update|delete`, `auth.logout_all`)
 - [x] Export logs d'audit (`GET /api/admin/audit-logs/export`, fichier `logs/audit.jsonl`)
@@ -307,6 +309,9 @@ npm run migrate:pg
 
 | Date | Changement | Tests |
 |---|---|---|
+| 2026-08-01 | B4 : rappels visibles par canal, historique des tentatives, erreurs et retry ciblé ; normalisation UTC des RDV | 7 tests backend + 3 tests frontend, lint ciblé, build |
+| 2026-08-01 | B2 : notifications actionnables vers rendez-vous, analytics, dashboard ou dossier patient ; destinations externes refusées | 3 tests API + 4 tests frontend, lint ciblé, build |
+| 2026-08-01 | T1 : permissions JWT autoritatives, suppression du repli implicite par rôle et matrice mock unifiée | 14 tests backend + 5 tests frontend RBAC |
 | 2026-05-26 | ML 7j/30j depuis SQLite ; Docker Compose ; CI GitHub ; E2E Playwright ; sécurité HTTP | `test_ml_forecast.py` + `e2e/` (8) |
 | 2026-05-26 | CRUD `/api/rbac/users` + UI admin (créer / modifier / supprimer / suspendre) | `test_rbac_users_crud.py` (4) |
 | 2026-05-26 | `PATCH /api/patients/{id}` + UI édition dossier | `test_patients_update.py` |

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { Bell, CheckCheck } from "lucide-react";
+import { ArrowRight, Bell, CheckCheck } from "lucide-react";
 import { alertsService } from "@/lib/api/services";
 import type { Alert } from "@/lib/api/types";
 import { useT } from "@/lib/i18n/store";
@@ -13,6 +13,7 @@ import {
   markAllAlertsRead,
   markAlertsRead,
 } from "@/lib/notifications/readState";
+import { getAlertDestination } from "@/lib/notifications/alertActions";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -46,13 +47,12 @@ export function NotificationBell() {
     refetchInterval: 60_000,
   });
 
-  const items = alerts.data ?? [];
+  const items = useMemo(() => alerts.data ?? [], [alerts.data]);
 
   const actionableUnread = useMemo(
     () =>
       items.filter(
-        (a) =>
-          (a.level === "critical" || a.level === "warning") && isAlertUnread(a, readKeys),
+        (a) => (a.level === "critical" || a.level === "warning") && isAlertUnread(a, readKeys),
       ),
     [items, readKeys],
   );
@@ -64,9 +64,8 @@ export function NotificationBell() {
 
   const badgeCount = actionableUnread.length;
 
-  const onOpenChange = (open: boolean) => {
-    if (open || items.length === 0) return;
-    markAlertsRead(items.map(alertReadKey));
+  const handleAlertOpen = (alert: Alert) => {
+    markAlertsRead([alertReadKey(alert)]);
     setReadKeys(getReadAlertKeys());
   };
 
@@ -76,7 +75,7 @@ export function NotificationBell() {
   };
 
   return (
-    <DropdownMenu onOpenChange={onOpenChange}>
+    <DropdownMenu>
       <DropdownMenuTrigger
         className="relative inline-flex size-9 items-center justify-center rounded-lg border border-border bg-background hover:bg-muted"
         aria-label={t("notif.aria")}
@@ -128,14 +127,9 @@ export function NotificationBell() {
             <ul className="divide-y divide-border">
               {items.map((a) => {
                 const unread = isAlertUnread(a, readKeys);
-                return (
-                  <li
-                    key={alertReadKey(a)}
-                    className={cn(
-                      "flex gap-3 px-3 py-3 transition-colors hover:bg-muted/50",
-                      unread && "bg-primary-soft/40",
-                    )}
-                  >
+                const destination = getAlertDestination(a);
+                const content = (
+                  <>
                     <div className={cn("mt-1.5 size-2 shrink-0 rounded-full", levelDot(a.level))} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
@@ -161,7 +155,35 @@ export function NotificationBell() {
                           {formatAlertTime(a.createdAt)}
                         </span>
                       </div>
+                      {destination ? (
+                        <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                          {destination.label}
+                          <ArrowRight className="size-3" aria-hidden />
+                        </span>
+                      ) : null}
                     </div>
+                  </>
+                );
+                return (
+                  <li
+                    key={alertReadKey(a)}
+                    className={cn(
+                      "transition-colors hover:bg-muted/50",
+                      unread && "bg-primary-soft/40",
+                    )}
+                  >
+                    {destination ? (
+                      <a
+                        href={destination.href}
+                        onClick={() => handleAlertOpen(a)}
+                        className="flex gap-3 px-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                        aria-label={`${a.title} — ${destination.label}`}
+                      >
+                        {content}
+                      </a>
+                    ) : (
+                      <div className="flex gap-3 px-3 py-3">{content}</div>
+                    )}
                   </li>
                 );
               })}

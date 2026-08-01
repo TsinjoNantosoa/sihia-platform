@@ -1,22 +1,78 @@
 // Données mockées réalistes pour SIH IA.
-import type {
-  Alert,
-  Appointment,
-  Doctor,
-  Patient,
-  PredictionPoint,
-  RbacUser,
-} from "./types";
+import type { Alert, Appointment, Doctor, Patient, PredictionPoint, RbacUser } from "./types";
 
-const FIRST_NAMES_M = ["Yassine", "Omar", "Karim", "Hicham", "Mehdi", "Adam", "Rayan", "Anas", "Sami", "Nabil"];
-const FIRST_NAMES_F = ["Salma", "Imane", "Nora", "Lina", "Sara", "Hiba", "Yasmine", "Amina", "Aya", "Fatima"];
-const LAST_NAMES = ["Bennani", "Kadri", "Touzani", "El Idrissi", "Mansouri", "Benali", "Cherkaoui", "Alaoui", "Berrada", "Saidi", "Ziani", "Lahlou"];
-const SPECIALTIES = ["Cardiologie", "Pédiatrie", "Médecine générale", "Chirurgie", "Radiologie", "Gynécologie", "Neurologie", "Ophtalmologie", "Dermatologie", "Urgences"];
-const REASONS = ["Consultation de routine", "Suivi post-opératoire", "Douleurs thoraciques", "Bilan annuel", "Vaccination", "Ordonnance", "Échographie", "Contrôle tension", "Consultation pédiatrique", "Examen pré-opératoire"];
-const ADDRESSES = ["12 rue de la Liberté, Casablanca", "45 av. Hassan II, Rabat", "8 bd Mohammed V, Marrakech", "23 rue de France, Tanger", "67 av. Ibn Sina, Fès"];
+const FIRST_NAMES_M = [
+  "Yassine",
+  "Omar",
+  "Karim",
+  "Hicham",
+  "Mehdi",
+  "Adam",
+  "Rayan",
+  "Anas",
+  "Sami",
+  "Nabil",
+];
+const FIRST_NAMES_F = [
+  "Salma",
+  "Imane",
+  "Nora",
+  "Lina",
+  "Sara",
+  "Hiba",
+  "Yasmine",
+  "Amina",
+  "Aya",
+  "Fatima",
+];
+const LAST_NAMES = [
+  "Bennani",
+  "Kadri",
+  "Touzani",
+  "El Idrissi",
+  "Mansouri",
+  "Benali",
+  "Cherkaoui",
+  "Alaoui",
+  "Berrada",
+  "Saidi",
+  "Ziani",
+  "Lahlou",
+];
+const SPECIALTIES = [
+  "Cardiologie",
+  "Pédiatrie",
+  "Médecine générale",
+  "Chirurgie",
+  "Radiologie",
+  "Gynécologie",
+  "Neurologie",
+  "Ophtalmologie",
+  "Dermatologie",
+  "Urgences",
+];
+const REASONS = [
+  "Consultation de routine",
+  "Suivi post-opératoire",
+  "Douleurs thoraciques",
+  "Bilan annuel",
+  "Vaccination",
+  "Ordonnance",
+  "Échographie",
+  "Contrôle tension",
+  "Consultation pédiatrique",
+  "Examen pré-opératoire",
+];
+const ADDRESSES = [
+  "12 rue de la Liberté, Casablanca",
+  "45 av. Hassan II, Rabat",
+  "8 bd Mohammed V, Marrakech",
+  "23 rue de France, Tanger",
+  "67 av. Ibn Sina, Fès",
+];
 
 const seed = (i: number) => ((i * 9301 + 49297) % 233280) / 233280;
-const pick = <T,>(arr: T[], i: number) => arr[Math.floor(seed(i) * arr.length)];
+const pick = <T>(arr: T[], i: number) => arr[Math.floor(seed(i) * arr.length)];
 
 const today = new Date();
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
@@ -65,7 +121,12 @@ export const DOCTORS: Doctor[] = Array.from({ length: 14 }, (_, i) => {
     satisfaction: 4 + Math.round(seed(i + 13) * 10) / 10,
     schedule: DAYS.map((day, di) => ({
       day,
-      slots: di < 5 ? ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"] : di === 5 ? ["09:00", "10:00", "11:00"] : [],
+      slots:
+        di < 5
+          ? ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]
+          : di === 5
+            ? ["09:00", "10:00", "11:00"]
+            : [],
     })),
   };
 });
@@ -123,6 +184,7 @@ export const ALERTS: Alert[] = [
     description: "Capacité dépassera 105% dans 24h selon le modèle LSTM.",
     area: "Réanimation Nord",
     createdAt: new Date(today.getTime() - 4 * 60000).toISOString(),
+    action: { href: "/analytics", label: "Analyser l'occupation" },
   },
   {
     id: "al-2",
@@ -131,6 +193,7 @@ export const ALERTS: Alert[] = [
     description: "Seuil critique atteint, réapprovisionnement sous 48h.",
     area: "Pharmacie centrale",
     createdAt: new Date(today.getTime() - 60 * 60000).toISOString(),
+    action: { href: "/", label: "Voir le tableau de bord" },
   },
   {
     id: "al-3",
@@ -139,13 +202,49 @@ export const ALERTS: Alert[] = [
     description: "+38% d'admissions prévues vendredi.",
     area: "Pédiatrie",
     createdAt: new Date(today.getTime() - 2 * 60 * 60000).toISOString(),
+    action: { href: "/appointments", label: "Ouvrir le planning" },
   },
 ];
 
 export const RBAC_USERS: RbacUser[] = [
-  { id: "u-1", name: "Dr. A. Benali", email: "a.benali@sihia.health", role: "doctor", status: "active", lastLogin: new Date(today.getTime() - 12 * 60000).toISOString() },
-  { id: "u-2", name: "K. Touzani", email: "k.touzani@sihia.health", role: "admin", status: "active", lastLogin: new Date(today.getTime() - 3 * 3600000).toISOString() },
-  { id: "u-3", name: "S. Berrada", email: "s.berrada@sihia.health", role: "manager", status: "active", lastLogin: new Date(today.getTime() - 24 * 3600000).toISOString() },
-  { id: "u-4", name: "I. Lahlou", email: "i.lahlou@sihia.health", role: "staff", status: "suspended", lastLogin: new Date(today.getTime() - 6 * 24 * 3600000).toISOString() },
-  { id: "u-5", name: "Dr. F. Mansouri", email: "f.mansouri@sihia.health", role: "doctor", status: "active", lastLogin: new Date(today.getTime() - 45 * 60000).toISOString() },
+  {
+    id: "u-1",
+    name: "Dr. A. Benali",
+    email: "a.benali@sihia.health",
+    role: "doctor",
+    status: "active",
+    lastLogin: new Date(today.getTime() - 12 * 60000).toISOString(),
+  },
+  {
+    id: "u-2",
+    name: "K. Touzani",
+    email: "k.touzani@sihia.health",
+    role: "admin",
+    status: "active",
+    lastLogin: new Date(today.getTime() - 3 * 3600000).toISOString(),
+  },
+  {
+    id: "u-3",
+    name: "S. Berrada",
+    email: "s.berrada@sihia.health",
+    role: "manager",
+    status: "active",
+    lastLogin: new Date(today.getTime() - 24 * 3600000).toISOString(),
+  },
+  {
+    id: "u-4",
+    name: "I. Lahlou",
+    email: "i.lahlou@sihia.health",
+    role: "staff",
+    status: "suspended",
+    lastLogin: new Date(today.getTime() - 6 * 24 * 3600000).toISOString(),
+  },
+  {
+    id: "u-5",
+    name: "Dr. F. Mansouri",
+    email: "f.mansouri@sihia.health",
+    role: "doctor",
+    status: "active",
+    lastLogin: new Date(today.getTime() - 45 * 60000).toISOString(),
+  },
 ];

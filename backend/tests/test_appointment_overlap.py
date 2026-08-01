@@ -37,3 +37,23 @@ def test_overlapping_appointments_return_409() -> None:
     assert overlap.status_code == 409
 
     client.post(f"/api/appointments/{appt_id}/cancel", headers=headers)
+
+
+def test_timezone_aware_appointment_can_coexist_with_naive_seed_dates() -> None:
+    headers = _doctor_headers()
+    response = client.post(
+        "/api/appointments",
+        headers=headers,
+        json={
+            "patientId": "p-timezone-test",
+            "patientName": "Timezone Test",
+            "doctorId": "d-8",
+            "doctorName": "Dr. Ziani",
+            "reason": "Validation UTC",
+            "status": "scheduled",
+            "durationMin": 30,
+            "date": "2098-12-20T09:00:00+00:00",
+        },
+    )
+    assert response.status_code == 200
+    client.post(f"/api/appointments/{response.json()['id']}/cancel", headers=headers)

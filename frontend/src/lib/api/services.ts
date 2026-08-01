@@ -1,7 +1,13 @@
 // Couche services API connectée.
 // Remplace les mocks par des appels REST complets (FastAPI).
 
-import type { Appointment, Patient, RbacUser } from "./types";
+import type {
+  Appointment,
+  AppointmentReminderHistoryResponse,
+  AppointmentReminderSendResponse,
+  Patient,
+  RbacUser,
+} from "./types";
 import { useAuth } from "../auth/store"; // Import the actual store instance
 import {
   handleAuthHttpError,
@@ -12,14 +18,7 @@ import {
 import { resolveT } from "@/lib/i18n/resolveT";
 import { resolveApiBaseUrl } from "./baseUrl";
 import { shouldUseMocks } from "./mockPolicy";
-import {
-  ALERTS,
-  APPOINTMENTS,
-  DOCTORS,
-  PATIENTS,
-  PREDICTION_7D,
-  RBAC_USERS,
-} from "./mockData";
+import { ALERTS, APPOINTMENTS, DOCTORS, PATIENTS, PREDICTION_7D, RBAC_USERS } from "./mockData";
 
 export const API_URL = resolveApiBaseUrl();
 const USE_MOCKS = shouldUseMocks();
@@ -62,10 +61,16 @@ const refreshAccessToken = async (): Promise<string | null> => {
 const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   console.warn(`[MODE SECOURS] Récupération des données mockées pour: ${endpoint}`);
   await new Promise((r) => setTimeout(r, 300)); // Latency
-  
+
   if (endpoint.includes("/api/patients")) {
     if (options.method === "POST" && options.body) {
-      const p = { ...JSON.parse(options.body as string), id: "p-" + Date.now(), recordNumber: "PT-" + Date.now().toString().slice(-6), status: "active", lastVisit: new Date().toISOString().slice(0, 10) };
+      const p = {
+        ...JSON.parse(options.body as string),
+        id: "p-" + Date.now(),
+        recordNumber: "PT-" + Date.now().toString().slice(-6),
+        status: "active",
+        lastVisit: new Date().toISOString().slice(0, 10),
+      };
       mockPatientsDb = [p, ...mockPatientsDb];
       return p;
     }
@@ -84,18 +89,78 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
     }
     return mockAppointmentsDb;
   }
-  if (endpoint.includes("/api/analytics/kpis")) return { patientsToday: 142, patientsTrend: 4.2, occupancy: 87.5, occupancyCapacity: 320, appointments: 412, appointmentsCapacity: 450, criticalAlerts: 3 };
-  if (endpoint.includes("/api/analytics/revenue")) return ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"].map((m, i) => ({ label: m, value: 80000 + Math.round(Math.sin(i / 2) * 18000 + i * 2200) }));
-  if (endpoint.includes("/api/analytics/admissions-dept")) return [ { label: "Urgences", value: 320 }, { label: "Cardio", value: 210 }, { label: "Pédiatrie", value: 180 } ];
-  if (endpoint.includes("/api/analytics/satisfaction")) return [ { label: "S1", value: 82 }, { label: "S2", value: 85 }, { label: "S3", value: 88 } ];
+  if (endpoint.includes("/api/analytics/kpis"))
+    return {
+      patientsToday: 142,
+      patientsTrend: 4.2,
+      occupancy: 87.5,
+      occupancyCapacity: 320,
+      appointments: 412,
+      appointmentsCapacity: 450,
+      criticalAlerts: 3,
+    };
+  if (endpoint.includes("/api/analytics/revenue"))
+    return [
+      "Jan",
+      "Fév",
+      "Mar",
+      "Avr",
+      "Mai",
+      "Juin",
+      "Juil",
+      "Août",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Déc",
+    ].map((m, i) => ({ label: m, value: 80000 + Math.round(Math.sin(i / 2) * 18000 + i * 2200) }));
+  if (endpoint.includes("/api/analytics/admissions-dept"))
+    return [
+      { label: "Urgences", value: 320 },
+      { label: "Cardio", value: 210 },
+      { label: "Pédiatrie", value: 180 },
+    ];
+  if (endpoint.includes("/api/analytics/satisfaction"))
+    return [
+      { label: "S1", value: 82 },
+      { label: "S2", value: 85 },
+      { label: "S3", value: 88 },
+    ];
   if (endpoint.includes("/api/admin/pipeline/status")) {
     const now = new Date().toISOString();
     return {
       status: "ok",
       dags: [
-        { dagId: "patient_import", lastRun: { id: "run-mock", status: "success", startedAt: now, finishedAt: now, metrics: {} } },
-        { dagId: "analytics_refresh", lastRun: { id: "run-mock2", status: "success", startedAt: now, finishedAt: now, metrics: {} } },
-        { dagId: "ml_features", lastRun: { id: "run-mock3", status: "success", startedAt: now, finishedAt: now, metrics: {} } },
+        {
+          dagId: "patient_import",
+          lastRun: {
+            id: "run-mock",
+            status: "success",
+            startedAt: now,
+            finishedAt: now,
+            metrics: {},
+          },
+        },
+        {
+          dagId: "analytics_refresh",
+          lastRun: {
+            id: "run-mock2",
+            status: "success",
+            startedAt: now,
+            finishedAt: now,
+            metrics: {},
+          },
+        },
+        {
+          dagId: "ml_features",
+          lastRun: {
+            id: "run-mock3",
+            status: "success",
+            startedAt: now,
+            finishedAt: now,
+            metrics: {},
+          },
+        },
       ],
       snapshots: { kpis: null },
       mlFeaturesDays: 61,
@@ -108,7 +173,14 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   }
   if (endpoint.includes("/api/admin/reminders/status")) {
     return {
-      email: { mode: "log", configured: true, ready: true, smtpHost: null, smtpPort: null, from: "noreply@sihia.health" },
+      email: {
+        mode: "log",
+        configured: true,
+        ready: true,
+        smtpHost: null,
+        smtpPort: null,
+        from: "noreply@sihia.health",
+      },
       sms: { mode: "log", configured: true, ready: true },
       hoursBefore: 24,
       logPath: "logs/reminders.jsonl",
@@ -150,7 +222,7 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   }
   if (endpoint.includes("/api/alerts")) return ALERTS;
   if (endpoint.includes("/api/rbac/users")) return RBAC_USERS;
-  
+
   return [];
 };
 
@@ -282,12 +354,19 @@ export const patientsService = {
       method: "PATCH",
       body: JSON.stringify(input),
     }),
-  remove: (id: string) =>
-    fetchWithAuth(`/api/patients/${id}`, { method: "DELETE" }),
+  remove: (id: string) => fetchWithAuth(`/api/patients/${id}`, { method: "DELETE" }),
   history: (id: string) => fetchWithAuth(`/api/patients/${id}/history`),
   addVisit: (
     id: string,
-    visit: { date: string; reason: string; doctorName: string; specialty: string; diagnosis: string; treatment?: string; notes?: string },
+    visit: {
+      date: string;
+      reason: string;
+      doctorName: string;
+      specialty: string;
+      diagnosis: string;
+      treatment?: string;
+      notes?: string;
+    },
   ) =>
     fetchWithAuth(`/api/patients/${id}/history`, {
       method: "POST",
@@ -319,13 +398,14 @@ export const appointmentsService = {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  cancel: (id: string) =>
-    fetchWithAuth(`/api/appointments/${id}/cancel`, { method: "POST" }),
+  cancel: (id: string) => fetchWithAuth(`/api/appointments/${id}/cancel`, { method: "POST" }),
   remind: (id: string, channels: Array<"email" | "sms"> = ["email"]) =>
-    fetchWithAuth(`/api/appointments/${id}/remind`, {
+    fetchWithAuth<AppointmentReminderSendResponse>(`/api/appointments/${id}/remind`, {
       method: "POST",
       body: JSON.stringify({ channels }),
     }),
+  reminderHistory: (id: string) =>
+    fetchWithAuth<AppointmentReminderHistoryResponse>(`/api/appointments/${id}/reminders`),
   runRemindersBatch: () =>
     fetchWithAuth<{ processed: number; sent: number; skipped: number; failed: number }>(
       "/api/admin/reminders/run",
@@ -336,8 +416,7 @@ export const appointmentsService = {
 
 export const pipelineService = {
   status: () => fetchWithAuth("/api/admin/pipeline/status"),
-  run: (dagId: string) =>
-    fetchWithAuth(`/api/admin/pipeline/run/${dagId}`, { method: "POST" }),
+  run: (dagId: string) => fetchWithAuth(`/api/admin/pipeline/run/${dagId}`, { method: "POST" }),
 };
 
 export const analyticsService = {
@@ -389,7 +468,8 @@ export type RbacUserUpdatePayload = Partial<
 >;
 
 export const auditService = {
-  list: (limit = 100) => fetchWithAuth<{ items: unknown[]; count: number }>(`/api/admin/audit-logs?limit=${limit}`),
+  list: (limit = 100) =>
+    fetchWithAuth<{ items: unknown[]; count: number }>(`/api/admin/audit-logs?limit=${limit}`),
   exportJsonl: async (limit = 5000) => {
     const blob = await fetchBlobWithAuth(`/api/admin/audit-logs/export?limit=${limit}`);
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
@@ -416,8 +496,7 @@ export const rbacService = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
-  remove: (id: string) =>
-    fetchWithAuth<null>(`/api/rbac/users/${id}`, { method: "DELETE" }),
+  remove: (id: string) => fetchWithAuth<null>(`/api/rbac/users/${id}`, { method: "DELETE" }),
 };
 
 export const authService = {

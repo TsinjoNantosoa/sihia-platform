@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.application.use_cases import AuthService
+from app.application.use_cases import AuthService, ROLE_PERMISSIONS
 from app.core.config import settings
 from app.core.security import decode_access_token, hash_password, verify_password
 from app.infrastructure.database import bootstrap_database, reset_engine
@@ -47,6 +47,22 @@ def test_access_token_includes_permissions_claim(tmp_path: Path) -> None:
     assert "permissions" in claims
     assert isinstance(claims["permissions"], list)
     assert "patients:read" in claims["permissions"]
+
+
+def test_demo_roles_receive_the_canonical_permission_matrix(tmp_path: Path) -> None:
+    auth = _setup_test_db(tmp_path)
+    accounts = {
+        "admin": ("admin@sihia.health", "admin123"),
+        "doctor": ("dr.benali@sihia.health", "demo1234"),
+        "manager": ("manager@sihia.health", "manager123"),
+        "staff": ("staff@sihia.health", "staff123"),
+    }
+
+    for role, (email, password) in accounts.items():
+        access_token, _refresh = auth.login(email, password)
+        claims = decode_access_token(access_token)
+        assert claims["role"] == role
+        assert claims["permissions"] == ROLE_PERMISSIONS[role]
 
 
 def test_refresh_access_token_includes_permissions_claim(tmp_path: Path) -> None:

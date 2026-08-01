@@ -49,9 +49,11 @@ const parseJwt = (token: string) => {
 };
 
 const permissionsFromClaims = (claims: Record<string, unknown>, role: Role): string[] => {
-  if (Array.isArray(claims.permissions) && claims.permissions.length > 0) {
+  // An empty list is an explicit restriction from the backend.
+  if (Array.isArray(claims.permissions)) {
     return claims.permissions.filter((p): p is string => typeof p === "string");
   }
+  // Compatibility is limited to legacy JWTs where the claim is absent.
   return getPermissionsForRole(role);
 };
 
@@ -137,16 +139,10 @@ export const useAuth = create<AuthState>()(
                 : "doctor";
           const name = email.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
           
-          const mockPermissions: Record<string, string[]> = {
-            admin: ["dashboard:read","patients:read","patients:create","patients:update","patients:delete","doctors:read","doctors:update","appointments:read","appointments:create","appointments:update","analytics:read","ml:read","users:read","users:create","users:update","users:delete","settings:read"],
-            manager: ["dashboard:read","patients:read","doctors:read","doctors:update","appointments:read","analytics:read","ml:read","settings:read"],
-            doctor: ["dashboard:read","patients:read","patients:update","doctors:read","appointments:read","appointments:create","appointments:update","analytics:read","ml:read","settings:read"],
-            staff: ["dashboard:read","patients:read","patients:create","doctors:read","appointments:read","appointments:create","settings:read"],
-          };
           set({
             token: "mock-jwt-" + Math.random().toString(36).slice(2),
             refreshToken: "mock-refresh-" + Math.random().toString(36).slice(2),
-            permissions: mockPermissions[role] ?? [],
+            permissions: getPermissionsForRole(role),
             isAuthenticated: true,
             user: {
               id: "u-" + Math.random().toString(36).slice(2, 8),

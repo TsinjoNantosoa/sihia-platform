@@ -5,10 +5,11 @@
   "scripts": {
     "dev": "npm run dev --prefix frontend",
     "dev:all": "concurrently -n backend,frontend -c yellow,cyan \"npm run dev:backend\" \"npm run dev --prefix frontend\"",
-    "dev:backend": "cd backend && .\\venv\\Scripts\\uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:backend": "cd backend && .\\venv\\Scripts\\uvicorn app.main:app --reload --host 127.0.0.1 --port 8001",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:pilot": "docker compose up -d postgres && npm run pilot:setup && npm run dev:all",
     "pilot:setup": "docker compose up -d postgres && cd backend && .\\venv\\Scripts\\python.exe scripts/pilot_setup.py",
+    "db:seed": "cd backend && .\\venv\\Scripts\\python.exe scripts/seed_mock_data.py",
     "pipeline:run": "cd backend && .\\venv\\Scripts\\python.exe scripts/run_pipeline.py",
     "airflow:up": "docker compose --profile airflow up -d airflow",
     "mailhog:up": "docker compose --profile mailhog up -d mailhog",

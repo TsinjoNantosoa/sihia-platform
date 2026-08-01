@@ -19,12 +19,12 @@ const adminState = {
 };
 
 describe("RBAC permission helpers", () => {
-  test("resolvePermissions falls back to role when JWT list is empty", () => {
-    expect(resolvePermissions(adminState)).toEqual(getPermissionsForRole("admin"));
+  test("an explicit empty JWT permission list remains restrictive", () => {
+    expect(resolvePermissions(adminState)).toEqual([]);
   });
 
-  test("hasExplicitPermission allows dashboard for admin without JWT permissions", () => {
-    expect(hasExplicitPermission(adminState, "dashboard:read")).toBe(true);
+  test("an authenticated admin is denied when its JWT grants no permission", () => {
+    expect(hasExplicitPermission(adminState, "dashboard:read")).toBe(false);
   });
 
   test("hasExplicitPermission uses explicit JWT permissions when present", () => {
@@ -49,5 +49,12 @@ describe("RBAC permission helpers", () => {
         "patients:delete",
       ),
     ).toBe(false);
+  });
+
+  test("role matrices stay least-privilege oriented", () => {
+    expect(getPermissionsForRole("admin")).toContain("users:delete");
+    expect(getPermissionsForRole("manager")).not.toContain("users:delete");
+    expect(getPermissionsForRole("doctor")).toContain("patients:update");
+    expect(getPermissionsForRole("staff")).not.toContain("patients:update");
   });
 });
