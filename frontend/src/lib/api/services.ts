@@ -20,6 +20,15 @@ import { resolveT } from "@/lib/i18n/resolveT";
 import { resolveApiBaseUrl } from "./baseUrl";
 import { shouldUseMocks } from "./mockPolicy";
 import { ALERTS, APPOINTMENTS, DOCTORS, PATIENTS, PREDICTION_7D, RBAC_USERS } from "./mockData";
+import {
+  enqueueOfflineAppointmentMutation,
+  isObservedNetworkOffline,
+  OfflineQueuedError,
+  replayOfflineAppointmentQueue,
+  shouldQueueOfflineMutation,
+  type OfflineAppointmentMutation,
+  type OfflineAppointmentMutationKind,
+} from "@/lib/offline/appointmentQueue";
 
 export const API_URL = resolveApiBaseUrl();
 const USE_MOCKS = shouldUseMocks();
@@ -333,6 +342,79 @@ async function fetchWithAuth<T = unknown>(
   }
 }
 
+const currentOfflineUserKey = () => {
+  const user = useAuth.getState().user;
+  return user?.id || user?.email || "anonymous";
+};
+
+async function queueableAppointmentMutation<T>(
+  kind: OfflineAppointmentMutationKind,
+  appointmentId: string,
+  payload: Record<string, unknown>,
+  execute: () => Promise<T>,
+): Promise<T> {
+  const queue = () => {
+    const item = enqueueOfflineAppointmentMutation(window.localStorage, currentOfflineUserKey(), {
+      kind,
+      appointmentId,
+      payload,
+    });
+    throw new OfflineQueuedError(item.id);
+  };
+
+  if (typeof window !== "undefined") {
+    const globallyOffline =
+      (window as Window & { __SIHIA_NETWORK_ONLINE__?: boolean }).__SIHIA_NETWORK_ONLINE__ ===
+      false;
+    if (globallyOffline || isObservedNetworkOffline()) {
+      return queue();
+    }
+  }
+
+  try {
+    return await execute();
+  } catch (error) {
+    if (typeof window !== "undefined" && shouldQueueOfflineMutation(error)) {
+      return queue();
+    }
+    throw error;
+  }
+}
+
+async function executeOfflineAppointmentMutation(mutation: OfflineAppointmentMutation) {
+  const { appointmentId, payload } = mutation;
+  if (mutation.kind === "appointment.status") {
+    return fetchWithAuth(`/api/appointments/${appointmentId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+  if (mutation.kind === "appointment.schedule") {
+    return fetchWithAuth(`/api/appointments/${appointmentId}/schedule`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+  if (mutation.kind === "appointment.cancel") {
+    return fetchWithAuth(`/api/appointments/${appointmentId}/cancel`, { method: "POST" });
+  }
+  return fetchWithAuth(`/api/appointments/${appointmentId}/remind`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function replayQueuedAppointmentMutations(userKey: string) {
+  if (typeof window === "undefined") {
+    return Promise.resolve({ processed: 0, remaining: 0, failed: 0 });
+  }
+  return replayOfflineAppointmentQueue(
+    window.localStorage,
+    userKey,
+    executeOfflineAppointmentMutation,
+  );
+}
+
 async function fetchBlobWithAuth(
   endpoint: string,
   options: RequestInit = {},
@@ -423,22 +505,31 @@ export const appointmentsService = {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  cancel: (id: string) => fetchWithAuth(`/api/appointments/${id}/cancel`, { method: "POST" }),
+  cancel: (id: string) =>
+    queueableAppointmentMutation("appointment.cancel", id, {}, () =>
+      fetchWithAuth(`/api/appointments/${id}/cancel`, { method: "POST" }),
+    ),
   updateStatus: (id: string, status: AppointmentStatus) =>
-    fetchWithAuth<Appointment>(`/api/appointments/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    }),
+    queueableAppointmentMutation("appointment.status", id, { status }, () =>
+      fetchWithAuth<Appointment>(`/api/appointments/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }),
+    ),
   reschedule: (id: string, input: { doctorId: string; date: string }) =>
-    fetchWithAuth<Appointment>(`/api/appointments/${id}/schedule`, {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    }),
+    queueableAppointmentMutation("appointment.schedule", id, input, () =>
+      fetchWithAuth<Appointment>(`/api/appointments/${id}/schedule`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
+    ),
   remind: (id: string, channels: Array<"email" | "sms"> = ["email"]) =>
-    fetchWithAuth<AppointmentReminderSendResponse>(`/api/appointments/${id}/remind`, {
-      method: "POST",
-      body: JSON.stringify({ channels }),
-    }),
+    queueableAppointmentMutation("appointment.remind", id, { channels }, () =>
+      fetchWithAuth<AppointmentReminderSendResponse>(`/api/appointments/${id}/remind`, {
+        method: "POST",
+        body: JSON.stringify({ channels }),
+      }),
+    ),
   reminderHistory: (id: string) =>
     fetchWithAuth<AppointmentReminderHistoryResponse>(`/api/appointments/${id}/reminders`),
   runRemindersBatch: () =>

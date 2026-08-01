@@ -62,6 +62,7 @@ import {
   type AppointmentFilters,
   type SavedAppointmentView,
 } from "@/lib/appointments/savedViews";
+import { isOfflineQueuedError } from "@/lib/offline/appointmentQueue";
 import {
   Dialog,
   DialogContent,
@@ -528,6 +529,7 @@ function MultiDoctorCalendar({
   );
 
   const moveMutation = useMutation({
+    networkMode: "always",
     mutationFn: ({
       appointmentId,
       doctorId,
@@ -541,7 +543,26 @@ function MultiDoctorCalendar({
       qc.invalidateQueries({ queryKey: ["appts"] });
       toast.success(t("appts.calendar.moved"));
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables) => {
+      if (isOfflineQueuedError(error)) {
+        const targetDoctor = doctors.find((doctor) => doctor.id === variables.doctorId);
+        qc.setQueryData<Appointment[]>(["appts"], (current) =>
+          current?.map((appointment) =>
+            appointment.id === variables.appointmentId
+              ? {
+                  ...appointment,
+                  doctorId: variables.doctorId,
+                  doctorName: targetDoctor
+                    ? `Dr. ${targetDoctor.firstName} ${targetDoctor.lastName}`
+                    : appointment.doctorName,
+                  date: variables.date,
+                }
+              : appointment,
+          ),
+        );
+        toast.success(t("offline.queuedToast"));
+        return;
+      }
       toast.error(
         error.message.toLowerCase().includes("conflit")
           ? t("appts.conflict")
@@ -758,13 +779,23 @@ function AppointmentWorkflowCell({ appointment }: { appointment: Appointment }) 
   const qc = useQueryClient();
   const nextStatus = nextAppointmentStatus(appointment.status);
   const mutation = useMutation({
+    networkMode: "always",
     mutationFn: (status: Appointment["status"]) =>
       appointmentsService.updateStatus(appointment.id, status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appts"] });
       toast.success(t("appts.workflow.updated"));
     },
-    onError: () => toast.error(t("common.error")),
+    onError: (error, status) => {
+      if (isOfflineQueuedError(error)) {
+        qc.setQueryData<Appointment[]>(["appts"], (current) =>
+          current?.map((item) => (item.id === appointment.id ? { ...item, status } : item)),
+        );
+        toast.success(t("offline.queuedToast"));
+        return;
+      }
+      toast.error(t("common.error"));
+    },
   });
 
   return (
@@ -818,6 +849,7 @@ function ReminderCell({ appointment }: { appointment: Appointment }) {
   const actionChannels = reminderActionChannels(appointment.reminderSummary);
 
   const mut = useMutation({
+    networkMode: "always",
     mutationFn: () => appointmentsService.remind(appointment.id, actionChannels),
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["appts"] });
@@ -831,7 +863,13 @@ function ReminderCell({ appointment }: { appointment: Appointment }) {
           t(failedChannels.length > 0 ? "appts.reminder.toastRetryOk" : "appts.reminder.toastOk"),
         );
     },
-    onError: () => toast.error(t("common.error")),
+    onError: (error) => {
+      if (isOfflineQueuedError(error)) {
+        toast.success(t("offline.queuedToast"));
+        return;
+      }
+      toast.error(t("common.error"));
+    },
   });
 
   return (

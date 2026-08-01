@@ -70,6 +70,12 @@ const fr: Dict = {
   "errors.networkTitle": "API inaccessible",
   "errors.networkDesc": "Vérifiez que le serveur backend est démarré.",
   "errors.exportFailed": "Échec de l'export",
+  "offline.active": "Mode hors ligne — {count} action(s) en attente",
+  "offline.pending": "{count} action(s) à synchroniser",
+  "offline.failed": "· {count} en échec",
+  "offline.sync": "Synchroniser",
+  "offline.queuedToast": "Action enregistrée dans la file hors ligne",
+  "offline.syncedToast": "{count} action(s) synchronisée(s)",
 
   "forbidden.title": "Accès refusé",
   "forbidden.subtitle":
@@ -401,6 +407,12 @@ const en: Dict = {
   "errors.networkTitle": "API unreachable",
   "errors.networkDesc": "Make sure the backend server is running.",
   "errors.exportFailed": "Export failed",
+  "offline.active": "Offline mode — {count} action(s) pending",
+  "offline.pending": "{count} action(s) to synchronize",
+  "offline.failed": "· {count} failed",
+  "offline.sync": "Synchronize",
+  "offline.queuedToast": "Action saved to the offline queue",
+  "offline.syncedToast": "{count} action(s) synchronized",
 
   "forbidden.title": "Access denied",
   "forbidden.subtitle":
@@ -732,6 +744,12 @@ const ar: Dict = {
   "errors.networkTitle": "الواجهة غير متاحة",
   "errors.networkDesc": "تأكد من تشغيل خادم الواجهة الخلفية.",
   "errors.exportFailed": "فشل التصدير",
+  "offline.active": "وضع عدم الاتصال — {count} إجراء قيد الانتظار",
+  "offline.pending": "{count} إجراء للمزامنة",
+  "offline.failed": "· فشل {count}",
+  "offline.sync": "مزامنة",
+  "offline.queuedToast": "تم حفظ الإجراء في قائمة الانتظار دون اتصال",
+  "offline.syncedToast": "تمت مزامنة {count} إجراء",
 
   "forbidden.title": "وصول مرفوض",
   "forbidden.subtitle":

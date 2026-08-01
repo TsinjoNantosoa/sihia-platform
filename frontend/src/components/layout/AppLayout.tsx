@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { SihiaChatbot } from "@/components/chatbot/SihiaChatbot";
+import { OfflineQueueBanner } from "@/components/shared/OfflineQueueBanner";
 import { cn } from "@/lib/utils";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -30,6 +31,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenu={() => setMobileOpen(true)} />
+        <OfflineQueueBanner />
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
