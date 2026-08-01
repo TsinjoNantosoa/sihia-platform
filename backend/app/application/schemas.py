@@ -99,7 +99,16 @@ class AppointmentCreate(BaseModel):
     date: str
     durationMin: int = Field(default=30, ge=15, le=240)
     reason: str
-    status: Literal["scheduled", "confirmed", "completed", "cancelled", "noshow"]
+    status: Literal["scheduled", "confirmed", "arrived", "completed", "cancelled", "noshow"]
+
+
+class AppointmentStatusUpdate(BaseModel):
+    status: Literal["confirmed", "arrived", "completed", "cancelled", "noshow"]
+
+
+class AppointmentReschedule(BaseModel):
+    doctorId: str = Field(min_length=1)
+    date: str = Field(min_length=1)
 
 
 UserRole = Literal["admin", "doctor", "staff", "manager"]
