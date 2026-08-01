@@ -76,6 +76,21 @@ const fr: Dict = {
   "offline.sync": "Synchroniser",
   "offline.queuedToast": "Action enregistrée dans la file hors ligne",
   "offline.syncedToast": "{count} action(s) synchronisée(s)",
+  "onboarding.step": "Étape {current} sur {total}",
+  "onboarding.skip": "Passer la visite",
+  "onboarding.finish": "Terminer",
+  "onboarding.navigation.title": "Naviguez dans le SIH",
+  "onboarding.navigation.description":
+    "Le menu regroupe les patients, médecins, rendez-vous, analyses et paramètres accessibles selon vos permissions.",
+  "onboarding.search.title": "Trouvez rapidement une information",
+  "onboarding.search.description":
+    "La recherche vous permet d’accéder rapidement aux données utiles sans parcourir chaque écran.",
+  "onboarding.notifications.title": "Suivez les événements importants",
+  "onboarding.notifications.description":
+    "Les alertes et rappels actionnables sont centralisés ici pour ne manquer aucune situation prioritaire.",
+  "onboarding.workspace.title": "Votre espace de travail",
+  "onboarding.workspace.description":
+    "Chaque module adapte ses actions à votre rôle. Vos filtres, préférences et actions hors ligne sont conservés pour votre compte.",
 
   "forbidden.title": "Accès refusé",
   "forbidden.subtitle":
@@ -326,6 +341,10 @@ const fr: Dict = {
   "settings.facility": "Établissement",
   "settings.profile": "Profil",
   "settings.security": "Sécurité de session",
+  "settings.onboarding.title": "Aide et prise en main",
+  "settings.onboarding.description":
+    "Relancez la visite guidée des fonctions principales à tout moment.",
+  "settings.onboarding.restart": "Relancer la visite guidée",
   "settings.notif.alerts": "Alertes critiques IA",
   "settings.notif.reminders": "Rappels de RDV (email)",
   "settings.notif.weekly": "Rapport hebdomadaire",
@@ -413,6 +432,21 @@ const en: Dict = {
   "offline.sync": "Synchronize",
   "offline.queuedToast": "Action saved to the offline queue",
   "offline.syncedToast": "{count} action(s) synchronized",
+  "onboarding.step": "Step {current} of {total}",
+  "onboarding.skip": "Skip tour",
+  "onboarding.finish": "Finish",
+  "onboarding.navigation.title": "Navigate the hospital system",
+  "onboarding.navigation.description":
+    "The menu groups patients, doctors, appointments, analytics and settings available for your permissions.",
+  "onboarding.search.title": "Find information quickly",
+  "onboarding.search.description":
+    "Search helps you reach useful information without browsing through every screen.",
+  "onboarding.notifications.title": "Track important events",
+  "onboarding.notifications.description":
+    "Actionable alerts and reminders are centralized here so priority situations are not missed.",
+  "onboarding.workspace.title": "Your workspace",
+  "onboarding.workspace.description":
+    "Each module adapts its actions to your role. Your filters, preferences and offline actions are retained for your account.",
 
   "forbidden.title": "Access denied",
   "forbidden.subtitle":
@@ -663,6 +697,9 @@ const en: Dict = {
   "settings.facility": "Facility",
   "settings.profile": "Profile",
   "settings.security": "Session security",
+  "settings.onboarding.title": "Help and onboarding",
+  "settings.onboarding.description": "Restart the guided tour of the main features at any time.",
+  "settings.onboarding.restart": "Restart guided tour",
   "settings.notif.alerts": "Critical AI alerts",
   "settings.notif.reminders": "Appointment reminders (email)",
   "settings.notif.weekly": "Weekly report",
@@ -750,6 +787,20 @@ const ar: Dict = {
   "offline.sync": "مزامنة",
   "offline.queuedToast": "تم حفظ الإجراء في قائمة الانتظار دون اتصال",
   "offline.syncedToast": "تمت مزامنة {count} إجراء",
+  "onboarding.step": "الخطوة {current} من {total}",
+  "onboarding.skip": "تخطي الجولة",
+  "onboarding.finish": "إنهاء",
+  "onboarding.navigation.title": "التنقل في النظام الصحي",
+  "onboarding.navigation.description":
+    "تجمع القائمة المرضى والأطباء والمواعيد والتحليلات والإعدادات المتاحة وفق صلاحياتك.",
+  "onboarding.search.title": "العثور على المعلومات بسرعة",
+  "onboarding.search.description": "يساعدك البحث على الوصول إلى المعلومات دون تصفح كل شاشة.",
+  "onboarding.notifications.title": "متابعة الأحداث المهمة",
+  "onboarding.notifications.description":
+    "يتم تجميع التنبيهات والتذكيرات القابلة للتنفيذ هنا حتى لا تفوت الحالات ذات الأولوية.",
+  "onboarding.workspace.title": "مساحة عملك",
+  "onboarding.workspace.description":
+    "تتكيف إجراءات كل وحدة مع دورك، ويتم حفظ عوامل التصفية والتفضيلات والإجراءات دون اتصال لحسابك.",
 
   "forbidden.title": "وصول مرفوض",
   "forbidden.subtitle":
@@ -1000,6 +1051,9 @@ const ar: Dict = {
   "settings.facility": "المؤسسة",
   "settings.profile": "الملف الشخصي",
   "settings.security": "أمان الجلسة",
+  "settings.onboarding.title": "المساعدة والبدء",
+  "settings.onboarding.description": "أعد تشغيل الجولة الإرشادية للميزات الرئيسية في أي وقت.",
+  "settings.onboarding.restart": "إعادة تشغيل الجولة الإرشادية",
   "settings.notif.alerts": "تنبيهات AI الحرجة",
   "settings.notif.reminders": "تذكيرات المواعيد (بريد)",
   "settings.notif.weekly": "تقرير أسبوعي",

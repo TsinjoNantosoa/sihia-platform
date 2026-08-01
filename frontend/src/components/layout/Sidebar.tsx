@@ -21,17 +21,39 @@ const groups = [
   {
     labelKey: "nav.section.main",
     items: [
-      { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, exact: true, permission: "dashboard:read" },
+      {
+        to: "/",
+        labelKey: "nav.dashboard",
+        icon: LayoutDashboard,
+        exact: true,
+        permission: "dashboard:read",
+      },
       { to: "/patients", labelKey: "nav.patients", icon: Users, permission: "patients:read" },
       { to: "/doctors", labelKey: "nav.doctors", icon: Stethoscope, permission: "doctors:read" },
-      { to: "/appointments", labelKey: "nav.appointments", icon: CalendarDays, permission: "appointments:read" },
+      {
+        to: "/appointments",
+        labelKey: "nav.appointments",
+        icon: CalendarDays,
+        permission: "appointments:read",
+      },
     ],
   },
   {
     labelKey: "nav.section.intelligence",
     items: [
-      { to: "/analytics", labelKey: "nav.analytics", icon: BarChart3, permission: "analytics:read" },
-      { to: "/prediction", labelKey: "nav.prediction", icon: Brain, beta: true, permission: "ml:read" },
+      {
+        to: "/analytics",
+        labelKey: "nav.analytics",
+        icon: BarChart3,
+        permission: "analytics:read",
+      },
+      {
+        to: "/prediction",
+        labelKey: "nav.prediction",
+        icon: Brain,
+        beta: true,
+        permission: "ml:read",
+      },
     ],
   },
   {
@@ -51,11 +73,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const isRtl = locale === "ar";
 
   const isActive = (to: string, exact?: boolean) =>
-    exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
+    exact
+      ? location.pathname === to
+      : location.pathname === to || location.pathname.startsWith(to + "/");
 
   return (
     <aside
       role="navigation"
+      data-onboarding="navigation"
       className={cn(
         "flex h-full w-64 shrink-0 flex-col border-border bg-sidebar",
         isRtl ? "border-l" : "border-r",
@@ -77,36 +102,40 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               {t(g.labelKey)}
             </div>
-            {g.items.filter((item) => permissions.includes(item.permission)).map((item) => {
-              const active = isActive(item.to, "exact" in item ? item.exact : false);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={onNavigate}
-                  className={cn(
-                    "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-primary-soft text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  <Icon
+            {g.items
+              .filter((item) => permissions.includes(item.permission))
+              .map((item) => {
+                const active = isActive(item.to, "exact" in item ? item.exact : false);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={onNavigate}
                     className={cn(
-                      "size-4 shrink-0",
-                      active ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                      "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-primary-soft text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
-                  />
-                  <span className="flex-1 truncate">{t(item.labelKey)}</span>
-                  {"beta" in item && item.beta ? (
-                    <span className="rounded-md bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent">
-                      Beta
-                    </span>
-                  ) : null}
-                </Link>
-              );
-            })}
+                  >
+                    <Icon
+                      className={cn(
+                        "size-4 shrink-0",
+                        active
+                          ? "text-primary"
+                          : "text-muted-foreground group-hover:text-foreground",
+                      )}
+                    />
+                    <span className="flex-1 truncate">{t(item.labelKey)}</span>
+                    {"beta" in item && item.beta ? (
+                      <span className="rounded-md bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent">
+                        Beta
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })}
           </div>
         ))}
       </nav>
@@ -134,7 +163,9 @@ function ApiHealthIndicator() {
       } catch {
         setStatus("down");
       }
-      setLastChecked(new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
+      setLastChecked(
+        new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+      );
     };
 
     check();
@@ -156,13 +187,20 @@ function ApiHealthIndicator() {
   };
 
   return (
-    <div className="flex items-center gap-2" title={lastChecked ? `Vérifié à ${lastChecked}` : undefined}>
+    <div
+      className="flex items-center gap-2"
+      title={lastChecked ? `Vérifié à ${lastChecked}` : undefined}
+    >
       {status === "down" ? (
         <WifiOff className="size-3.5 text-destructive" />
       ) : (
-        <span className={`size-2 rounded-full ${dot[status]} ${status === "ok" ? "animate-pulse" : ""}`} />
+        <span
+          className={`size-2 rounded-full ${dot[status]} ${status === "ok" ? "animate-pulse" : ""}`}
+        />
       )}
-      <span className={`text-[10px] font-medium uppercase tracking-wide ${status === "down" ? "text-destructive" : "text-muted-foreground"}`}>
+      <span
+        className={`text-[10px] font-medium uppercase tracking-wide ${status === "down" ? "text-destructive" : "text-muted-foreground"}`}
+      >
         {label[status]}
       </span>
     </div>

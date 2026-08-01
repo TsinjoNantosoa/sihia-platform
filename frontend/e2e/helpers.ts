@@ -11,7 +11,12 @@ export async function apiLogin(request: APIRequestContext, email: string, passwo
 }
 
 /** Connexion via le formulaire (garde la session en mémoire SPA, sans rechargement). */
-export async function loginViaUi(page: Page, email: string, password: string) {
+export async function loginViaUi(
+  page: Page,
+  email: string,
+  password: string,
+  options: { skipOnboarding?: boolean } = {},
+) {
   await page.goto("/login");
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-password").fill(password);
@@ -27,4 +32,11 @@ export async function loginViaUi(page: Page, email: string, password: string) {
   await expect(page.getByRole("link", { name: /Tableau de bord|Dashboard/i })).toBeVisible({
     timeout: 15_000,
   });
+
+  if (options.skipOnboarding !== false) {
+    const skip = page.getByRole("button", { name: /Passer la visite|Skip tour/i });
+    if (await skip.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await skip.click();
+    }
+  }
 }

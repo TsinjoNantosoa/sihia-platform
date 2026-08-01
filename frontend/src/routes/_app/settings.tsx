@@ -8,10 +8,11 @@ import { PipelineAdminPanel } from "@/components/shared/PipelineAdminPanel";
 import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBanner";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { useAuth } from "@/lib/auth/store";
-import { Bell, Globe, User, Building, LogOut, Shield, Database } from "lucide-react";
+import { Bell, CircleHelp, Globe, User, Building, LogOut, Shield, Database } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { appointmentsService, authService } from "@/lib/api/services";
 import { toast } from "sonner";
+import { requestOnboardingRestart } from "@/lib/onboarding/state";
 
 export const Route = createFileRoute("/_app/settings")({
   beforeLoad: requireRoutePermission("view_settings"),
@@ -75,7 +76,9 @@ function SettingsPage() {
             >
               <span className="font-mono text-[10px] uppercase">{l.code}</span>
               <span>{l.label}</span>
-              {l.dir === "rtl" ? <span className="text-[10px] text-muted-foreground">RTL</span> : null}
+              {l.dir === "rtl" ? (
+                <span className="text-[10px] text-muted-foreground">RTL</span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -106,7 +109,10 @@ function SettingsPage() {
             { label: t("settings.notif.reminders"), on: true },
             { label: t("settings.notif.weekly"), on: false },
           ].map((opt) => (
-            <label key={opt.label} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+            <label
+              key={opt.label}
+              className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
+            >
               <span className="text-sm">{opt.label}</span>
               <input type="checkbox" defaultChecked={opt.on} className="size-4 accent-primary" />
             </label>
@@ -127,6 +133,18 @@ function SettingsPage() {
           <PipelineAdminPanel />
         </Section>
       </PermissionGuard>
+
+      <Section icon={<CircleHelp className="size-4" />} title={t("settings.onboarding.title")}>
+        <p className="mb-3 text-xs text-muted-foreground">{t("settings.onboarding.description")}</p>
+        <button
+          type="button"
+          onClick={requestOnboardingRestart}
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted"
+        >
+          <CircleHelp className="size-4" />
+          {t("settings.onboarding.restart")}
+        </button>
+      </Section>
 
       <Section icon={<Shield className="size-4" />} title={t("settings.security")}>
         <div className="flex flex-wrap gap-3">
@@ -150,11 +168,21 @@ function SettingsPage() {
   );
 }
 
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function Section({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
       <div className="mb-4 flex items-center gap-2">
-        <div className="flex size-7 items-center justify-center rounded-md bg-primary-soft text-primary">{icon}</div>
+        <div className="flex size-7 items-center justify-center rounded-md bg-primary-soft text-primary">
+          {icon}
+        </div>
         <h2 className="text-sm font-semibold">{title}</h2>
       </div>
       {children}
@@ -165,7 +193,9 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
       <span className="text-sm">{value}</span>
     </div>
   );

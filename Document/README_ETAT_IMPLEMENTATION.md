@@ -42,6 +42,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Page 403 + focus / labels accessibles
 - [x] Login JWT + refresh automatique sur 401
 - [x] Notifications riches : actions API, deep-links sûrs et statut lu au clic
+- [x] Onboarding premier accès : visite guidée 4 étapes, progression par utilisateur et relance depuis Paramètres
 
 ### 1.2 Modules métier
 
@@ -313,6 +314,7 @@ npm run migrate:pg
 
 | Date | Changement | Tests |
 |---|---|---|
+| 2026-08-01 | B9 : coach marks sur navigation, recherche, notifications et espace de travail, avec persistance par utilisateur et relance depuis Paramètres | 19 tests frontend + 1 E2E Chrome, lint ciblé, build |
 | 2026-08-01 | B8 : file hors ligne persistante par utilisateur, état optimiste, bandeau global, rejeu ordonné automatique ou manuel | 15 tests frontend + 1 E2E Chrome hors ligne/reconnexion, lint ciblé, build |
 | 2026-08-01 | B7 : recherche et filtres statut/spécialité/médecin, vues liste/calendrier sauvegardées par utilisateur et raccourci « Mon service » | 11 tests frontend, lint ciblé, build, contrôle frontend/API réels |
 | 2026-08-01 | B6 : calendrier journalier multi-médecins, filtre, créneaux 30 min et drag & drop avec contrôle des conflits, permissions et audit | 9 tests backend + 7 tests frontend, lint ciblé, build, déplacement HTTP réel |

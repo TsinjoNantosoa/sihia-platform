@@ -36,13 +36,17 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-xl sm:px-6">
       <div className="flex flex-1 items-center gap-3">
         <button
+          data-onboarding="navigation"
           onClick={onMenu}
           className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
           aria-label="Menu"
         >
           <Menu className="size-5" />
         </button>
-        <div className="flex w-full max-w-md items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+        <div
+          data-onboarding="search"
+          className="flex w-full max-w-md items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
+        >
           <Search className="size-4 text-muted-foreground" />
           <input
             value={search}
@@ -80,7 +84,9 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <NotificationBell />
+        <div data-onboarding="notifications">
+          <NotificationBell />
+        </div>
 
         {/* Profile */}
         {user ? (

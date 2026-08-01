@@ -78,7 +78,7 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 | B6 | [x] | Calendrier multi-médecins + drag & drop | Vue journalière filtrable, créneaux 30 min, replanification contrôlée et auditée |
 | B7 | [x] | Filtres sauvegardés / vues “Mon service” | Recherche et filtres combinés, vues liste/calendrier persistées par utilisateur |
 | B8 | [x] | Mode offline / file d’attente si réseau faible | Mutations RDV persistées par utilisateur, état optimiste, rejeu ordonné et synchronisation automatique/manuelle |
-| B9 | [ ] | Onboarding + tooltips premier login | Adoption |
+| B9 | [x] | Onboarding + tooltips premier login | Visite guidée 4 étapes, progression par utilisateur et relance depuis Paramètres |
 | B10 | [ ] | Accessibilité A11y (clavier, contrastes, lecteurs d’écran) | Qualité produit |
 | B11 | [ ] | Tableaux densifiés (tri, colonnes, export par liste) | Productivité admin |
 | B12 | [ ] | Toasts + undo sur actions critiques | Moins d’erreurs |
@@ -244,6 +244,7 @@ Items historiques du plan futur — à conserver pour traçabilité.
 | 2026-08-01 | Tests automatisés | B6 | 9 tests backend + 7 tests frontend, lint ciblé, build et déplacement HTTP réel validés |
 | 2026-08-01 | Tests automatisés | B7 | 11 tests frontend, lint ciblé, build et contrôle frontend/API réels validés |
 | 2026-08-01 | Tests automatisés | B8 | 15 tests frontend + 1 E2E Chrome hors ligne/reconnexion, lint ciblé et build validés |
+| 2026-08-01 | Tests automatisés | B9 | 19 tests frontend + 1 E2E Chrome (premier accès, persistance, relance), lint ciblé et build validés |
 
 Exemple :
 
