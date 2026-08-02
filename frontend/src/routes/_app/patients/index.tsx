@@ -29,6 +29,8 @@ import { toast } from "sonner";
 import type { Patient } from "@/lib/api/types";
 import { buildCsv, downloadCsv, sortRows, toggleSort, type SortState } from "@/lib/table/dataTable";
 import { useTablePreferences } from "@/lib/table/useTablePreferences";
+import { UNDOABLE_ACTION_DELAY_MS } from "@/lib/actions/undoableAction";
+import { scheduleUndoableToast } from "@/lib/actions/undoableToast";
 
 export const Route = createFileRoute("/_app/patients/")({
   beforeLoad: requireRoutePermission("view_patients"),
@@ -68,6 +70,7 @@ function PatientsListPage() {
   const PAGE_SIZE = 10;
   const [showNew, setShowNew] = useState(false);
   const [toDelete, setToDelete] = useState<Patient | null>(null);
+  const [pendingDeletionIds, setPendingDeletionIds] = useState<Set<string>>(() => new Set());
   const [sort, setSort] = useState<SortState<PatientColumn>>({ key: "name", direction: "asc" });
   const columns: TableColumnOption<PatientColumn>[] = [
     { id: "id", label: t("patients.col.id") },
@@ -89,13 +92,31 @@ function PatientsListPage() {
     queryFn: () => patientsService.list({ search, status: statusFilter }),
   });
 
-  const removeMut = useMutation({
-    mutationFn: (id: string) => patientsService.remove(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["patients"] });
-      toast.success("Patient supprimé");
-    },
-  });
+  const schedulePatientDeletion = (patient: Patient) => {
+    const name = `${patient.firstName} ${patient.lastName}`;
+    setPendingDeletionIds((current) => new Set(current).add(patient.id));
+    scheduleUndoableToast({
+      message: t("undo.deleteScheduled", { name }),
+      description: t("undo.deleteDescription", {
+        seconds: UNDOABLE_ACTION_DELAY_MS / 1_000,
+      }),
+      undoLabel: t("undo.action"),
+      committingMessage: t("undo.committing"),
+      undoneMessage: t("undo.cancelled"),
+      successMessage: t("patients.deleted"),
+      errorMessage: t("undo.failed"),
+      execute: async () => {
+        await patientsService.remove(patient.id);
+        await qc.invalidateQueries({ queryKey: ["patients"] });
+      },
+      onSettled: () =>
+        setPendingDeletionIds((current) => {
+          const next = new Set(current);
+          next.delete(patient.id);
+          return next;
+        }),
+    });
+  };
 
   const sortedPatients = useMemo(
     () =>
@@ -306,6 +327,7 @@ function PatientsListPage() {
                           <PermissionGuard permission="patients:delete">
                             <button
                               onClick={() => setToDelete(p)}
+                              disabled={pendingDeletionIds.has(p.id)}
                               className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
                               aria-label="Supprimer"
                             >
@@ -355,9 +377,13 @@ function PatientsListPage() {
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
         title="Supprimer le patient"
-        description={`Supprimer définitivement le dossier de ${toDelete?.firstName} ${toDelete?.lastName} ?`}
+        description={`Supprimer le dossier de ${toDelete?.firstName} ${toDelete?.lastName} ? ${t(
+          "undo.confirmDescription",
+          { seconds: UNDOABLE_ACTION_DELAY_MS / 1_000 },
+        )}`}
+        confirmLabel={t("common.delete")}
         destructive
-        onConfirm={() => toDelete && removeMut.mutate(toDelete.id)}
+        onConfirm={() => toDelete && schedulePatientDeletion(toDelete)}
       />
     </div>
   );

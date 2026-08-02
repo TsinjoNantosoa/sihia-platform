@@ -81,7 +81,7 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 | B9 | [x] | Onboarding + tooltips premier login | Visite guidée 4 étapes, progression par utilisateur et relance depuis Paramètres |
 | B10 | [x] | Accessibilité A11y (clavier, contrastes, lecteurs d’écran) | WCAG 2.1 AA automatisé, navigation clavier, focus maîtrisé, contrastes et annonces ARIA |
 | B11 | [x] | Tableaux densifiés (tri, colonnes, export par liste) | Tri accessible, colonnes et densité persistées par utilisateur, export CSV sur Patients/RDV/RBAC |
-| B12 | [ ] | Toasts + undo sur actions critiques | Moins d’erreurs |
+| B12 | [x] | Toasts + undo sur actions critiques | Suppressions Patient/RBAC différées de 6 s, annulables avant appel API, avec retours succès/erreur |
 
 ---
 
@@ -247,6 +247,7 @@ Items historiques du plan futur — à conserver pour traçabilité.
 | 2026-08-01 | Tests automatisés | B9 | 19 tests frontend + 1 E2E Chrome (premier accès, persistance, relance), lint ciblé et build validés |
 | 2026-08-02 | Tests automatisés | B10 | 49 tests frontend + 14 E2E Chrome, dont audits Axe WCAG 2.1 AA et parcours clavier, lint ciblé et build validés |
 | 2026-08-03 | Tests automatisés | B11 | 53 tests frontend + 15 E2E Chrome (tri, colonnes, densité, export CSV et persistance), lint ciblé et build validés |
+| 2026-08-03 | Tests automatisés | B12 | 57 tests frontend + 16 E2E Chrome (annulation, exécution différée et absence de DELETE après undo), lint ciblé et build validés |
 
 Exemple :
 

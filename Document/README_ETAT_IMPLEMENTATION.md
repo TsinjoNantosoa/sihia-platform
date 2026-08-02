@@ -1,6 +1,6 @@
 # État d'implémentation — SIH IA
 
-> **Dernière mise à jour :** 3 août 2026 (B11 tableaux métier configurables)
+> **Dernière mise à jour :** 3 août 2026 (B12 actions critiques annulables)
 > **Sources :** `src/`, `backend/`, dossier `Document/`
 
 Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lorsqu'une fonctionnalité est implémentée **et** validée (tests ou vérification manuelle documentée).
@@ -17,7 +17,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 | **Couverture fonctionnelle MVP** | **~95 %** |
 | **Couverture valeur métier réelle** | **~70 %** |
 | **Tests backend** | ✅ **68/68** (`pytest tests/`) |
-| **Tests E2E** | ✅ **15/15** Playwright Chrome (`npm run test:e2e`) |
+| **Tests E2E** | ✅ **16/16** Playwright Chrome (`npm run test:e2e`) |
 
 ---
 
@@ -45,6 +45,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Onboarding premier accès : visite guidée 4 étapes, progression par utilisateur et relance depuis Paramètres
 - [x] Accessibilité WCAG 2.1 AA : contrastes, lien d’évitement, landmarks, labels ARIA, focus clavier et réduction des animations
 - [x] Tableaux métier Patients/RDV/RBAC : tri accessible, colonnes et densité persistées par utilisateur, export CSV
+- [x] Actions critiques annulables : suppressions Patient/RBAC différées de 6 secondes avec toast, undo et retours succès/erreur
 
 ### 1.2 Modules métier
 
@@ -316,6 +317,7 @@ npm run migrate:pg
 
 | Date | Changement | Tests |
 |---|---|---|
+| 2026-08-03 | B12 : suppressions Patient et Utilisateur RBAC confirmées puis différées de 6 secondes, annulables par toast avant l’appel API | 57 tests frontend + 16 E2E Chrome, lint ciblé, build |
 | 2026-08-03 | B11 : tableaux Patients, rendez-vous et utilisateurs RBAC configurables avec tri, colonnes, densité et export CSV persistés par utilisateur | 53 tests frontend + 15 E2E Chrome, lint ciblé, build |
 | 2026-08-02 | B10 : conformité WCAG 2.1 AA automatisée, contrastes renforcés, navigation clavier, focus modal/mobile, annonces ARIA et mouvements réduits | 49 tests frontend + 14 E2E Chrome, audit Axe multi-écrans, lint ciblé, build |
 | 2026-08-01 | B9 : coach marks sur navigation, recherche, notifications et espace de travail, avec persistance par utilisateur et relance depuis Paramètres | 19 tests frontend + 1 E2E Chrome, lint ciblé, build |

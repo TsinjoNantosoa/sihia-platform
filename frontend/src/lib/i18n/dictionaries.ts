@@ -49,6 +49,15 @@ const fr: Dict = {
   "common.yes": "Oui",
   "common.no": "Non",
 
+  "undo.deleteScheduled": "Suppression programmée : {{name}}",
+  "undo.deleteDescription":
+    "Vous avez {{seconds}} secondes pour annuler avant la suppression définitive.",
+  "undo.action": "Annuler la suppression",
+  "undo.committing": "Suppression en cours…",
+  "undo.cancelled": "Suppression annulée",
+  "undo.failed": "La suppression a échoué",
+  "undo.confirmDescription": "Après confirmation, vous aurez {{seconds}} secondes pour annuler.",
+
   "a11y.skipToContent": "Aller au contenu principal",
   "a11y.openMenu": "Ouvrir le menu",
   "a11y.primaryNavigation": "Navigation principale",
@@ -201,6 +210,7 @@ const fr: Dict = {
   "patients.form.allergies": "Allergies",
   "patients.form.insurance": "Assurance",
   "patients.created": "Patient créé avec succès",
+  "patients.deleted": "Patient supprimé",
 
   "doctors.title": "Médecins",
   "doctors.subtitle": "Annuaire et disponibilités",
@@ -417,6 +427,14 @@ const en: Dict = {
   "common.empty": "No results",
   "common.error": "Something went wrong",
   "common.retry": "Retry",
+
+  "undo.deleteScheduled": "Deletion scheduled: {{name}}",
+  "undo.deleteDescription": "You have {{seconds}} seconds to undo before permanent deletion.",
+  "undo.action": "Undo deletion",
+  "undo.committing": "Deleting…",
+  "undo.cancelled": "Deletion cancelled",
+  "undo.failed": "Deletion failed",
+  "undo.confirmDescription": "After confirmation, you will have {{seconds}} seconds to undo.",
   "common.viewAll": "View all",
   "common.actions": "Actions",
   "common.status": "Status",
@@ -576,6 +594,7 @@ const en: Dict = {
   "patients.form.allergies": "Allergies",
   "patients.form.insurance": "Insurance",
   "patients.created": "Patient created successfully",
+  "patients.deleted": "Patient deleted",
 
   "doctors.title": "Doctors",
   "doctors.subtitle": "Directory and availability",
@@ -791,6 +810,14 @@ const ar: Dict = {
   "common.empty": "لا توجد نتائج",
   "common.error": "حدث خطأ ما",
   "common.retry": "إعادة المحاولة",
+
+  "undo.deleteScheduled": "تمت جدولة الحذف: {{name}}",
+  "undo.deleteDescription": "لديك {{seconds}} ثوانٍ للتراجع قبل الحذف النهائي.",
+  "undo.action": "التراجع عن الحذف",
+  "undo.committing": "جارٍ الحذف…",
+  "undo.cancelled": "تم إلغاء الحذف",
+  "undo.failed": "فشل الحذف",
+  "undo.confirmDescription": "بعد التأكيد، سيكون لديك {{seconds}} ثوانٍ للتراجع.",
   "common.viewAll": "عرض الكل",
   "common.actions": "الإجراءات",
   "common.status": "الحالة",
@@ -949,6 +976,7 @@ const ar: Dict = {
   "patients.form.allergies": "الحساسيات",
   "patients.form.insurance": "التأمين",
   "patients.created": "تم إنشاء المريض بنجاح",
+  "patients.deleted": "تم حذف المريض",
 
   "doctors.title": "الأطباء",
   "doctors.subtitle": "الدليل والتوفر",

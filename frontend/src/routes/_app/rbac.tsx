@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState } from "@/components/shared/States";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   DataTableToolbar,
   SortableTableHead,
@@ -33,6 +34,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { buildCsv, downloadCsv, sortRows, toggleSort, type SortState } from "@/lib/table/dataTable";
 import { useTablePreferences } from "@/lib/table/useTablePreferences";
+import { UNDOABLE_ACTION_DELAY_MS } from "@/lib/actions/undoableAction";
+import { scheduleUndoableToast } from "@/lib/actions/undoableToast";
 
 export const Route = createFileRoute("/_app/rbac")({
   beforeLoad: requireRoutePermission("manage_roles"),
@@ -80,6 +83,8 @@ function RbacPage() {
   const currentUserId = currentUser?.id;
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<RbacUser | null>(null);
+  const [toDelete, setToDelete] = useState<RbacUser | null>(null);
+  const [pendingDeletionIds, setPendingDeletionIds] = useState<Set<string>>(() => new Set());
   const [sort, setSort] = useState<SortState<RbacColumn>>({ key: "user", direction: "asc" });
   const columns: TableColumnOption<RbacColumn>[] = [
     { id: "user", label: t("rbac.col.user") },
@@ -128,13 +133,30 @@ function RbacPage() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => rbacService.remove(id),
-    onSuccess: () => {
-      toast.success(t("rbac.deleted"));
-      invalidate();
-    },
-  });
+  const scheduleUserDeletion = (user: RbacUser) => {
+    setPendingDeletionIds((current) => new Set(current).add(user.id));
+    scheduleUndoableToast({
+      message: t("undo.deleteScheduled", { name: user.name }),
+      description: t("undo.deleteDescription", {
+        seconds: UNDOABLE_ACTION_DELAY_MS / 1_000,
+      }),
+      undoLabel: t("undo.action"),
+      committingMessage: t("undo.committing"),
+      undoneMessage: t("undo.cancelled"),
+      successMessage: t("rbac.deleted"),
+      errorMessage: t("undo.failed"),
+      execute: async () => {
+        await rbacService.remove(user.id);
+        await invalidate();
+      },
+      onSettled: () =>
+        setPendingDeletionIds((current) => {
+          const next = new Set(current);
+          next.delete(user.id);
+          return next;
+        }),
+    });
+  };
 
   const exportAuditMutation = useMutation({
     mutationFn: () => auditService.exportJsonl(),
@@ -308,12 +330,8 @@ function RbacPage() {
                           {u.id !== currentUserId && (
                             <button
                               type="button"
-                              disabled={deleteMutation.isPending}
-                              onClick={() => {
-                                if (window.confirm(t("confirm.delete.body"))) {
-                                  deleteMutation.mutate(u.id);
-                                }
-                              }}
+                              disabled={pendingDeletionIds.has(u.id)}
+                              onClick={() => setToDelete(u)}
                               className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2 py-1 text-[10px] font-medium text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="size-3" />
@@ -357,6 +375,18 @@ function RbacPage() {
           t={t}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(toDelete)}
+        onOpenChange={(open) => !open && setToDelete(null)}
+        title={t("confirm.delete.title")}
+        description={t("undo.confirmDescription", {
+          seconds: UNDOABLE_ACTION_DELAY_MS / 1_000,
+        })}
+        confirmLabel={t("common.delete")}
+        destructive
+        onConfirm={() => toDelete && scheduleUserDeletion(toDelete)}
+      />
     </div>
   );
 }

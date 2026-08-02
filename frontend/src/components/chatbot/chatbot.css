@@ -1133,7 +1133,7 @@
   margin-right: 8px; /* Offset slightly from absolute edge */
   width: min(280px, calc(100vw - 28px));
   position: relative;
-  pointer-events: auto;
+  pointer-events: none;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -1143,7 +1143,7 @@
   color: #1e293b;
   font-size: 14px;
   line-height: 1.5;
-  cursor: pointer;
+  cursor: default;
 }
 
 /* Triangle for the speech bubble */
@@ -1187,6 +1187,7 @@
   font-size: 16px;
   margin-top: -4px;
   margin-right: -4px;
+  pointer-events: auto;
 }
 
 .chat-callout-close:hover {
