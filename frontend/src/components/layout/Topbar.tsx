@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function Topbar({ onMenu }: { onMenu?: () => void }) {
+export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menuOpen?: boolean }) {
   const t = useT();
   const { locale, setLocale } = useI18n();
   const { user, logout } = useAuth();
@@ -36,25 +36,32 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-xl sm:px-6">
       <div className="flex flex-1 items-center gap-3">
         <button
+          id="mobile-menu-trigger"
           data-onboarding="navigation"
           onClick={onMenu}
           className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
-          aria-label="Menu"
+          aria-label={t("a11y.openMenu")}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-navigation"
         >
-          <Menu className="size-5" />
+          <Menu className="size-5" aria-hidden />
         </button>
         <div
           data-onboarding="search"
           className="flex w-full max-w-md items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
         >
-          <Search className="size-4 text-muted-foreground" />
+          <Search className="size-4 text-muted-foreground" aria-hidden />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("common.searchPlaceholder")}
+            aria-label={t("common.search")}
             className="w-full bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
           />
-          <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:block">
+          <kbd
+            aria-hidden
+            className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:block"
+          >
             ⌘K
           </kbd>
         </div>
@@ -63,9 +70,12 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
       <div className="flex items-center gap-2">
         {/* Language switcher */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide hover:bg-muted">
+          <DropdownMenuTrigger
+            aria-label={t("a11y.languageMenu")}
+            className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide hover:bg-muted"
+          >
             {locale}
-            <ChevronDown className="size-3" />
+            <ChevronDown className="size-3" aria-hidden />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             {LOCALES.map((l) => (
@@ -91,7 +101,10 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
         {/* Profile */}
         {user ? (
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-lg border border-border bg-background px-2 py-1 hover:bg-muted">
+            <DropdownMenuTrigger
+              aria-label={t("a11y.userMenu").replace("{name}", user.name)}
+              className="flex items-center gap-2.5 rounded-lg border border-border bg-background px-2 py-1 hover:bg-muted"
+            >
               <div
                 className="flex size-7 items-center justify-center rounded-md bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground"
                 aria-hidden
@@ -102,7 +115,7 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
                 <div className="text-xs font-semibold">{user.name}</div>
                 <div className="text-[10px] uppercase text-muted-foreground">{user.role}</div>
               </div>
-              <ChevronDown className="size-3 text-muted-foreground" />
+              <ChevronDown className="size-3 text-muted-foreground" aria-hidden />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>

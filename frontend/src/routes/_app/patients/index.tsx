@@ -1,13 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Trash2, Filter, Eye } from "lucide-react";
-import { useT } from "@/lib/i18n/store";
+import { useI18n, useT } from "@/lib/i18n/store";
+import { useAuth } from "@/lib/auth/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { LoadingState, EmptyState, ErrorState } from "@/components/shared/States";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
+import {
+  DataTableToolbar,
+  SortableTableHead,
+  type TableColumnOption,
+} from "@/components/shared/DataTableTools";
 import { patientsService } from "@/lib/api/services";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import {
@@ -21,6 +27,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { Patient } from "@/lib/api/types";
+import { buildCsv, downloadCsv, sortRows, toggleSort, type SortState } from "@/lib/table/dataTable";
+import { useTablePreferences } from "@/lib/table/useTablePreferences";
 
 export const Route = createFileRoute("/_app/patients/")({
   beforeLoad: requireRoutePermission("view_patients"),
@@ -38,8 +46,21 @@ function calcAge(dob: string) {
   return Math.floor((Date.now() - d.getTime()) / (365.25 * 86400000));
 }
 
+type PatientColumn = "id" | "name" | "age" | "gender" | "phone" | "lastVisit" | "status";
+const PATIENT_COLUMN_IDS: PatientColumn[] = [
+  "id",
+  "name",
+  "age",
+  "gender",
+  "phone",
+  "lastVisit",
+  "status",
+];
+
 function PatientsListPage() {
   const t = useT();
+  const locale = useI18n((state) => state.locale);
+  const user = useAuth((state) => state.user);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -47,6 +68,21 @@ function PatientsListPage() {
   const PAGE_SIZE = 10;
   const [showNew, setShowNew] = useState(false);
   const [toDelete, setToDelete] = useState<Patient | null>(null);
+  const [sort, setSort] = useState<SortState<PatientColumn>>({ key: "name", direction: "asc" });
+  const columns: TableColumnOption<PatientColumn>[] = [
+    { id: "id", label: t("patients.col.id") },
+    { id: "name", label: t("patients.col.name") },
+    { id: "age", label: t("patients.col.age") },
+    { id: "gender", label: t("patients.col.gender") },
+    { id: "phone", label: t("patients.col.phone") },
+    { id: "lastVisit", label: t("patients.col.lastVisit") },
+    { id: "status", label: t("patients.col.status") },
+  ];
+  const table = useTablePreferences(
+    "patients",
+    user?.id || user?.email || "anonymous",
+    PATIENT_COLUMN_IDS,
+  );
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["patients", search, statusFilter],
@@ -61,9 +97,59 @@ function PatientsListPage() {
     },
   });
 
-  const total = data?.length ?? 0;
-  const pageData = data?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? [];
+  const sortedPatients = useMemo(
+    () =>
+      sortRows(
+        data ?? [],
+        sort,
+        {
+          id: (patient) => patient.recordNumber,
+          name: (patient) => `${patient.lastName} ${patient.firstName}`,
+          age: (patient) => calcAge(patient.dob),
+          gender: (patient) => patient.gender,
+          phone: (patient) => patient.phone,
+          lastVisit: (patient) => patient.lastVisit,
+          status: (patient) => patient.status,
+        },
+        locale,
+      ),
+    [data, locale, sort],
+  );
+  const total = sortedPatients.length;
+  const pageData = sortedPatients.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const rowClassName = table.dense ? "px-3 py-2" : "px-4 py-3";
+
+  const exportPatients = () => {
+    const csvColumns = {
+      id: { header: t("patients.col.id"), value: (patient: Patient) => patient.recordNumber },
+      name: {
+        header: t("patients.col.name"),
+        value: (patient: Patient) => `${patient.firstName} ${patient.lastName}`,
+      },
+      age: { header: t("patients.col.age"), value: (patient: Patient) => calcAge(patient.dob) },
+      gender: {
+        header: t("patients.col.gender"),
+        value: (patient: Patient) => t(`patients.gender.${patient.gender.toLowerCase()}`),
+      },
+      phone: { header: t("patients.col.phone"), value: (patient: Patient) => patient.phone },
+      lastVisit: {
+        header: t("patients.col.lastVisit"),
+        value: (patient: Patient) => patient.lastVisit,
+      },
+      status: {
+        header: t("patients.col.status"),
+        value: (patient: Patient) => t(`patients.status.${patient.status}`),
+      },
+    };
+    downloadCsv(
+      `patients-${new Date().toISOString().slice(0, 10)}.csv`,
+      buildCsv(
+        sortedPatients,
+        table.visibleColumns.map((column) => csvColumns[column]),
+      ),
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,7 +171,7 @@ function PatientsListPage() {
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
-            <Search className="size-4 text-muted-foreground" />
+            <Search className="size-4 text-muted-foreground" aria-hidden />
             <input
               type="text"
               value={search}
@@ -94,12 +180,14 @@ function PatientsListPage() {
                 setPage(1);
               }}
               placeholder={t("common.searchPlaceholder")}
+              aria-label={t("common.search")}
               className="w-full bg-transparent text-sm focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-            <Filter className="size-4 text-muted-foreground" />
+            <Filter className="size-4 text-muted-foreground" aria-hidden />
             <select
+              aria-label={t("common.status")}
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
@@ -115,6 +203,16 @@ function PatientsListPage() {
           </div>
         </div>
 
+        <DataTableToolbar
+          columns={columns}
+          visibleColumns={table.visibleColumns}
+          onToggleColumn={table.toggleColumn}
+          dense={table.dense}
+          onDenseChange={table.setDense}
+          rowCount={total}
+          onExport={exportPatients}
+        />
+
         {isLoading ? (
           <LoadingState />
         ) : isError ? (
@@ -124,49 +222,78 @@ function PatientsListPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+              <table
+                className="min-w-full text-sm"
+                data-testid="patients-table"
+                data-density={table.dense ? "compact" : "comfortable"}
+              >
                 <thead className="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3 text-start">{t("patients.col.id")}</th>
-                    <th className="px-4 py-3 text-start">{t("patients.col.name")}</th>
-                    <th className="px-4 py-3 text-start">{t("patients.col.age")}</th>
-                    <th className="px-4 py-3 text-start">{t("patients.col.gender")}</th>
-                    <th className="px-4 py-3 text-start">{t("patients.col.phone")}</th>
-                    <th className="px-4 py-3 text-start">{t("patients.col.lastVisit")}</th>
-                    <th className="px-4 py-3 text-start">{t("patients.col.status")}</th>
-                    <th className="px-4 py-3 text-end">{t("common.actions")}</th>
+                    {columns.map((column) =>
+                      table.isVisible(column.id) ? (
+                        <SortableTableHead
+                          key={column.id}
+                          column={column.id}
+                          label={column.label}
+                          sort={sort}
+                          onSort={(nextColumn) => {
+                            setSort((current) => toggleSort(current, nextColumn));
+                            setPage(1);
+                          }}
+                        />
+                      ) : null,
+                    )}
+                    <th scope="col" className="px-3 py-2 text-end">
+                      {t("common.actions")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {pageData.map((p: Patient) => (
                     <tr key={p.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {p.recordNumber}
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        {p.firstName} {p.lastName}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{calcAge(p.dob)}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {t(`patients.gender.${p.gender.toLowerCase()}`)}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs">{p.phone}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{p.lastVisit}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge
-                          tone={
-                            p.status === "active"
-                              ? "success"
-                              : p.status === "admitted"
-                                ? "warning"
-                                : "neutral"
-                          }
-                          dot
-                        >
-                          {t(`patients.status.${p.status}`)}
-                        </StatusBadge>
-                      </td>
-                      <td className="px-4 py-3 text-end">
+                      {table.isVisible("id") ? (
+                        <td className={`${rowClassName} font-mono text-xs text-muted-foreground`}>
+                          {p.recordNumber}
+                        </td>
+                      ) : null}
+                      {table.isVisible("name") ? (
+                        <td className={`${rowClassName} font-medium`}>
+                          {p.firstName} {p.lastName}
+                        </td>
+                      ) : null}
+                      {table.isVisible("age") ? (
+                        <td className={`${rowClassName} text-muted-foreground`}>
+                          {calcAge(p.dob)}
+                        </td>
+                      ) : null}
+                      {table.isVisible("gender") ? (
+                        <td className={`${rowClassName} text-muted-foreground`}>
+                          {t(`patients.gender.${p.gender.toLowerCase()}`)}
+                        </td>
+                      ) : null}
+                      {table.isVisible("phone") ? (
+                        <td className={`${rowClassName} font-mono text-xs`}>{p.phone}</td>
+                      ) : null}
+                      {table.isVisible("lastVisit") ? (
+                        <td className={`${rowClassName} text-muted-foreground`}>{p.lastVisit}</td>
+                      ) : null}
+                      {table.isVisible("status") ? (
+                        <td className={rowClassName}>
+                          <StatusBadge
+                            tone={
+                              p.status === "active"
+                                ? "success"
+                                : p.status === "admitted"
+                                  ? "warning"
+                                  : "neutral"
+                            }
+                            dot
+                          >
+                            {t(`patients.status.${p.status}`)}
+                          </StatusBadge>
+                        </td>
+                      ) : null}
+                      <td className={`${rowClassName} text-end`}>
                         <div className="inline-flex items-center gap-1">
                           <Link
                             to="/patients/$patientId"
@@ -290,7 +417,8 @@ function NewPatientDialog({
       const dob = new Date(form.dob);
       const today = new Date();
       if (dob > today) errs.dob = "La date de naissance ne peut pas être dans le futur";
-      else if (today.getFullYear() - dob.getFullYear() > 150) errs.dob = "Date de naissance invalide";
+      else if (today.getFullYear() - dob.getFullYear() > 150)
+        errs.dob = "Date de naissance invalide";
     }
     if (!form.phone.trim()) {
       errs.phone = "Requis";
@@ -307,20 +435,34 @@ function NewPatientDialog({
       ...form,
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
-      allergies: form.allergies ? form.allergies.split(",").map((a) => a.trim()).filter(Boolean) : [],
+      allergies: form.allergies
+        ? form.allergies
+            .split(",")
+            .map((a) => a.trim())
+            .filter(Boolean)
+        : [],
     });
   };
 
-  const field = (key: string, label: string, type = "text") => (
+  const field = (key: keyof typeof form, label: string, type = "text") => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium">{label}</label>
+      <label htmlFor={`new-patient-${key}`} className="text-xs font-medium">
+        {label}
+      </label>
       <input
+        id={`new-patient-${key}`}
         type={type}
-        value={(form as any)[key]}
+        value={form[key]}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+        aria-invalid={Boolean(errors[key])}
+        aria-describedby={errors[key] ? `new-patient-${key}-error` : undefined}
         className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
       />
-      {errors[key] ? <span className="text-[11px] text-destructive">{errors[key]}</span> : null}
+      {errors[key] ? (
+        <span id={`new-patient-${key}-error`} role="alert" className="text-[11px] text-destructive">
+          {errors[key]}
+        </span>
+      ) : null}
     </div>
   );
 

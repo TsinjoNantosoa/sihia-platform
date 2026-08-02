@@ -61,6 +61,7 @@ export function OnboardingTour() {
   const user = useAuth((state) => state.user);
   const userKey = user?.id || user?.email || "anonymous";
   const cardRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
@@ -110,6 +111,13 @@ export function OnboardingTour() {
       window.removeEventListener("scroll", updateTarget, true);
     };
   }, [open, step.target]);
+
+  useEffect(() => {
+    if (!open) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    cardRef.current?.focus();
+    return () => previousFocusRef.current?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (open) cardRef.current?.focus();
@@ -163,6 +171,7 @@ export function OnboardingTour() {
     <div className="fixed inset-0 z-[100] pointer-events-none" aria-live="polite">
       {targetRect ? (
         <div
+          aria-hidden
           className="fixed rounded-xl ring-2 ring-primary ring-offset-2 ring-offset-background transition-all duration-200"
           style={{
             top: targetRect.top,
@@ -173,7 +182,7 @@ export function OnboardingTour() {
           }}
         />
       ) : (
-        <div className="fixed inset-0 bg-black/60" />
+        <div aria-hidden className="fixed inset-0 bg-black/60" />
       )}
 
       <div
@@ -181,8 +190,30 @@ export function OnboardingTour() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-title"
+        aria-describedby="onboarding-description"
         tabIndex={-1}
         onKeyDown={(event) => {
+          if (event.key === "Tab") {
+            const focusable = cardRef.current?.querySelectorAll<HTMLElement>(
+              'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            );
+            if (!focusable?.length) {
+              event.preventDefault();
+              return;
+            }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (
+              event.shiftKey &&
+              (document.activeElement === first || document.activeElement === cardRef.current)
+            ) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault();
+              first.focus();
+            }
+          }
           if (event.key === "Escape") finish();
           if (event.key === "ArrowRight") next();
           if (event.key === "ArrowLeft") previous();
@@ -192,7 +223,7 @@ export function OnboardingTour() {
       >
         <div className="mb-4 flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-            <StepIcon className="size-5" />
+            <StepIcon className="size-5" aria-hidden />
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
@@ -205,7 +236,9 @@ export function OnboardingTour() {
             </h2>
           </div>
         </div>
-        <p className="text-sm leading-relaxed text-muted-foreground">{t(step.descriptionKey)}</p>
+        <p id="onboarding-description" className="text-sm leading-relaxed text-muted-foreground">
+          {t(step.descriptionKey)}
+        </p>
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <div className="flex gap-1.5" aria-hidden>

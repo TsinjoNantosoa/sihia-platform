@@ -1,4 +1,10 @@
-import { Outlet, Link, HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
+import {
+  Outlet,
+  Link,
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+} from "@tanstack/react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { I18nHydrator } from "@/components/I18nHydrator";
 import { Toaster } from "@/components/ui/sonner";
@@ -43,7 +49,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       { property: "og:title", content: "SIH IA — Système Intelligent de Gestion Hospitalière" },
       {
         property: "og:description",
-        content: "Gestion hospitalière augmentée par l'IA : KPIs temps réel, prédiction du flux patients, RBAC.",
+        content:
+          "Gestion hospitalière augmentée par l'IA : KPIs temps réel, prédiction du flux patients, RBAC.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -82,7 +89,7 @@ function RootComponent() {
       <I18nHydrator>
         <Outlet />
       </I18nHydrator>
-      <Toaster richColors position="top-right" />
+      <Toaster position="top-right" />
     </QueryClientProvider>
   );
 }

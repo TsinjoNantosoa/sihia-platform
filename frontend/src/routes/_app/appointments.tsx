@@ -28,6 +28,11 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBanner";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import {
+  DataTableToolbar,
+  SortableTableHead,
+  type TableColumnOption,
+} from "@/components/shared/DataTableTools";
 import { LoadingState, EmptyState } from "@/components/shared/States";
 import { appointmentsService, doctorsService, patientsService } from "@/lib/api/services";
 import type {
@@ -63,6 +68,8 @@ import {
   type SavedAppointmentView,
 } from "@/lib/appointments/savedViews";
 import { isOfflineQueuedError } from "@/lib/offline/appointmentQueue";
+import { buildCsv, downloadCsv, sortRows, toggleSort, type SortState } from "@/lib/table/dataTable";
+import { useTablePreferences } from "@/lib/table/useTablePreferences";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +82,16 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 type Appointment = ApiAppointment;
+
+type AppointmentColumn = "time" | "patient" | "doctor" | "reason" | "reminder" | "status";
+const APPOINTMENT_COLUMN_IDS: AppointmentColumn[] = [
+  "time",
+  "patient",
+  "doctor",
+  "reason",
+  "reminder",
+  "status",
+];
 
 type Patient = {
   id: string;
@@ -105,6 +122,18 @@ function AppointmentsPage() {
   const [filters, setFilters] = useState<AppointmentFilters>(EMPTY_APPOINTMENT_FILTERS);
   const [savedViews, setSavedViews] = useState<SavedAppointmentView[]>([]);
   const [mySpecialty, setMySpecialty] = useState("");
+  const [sort, setSort] = useState<SortState<AppointmentColumn>>({
+    key: "time",
+    direction: "asc",
+  });
+  const columns: TableColumnOption<AppointmentColumn>[] = [
+    { id: "time", label: t("appts.col.time") },
+    { id: "patient", label: t("appts.col.patient") },
+    { id: "doctor", label: t("appts.col.doctor") },
+    { id: "reason", label: t("appts.col.reason") },
+    { id: "reminder", label: t("appts.col.reminder") },
+    { id: "status", label: t("appts.col.status") },
+  ];
 
   const qc = useQueryClient();
   const { data, isLoading } = useQuery<Appointment[]>({
@@ -132,8 +161,22 @@ function AppointmentsPage() {
   });
 
   const userKey = user?.id || user?.email || "anonymous";
+  const table = useTablePreferences("appointments", userKey, APPOINTMENT_COLUMN_IDS);
   const specialties = [...new Set((doctors ?? []).map((doctor) => doctor.specialty))].sort();
   const filteredAppointments = filterAppointments(data ?? [], doctors ?? [], filters);
+  const sortedAppointments = sortRows(
+    filteredAppointments,
+    sort,
+    {
+      time: (appointment) => new Date(appointment.date),
+      patient: (appointment) => appointment.patientName,
+      doctor: (appointment) => appointment.doctorName,
+      reason: (appointment) => appointment.reason,
+      reminder: (appointment) => appointment.reminderSummary?.lastSentAt,
+      status: (appointment) => appointment.status,
+    },
+    locale,
+  );
   const filteredDoctors = (doctors ?? []).filter(
     (doctor) =>
       (!filters.specialty || doctor.specialty === filters.specialty) &&
@@ -184,6 +227,43 @@ function AppointmentsPage() {
     if (typeof window !== "undefined") {
       saveMySpecialty(window.localStorage, userKey, specialty);
     }
+  };
+
+  const exportAppointments = () => {
+    const csvColumns = {
+      time: {
+        header: t("appts.col.time"),
+        value: (appointment: Appointment) => new Date(appointment.date).toLocaleString(locale),
+      },
+      patient: {
+        header: t("appts.col.patient"),
+        value: (appointment: Appointment) => appointment.patientName,
+      },
+      doctor: {
+        header: t("appts.col.doctor"),
+        value: (appointment: Appointment) => appointment.doctorName,
+      },
+      reason: {
+        header: t("appts.col.reason"),
+        value: (appointment: Appointment) => appointment.reason,
+      },
+      reminder: {
+        header: t("appts.col.reminder"),
+        value: (appointment: Appointment) =>
+          `Email: ${appointment.reminderSummary?.email ?? "none"}, SMS: ${appointment.reminderSummary?.sms ?? "none"}`,
+      },
+      status: {
+        header: t("appts.col.status"),
+        value: (appointment: Appointment) => t(`appts.status.${appointment.status}`),
+      },
+    };
+    downloadCsv(
+      `rendez-vous-${new Date().toISOString().slice(0, 10)}.csv`,
+      buildCsv(
+        sortedAppointments,
+        table.visibleColumns.map((column) => csvColumns[column]),
+      ),
+    );
   };
 
   return (
@@ -257,45 +337,90 @@ function AppointmentsPage() {
         <LoadingState />
       ) : view === "list" ? (
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+          <DataTableToolbar
+            columns={columns}
+            visibleColumns={table.visibleColumns}
+            onToggleColumn={table.toggleColumn}
+            dense={table.dense}
+            onDenseChange={table.setDense}
+            rowCount={sortedAppointments.length}
+            onExport={exportAppointments}
+          />
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+            <table
+              className="min-w-full text-sm"
+              data-testid="appointments-table"
+              data-density={table.dense ? "compact" : "comfortable"}
+            >
               <thead className="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3 text-start">{t("appts.col.time")}</th>
-                  <th className="px-4 py-3 text-start">{t("appts.col.patient")}</th>
-                  <th className="px-4 py-3 text-start">{t("appts.col.doctor")}</th>
-                  <th className="px-4 py-3 text-start">{t("appts.col.reason")}</th>
-                  <th className="px-4 py-3 text-start">{t("appts.col.reminder")}</th>
-                  <th className="px-4 py-3 text-end">{t("appts.col.status")}</th>
+                  {columns.map((column) =>
+                    table.isVisible(column.id) ? (
+                      <SortableTableHead
+                        key={column.id}
+                        column={column.id}
+                        label={column.label}
+                        sort={sort}
+                        onSort={(nextColumn) =>
+                          setSort((current) => toggleSort(current, nextColumn))
+                        }
+                        align={column.id === "status" ? "end" : "start"}
+                      />
+                    ) : null,
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredAppointments.length === 0 ? (
+                {sortedAppointments.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={table.visibleColumns.length}>
                       <EmptyState />
                     </td>
                   </tr>
                 ) : (
-                  filteredAppointments.map((a: Appointment) => (
+                  sortedAppointments.map((a: Appointment) => (
                     <tr key={a.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3 font-mono text-xs">
-                        {new Date(a.date).toLocaleString(locale, {
-                          day: "2-digit",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="px-4 py-3 font-medium">{a.patientName}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{a.doctorName}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{a.reason}</td>
-                      <td className="px-4 py-3">
-                        <ReminderCell appointment={a} />
-                      </td>
-                      <td className="px-4 py-3 text-end">
-                        <AppointmentWorkflowCell appointment={a} />
-                      </td>
+                      {table.isVisible("time") ? (
+                        <td
+                          className={`${table.dense ? "px-3 py-2" : "px-4 py-3"} font-mono text-xs`}
+                        >
+                          {new Date(a.date).toLocaleString(locale, {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                      ) : null}
+                      {table.isVisible("patient") ? (
+                        <td className={`${table.dense ? "px-3 py-2" : "px-4 py-3"} font-medium`}>
+                          {a.patientName}
+                        </td>
+                      ) : null}
+                      {table.isVisible("doctor") ? (
+                        <td
+                          className={`${table.dense ? "px-3 py-2" : "px-4 py-3"} text-muted-foreground`}
+                        >
+                          {a.doctorName}
+                        </td>
+                      ) : null}
+                      {table.isVisible("reason") ? (
+                        <td
+                          className={`${table.dense ? "px-3 py-2" : "px-4 py-3"} text-muted-foreground`}
+                        >
+                          {a.reason}
+                        </td>
+                      ) : null}
+                      {table.isVisible("reminder") ? (
+                        <td className={table.dense ? "px-3 py-2" : "px-4 py-3"}>
+                          <ReminderCell appointment={a} />
+                        </td>
+                      ) : null}
+                      {table.isVisible("status") ? (
+                        <td className={`${table.dense ? "px-3 py-2" : "px-4 py-3"} text-end`}>
+                          <AppointmentWorkflowCell appointment={a} />
+                        </td>
+                      ) : null}
                     </tr>
                   ))
                 )}

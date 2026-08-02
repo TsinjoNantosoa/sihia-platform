@@ -3,7 +3,7 @@
 > **Statut :** backlog produit (non implémenté, sauf mentions `[x]`)  
 > **Objectif :** rendre la plateforme **plus intelligente** et **très utilisable** (clinique, ops, agent IA, prod).  
 > **Stack cible :** `frontend/` (React) + `backend/` (FastAPI)  
-> **Dernière mise à jour :** 1er août 2026
+> **Dernière mise à jour :** 3 août 2026
 
 Ce document regroupe **toutes** les améliorations futures validables.  
 Cocher `[x]` uniquement quand la feature est livrée **et** testée.  
@@ -79,8 +79,8 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 | B7 | [x] | Filtres sauvegardés / vues “Mon service” | Recherche et filtres combinés, vues liste/calendrier persistées par utilisateur |
 | B8 | [x] | Mode offline / file d’attente si réseau faible | Mutations RDV persistées par utilisateur, état optimiste, rejeu ordonné et synchronisation automatique/manuelle |
 | B9 | [x] | Onboarding + tooltips premier login | Visite guidée 4 étapes, progression par utilisateur et relance depuis Paramètres |
-| B10 | [ ] | Accessibilité A11y (clavier, contrastes, lecteurs d’écran) | Qualité produit |
-| B11 | [ ] | Tableaux densifiés (tri, colonnes, export par liste) | Productivité admin |
+| B10 | [x] | Accessibilité A11y (clavier, contrastes, lecteurs d’écran) | WCAG 2.1 AA automatisé, navigation clavier, focus maîtrisé, contrastes et annonces ARIA |
+| B11 | [x] | Tableaux densifiés (tri, colonnes, export par liste) | Tri accessible, colonnes et densité persistées par utilisateur, export CSV sur Patients/RDV/RBAC |
 | B12 | [ ] | Toasts + undo sur actions critiques | Moins d’erreurs |
 
 ---
@@ -245,6 +245,8 @@ Items historiques du plan futur — à conserver pour traçabilité.
 | 2026-08-01 | Tests automatisés | B7 | 11 tests frontend, lint ciblé, build et contrôle frontend/API réels validés |
 | 2026-08-01 | Tests automatisés | B8 | 15 tests frontend + 1 E2E Chrome hors ligne/reconnexion, lint ciblé et build validés |
 | 2026-08-01 | Tests automatisés | B9 | 19 tests frontend + 1 E2E Chrome (premier accès, persistance, relance), lint ciblé et build validés |
+| 2026-08-02 | Tests automatisés | B10 | 49 tests frontend + 14 E2E Chrome, dont audits Axe WCAG 2.1 AA et parcours clavier, lint ciblé et build validés |
+| 2026-08-03 | Tests automatisés | B11 | 53 tests frontend + 15 E2E Chrome (tri, colonnes, densité, export CSV et persistance), lint ciblé et build validés |
 
 Exemple :
 

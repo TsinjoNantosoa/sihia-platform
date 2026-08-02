@@ -11,7 +11,8 @@ test("une action RDV hors ligne est mise en file puis synchronisée", async ({ p
   await expect(confirmButton).toBeVisible();
 
   await context.setOffline(true);
-  await expect(page.getByRole("status")).toContainText(/hors ligne|offline/i);
+  const offlineStatus = page.getByRole("status").filter({ hasText: /hors ligne|offline/i });
+  await expect(offlineStatus).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(
@@ -20,7 +21,7 @@ test("une action RDV hors ligne est mise en file puis synchronisée", async ({ p
     )
     .toBe(false);
   await confirmButton.click();
-  await expect(page.getByRole("status")).toContainText(/1 action|1 action/i);
+  await expect(offlineStatus).toContainText(/1 action/i);
 
   const pendingOffline = await page.evaluate(() =>
     Object.keys(localStorage)
@@ -30,12 +31,18 @@ test("une action RDV hors ligne est mise en file puis synchronisée", async ({ p
   expect(pendingOffline).toHaveLength(1);
 
   await context.setOffline(false);
-  await expect(page.getByRole("status")).toHaveCount(0, { timeout: 20_000 });
+  await expect(offlineStatus).toHaveCount(0, { timeout: 20_000 });
 
-  const remainingOffline = await page.evaluate(() =>
-    Object.keys(localStorage)
-      .filter((key) => key.startsWith("sihia:offline-appointments:"))
-      .flatMap((key) => JSON.parse(localStorage.getItem(key) ?? "[]") as unknown[]),
-  );
-  expect(remainingOffline).toHaveLength(0);
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            Object.keys(localStorage)
+              .filter((key) => key.startsWith("sihia:offline-appointments:"))
+              .flatMap((key) => JSON.parse(localStorage.getItem(key) ?? "[]") as unknown[]).length,
+        ),
+      { timeout: 20_000 },
+    )
+    .toBe(0);
 });

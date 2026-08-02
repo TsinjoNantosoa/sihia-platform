@@ -79,8 +79,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <aside
-      role="navigation"
       data-onboarding="navigation"
+      aria-label={t("a11y.sidebar")}
       className={cn(
         "flex h-full w-64 shrink-0 flex-col border-border bg-sidebar",
         isRtl ? "border-l" : "border-r",
@@ -88,7 +88,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     >
       <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
         <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-[var(--shadow-card)]">
-          <HeartPulse className="size-5" />
+          <HeartPulse className="size-5" aria-hidden />
         </div>
         <div className="leading-tight">
           <div className="text-sm font-semibold tracking-tight">{t("app.name")}</div>
@@ -96,7 +96,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-5 overflow-y-auto p-3">
+      <nav
+        aria-label={t("a11y.primaryNavigation")}
+        className="flex flex-1 flex-col gap-5 overflow-y-auto p-3"
+      >
         {groups.map((g) => (
           <div key={g.labelKey} className="flex flex-col gap-1">
             <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -112,6 +115,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     key={item.to}
                     to={item.to}
                     onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
                       "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                       active
@@ -120,6 +124,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     )}
                   >
                     <Icon
+                      aria-hidden
                       className={cn(
                         "size-4 shrink-0",
                         active
@@ -129,7 +134,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     />
                     <span className="flex-1 truncate">{t(item.labelKey)}</span>
                     {"beta" in item && item.beta ? (
-                      <span className="rounded-md bg-accent/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent">
+                      <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent">
                         Beta
                       </span>
                     ) : null}
@@ -150,6 +155,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 type ApiStatus = "ok" | "degraded" | "down" | "checking";
 
 function ApiHealthIndicator() {
+  const t = useT();
   const [status, setStatus] = useState<ApiStatus>("checking");
   const [lastChecked, setLastChecked] = useState<string>("");
 
@@ -180,21 +186,24 @@ function ApiHealthIndicator() {
     checking: "bg-muted-foreground",
   };
   const label: Record<ApiStatus, string> = {
-    ok: "Système opérationnel",
-    degraded: "Latence élevée",
-    down: "API hors ligne",
-    checking: "Vérification…",
+    ok: t("a11y.systemOk"),
+    degraded: t("a11y.systemDegraded"),
+    down: t("a11y.systemDown"),
+    checking: t("a11y.systemChecking"),
   };
 
   return (
     <div
       className="flex items-center gap-2"
+      role="status"
+      aria-live="polite"
       title={lastChecked ? `Vérifié à ${lastChecked}` : undefined}
     >
       {status === "down" ? (
-        <WifiOff className="size-3.5 text-destructive" />
+        <WifiOff className="size-3.5 text-destructive" aria-hidden />
       ) : (
         <span
+          aria-hidden
           className={`size-2 rounded-full ${dot[status]} ${status === "ok" ? "animate-pulse" : ""}`}
         />
       )}
