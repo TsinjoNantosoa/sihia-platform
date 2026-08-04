@@ -6,7 +6,14 @@ import type {
   AppointmentStatus,
   AppointmentReminderHistoryResponse,
   AppointmentReminderSendResponse,
+  NoShowRiskResponse,
   Patient,
+  PatientAiSummaryResponse,
+  PatientDocument,
+  NotificationPrefs,
+  NotificationsInboxResponse,
+  SearchResponse,
+  WaitingRoomSnapshot,
   RbacUser,
 } from "./types";
 import { useAuth } from "../auth/store"; // Import the actual store instance
@@ -254,6 +261,24 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
       ...(horizon === 30 ? { drift_score: 0.04 } : {}),
     };
   }
+  if (endpoint.includes("/api/ml/noshow-risk")) {
+    return {
+      items: [],
+      total: 0,
+      limit: 50,
+      offset: 0,
+      horizonDays: 14,
+      minRisk: 0.25,
+      model: "heuristic-noshow",
+      model_version: "heuristic-noshow-1.0",
+      engine: "rules",
+      source: "sqlite",
+      generatedAt: new Date().toISOString(),
+      disclaimer: "Score indicatif d'aide à la décision.",
+      facilityNoshowRate: 0.12,
+      summary: { high: 0, medium: 0, low: 0, avgRisk: 0 },
+    };
+  }
   if (endpoint.includes("/api/alerts")) return ALERTS;
   if (endpoint.includes("/api/rbac/users")) return RBAC_USERS;
 
@@ -463,6 +488,33 @@ export const patientsService = {
     }),
   remove: (id: string) => fetchWithAuth(`/api/patients/${id}`, { method: "DELETE" }),
   history: (id: string) => fetchWithAuth(`/api/patients/${id}/history`),
+  aiSummary: (id: string, lang: "fr" | "en" | "ar" = "fr") =>
+    fetchWithAuth<PatientAiSummaryResponse>(
+      `/api/patients/${id}/ai-summary?lang=${lang}`,
+      { method: "POST" },
+    ),
+  listDocuments: (id: string) => fetchWithAuth<PatientDocument[]>(`/api/patients/${id}/documents`),
+  uploadDocument: async (id: string, file: File, category = "other", notes?: string) => {
+    const token = useAuth.getState().token;
+    const form = new FormData();
+    form.append("file", file);
+    form.append("category", category);
+    if (notes) form.append("notes", notes);
+    const res = await fetch(`${API_URL}/api/patients/${id}/documents`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: form,
+    });
+    if (!res.ok) {
+      notifyNetworkError();
+      throw new Error("upload failed");
+    }
+    return (await res.json()) as PatientDocument;
+  },
+  deleteDocument: (patientId: string, documentId: string) =>
+    fetchWithAuth(`/api/patients/${patientId}/documents/${documentId}`, { method: "DELETE" }),
+  documentDownloadUrl: (patientId: string, documentId: string) =>
+    `${API_URL}/api/patients/${patientId}/documents/${documentId}/download`,
   addVisit: (
     id: string,
     visit: {
@@ -575,10 +627,66 @@ export const mlService = {
   predict7d: () => fetchWithAuth("/api/ml/predict-7d"),
   predict30d: () => fetchWithAuth("/api/ml/predict-30d"),
   metrics: () => fetchWithAuth("/api/ml/metrics"),
+  noshowRisk: (params?: {
+    horizonDays?: number;
+    minRisk?: number;
+    riskLevel?: "high" | "medium" | "low";
+    limit?: number;
+    offset?: number;
+  }) => {
+    const q = new URLSearchParams();
+    if (params?.horizonDays != null) q.set("horizonDays", String(params.horizonDays));
+    if (params?.minRisk != null) q.set("minRisk", String(params.minRisk));
+    if (params?.riskLevel) q.set("riskLevel", params.riskLevel);
+    if (params?.limit != null) q.set("limit", String(params.limit));
+    if (params?.offset != null) q.set("offset", String(params.offset));
+    const qs = q.toString();
+    return fetchWithAuth<NoShowRiskResponse>(
+      `/api/ml/noshow-risk${qs ? `?${qs}` : ""}`,
+    );
+  },
 };
 
 export const alertsService = {
   list: () => fetchWithAuth("/api/alerts"),
+};
+
+export const notificationsService = {
+  list: (params?: { level?: string; unreadOnly?: boolean; area?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.level) q.set("level", params.level);
+    if (params?.unreadOnly) q.set("unreadOnly", "true");
+    if (params?.area) q.set("area", params.area);
+    const qs = q.toString();
+    return fetchWithAuth<NotificationsInboxResponse>(`/api/notifications${qs ? `?${qs}` : ""}`);
+  },
+  markRead: (alertIds: string[]) =>
+    fetchWithAuth<{ marked: number }>("/api/notifications/read", {
+      method: "POST",
+      body: JSON.stringify({ alertIds }),
+    }),
+  markAllRead: () =>
+    fetchWithAuth<{ marked: number }>("/api/notifications/read-all", { method: "POST" }),
+  getPrefs: () => fetchWithAuth<NotificationPrefs>("/api/notifications/prefs"),
+  updatePrefs: (prefs: Partial<NotificationPrefs>) =>
+    fetchWithAuth<NotificationPrefs>("/api/notifications/prefs", {
+      method: "PATCH",
+      body: JSON.stringify(prefs),
+    }),
+};
+
+export const searchService = {
+  search: (q: string, limit = 8) =>
+    fetchWithAuth<SearchResponse>(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+};
+
+export const waitingRoomService = {
+  snapshot: () => fetchWithAuth<WaitingRoomSnapshot>("/api/waiting-room"),
+  callNext: (doctorId?: string) =>
+    fetchWithAuth<{ called: unknown; message: string }>(
+      `/api/waiting-room/call-next${doctorId ? `?doctorId=${encodeURIComponent(doctorId)}` : ""}`,
+      { method: "POST" },
+    ),
 };
 
 export type RbacUserCreatePayload = {

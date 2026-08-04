@@ -46,3 +46,6 @@ frontend/.wrangler/
 *.njsproj
 *.sln
 *.sw?
+
+# Uploads patients (locaux)
+backend/data/uploads/

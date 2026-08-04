@@ -296,13 +296,37 @@ function DashboardPage() {
                     <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                       {a.description}
                     </p>
-                    <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
                       <span>{a.area}</span>
                       <span>•</span>
                       <span>
                         {new Date(a.createdAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                       </span>
+                      {a.action?.href ? (
+                        <>
+                          <span>•</span>
+                          <a
+                            href={a.action.href}
+                            className="font-semibold normal-case text-primary hover:underline"
+                          >
+                            {a.action.label}
+                          </a>
+                        </>
+                      ) : null}
                     </div>
+                    {a.suggestedActions && a.suggestedActions.length > 1 ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {a.suggestedActions.slice(0, 3).map((sa) => (
+                          <a
+                            key={`${a.id}-${sa.href}-${sa.label}`}
+                            href={sa.href}
+                            className="rounded-md border border-border bg-card px-2 py-0.5 text-[10px] font-medium text-foreground hover:bg-muted"
+                          >
+                            {sa.label}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ))

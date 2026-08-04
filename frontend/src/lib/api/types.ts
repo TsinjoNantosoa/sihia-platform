@@ -17,6 +17,22 @@ export interface Patient {
   insurance?: string;
   status: "active" | "inactive" | "admitted";
   lastVisit?: string;
+  chronicConditions?: string | null;
+  currentTreatments?: string | null;
+  emergencyContact?: string | null;
+}
+
+export interface PatientDocument {
+  id: string;
+  patientId: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  category: string;
+  uploadedBy?: string | null;
+  uploadedAt: string;
+  notes?: string | null;
+  downloadUrl: string;
 }
 
 export interface Doctor {
@@ -127,6 +143,127 @@ export interface MlMetricsResponse {
   withinTarget: boolean | null;
 }
 
+export type NoShowRiskLevel = "high" | "medium" | "low";
+
+export interface NoShowRiskFactor {
+  code: string;
+  weight: number;
+  label: string;
+}
+
+export interface NoShowRiskItem {
+  appointmentId: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  status: AppointmentStatus;
+  reason: string;
+  riskScore: number;
+  riskLevel: NoShowRiskLevel;
+  factors: NoShowRiskFactor[];
+  suggestedAction: "remind" | "confirm_or_call";
+  reminderSent: boolean;
+  reminderCount: number;
+  patientNoshowRate: number;
+  patientPastAppointments: number;
+  daysUntil: number;
+}
+
+export interface NoShowRiskResponse {
+  items: NoShowRiskItem[];
+  total: number;
+  limit: number;
+  offset: number;
+  horizonDays: number;
+  minRisk: number;
+  model: string;
+  model_version: string;
+  engine: string;
+  source: "sqlite" | "postgresql" | string;
+  generatedAt: string;
+  disclaimer: string;
+  facilityNoshowRate: number;
+  summary: {
+    high: number;
+    medium: number;
+    low: number;
+    avgRisk: number;
+  };
+}
+
+export interface PatientAiSummaryResponse {
+  patientId: string;
+  patientName: string;
+  lines: string[];
+  bullets: string[];
+  visitCount: number;
+  model: string;
+  model_version: string;
+  engine: "rules" | "openai" | string;
+  source: "sqlite" | "postgresql" | string;
+  generatedAt: string;
+  disclaimer: string;
+  allergies: string[];
+  bloodType: string;
+  status: string;
+}
+
+export interface NotificationItem extends Alert {
+  read: boolean;
+}
+
+export interface NotificationPrefs {
+  alertsEnabled: boolean;
+  remindersEnabled: boolean;
+  weeklyDigestEnabled: boolean;
+  updatedAt?: string | null;
+}
+
+export interface NotificationsInboxResponse {
+  items: NotificationItem[];
+  total: number;
+  unreadCount: number;
+  prefs: NotificationPrefs;
+}
+
+export interface SearchResultItem {
+  type: "patient" | "doctor" | "appointment";
+  id: string;
+  title: string;
+  subtitle: string;
+  href: string;
+  patientId?: string;
+}
+
+export interface SearchResponse {
+  query: string;
+  items: SearchResultItem[];
+  total: number;
+}
+
+export interface WaitingRoomItem {
+  appointmentId: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  status: string;
+  reason: string;
+  durationMin: number;
+}
+
+export interface WaitingRoomSnapshot {
+  date: string;
+  waiting: WaitingRoomItem[];
+  inProgress: WaitingRoomItem[];
+  upcoming: WaitingRoomItem[];
+  counts: { waiting: number; inProgress: number; upcoming: number };
+  generatedAt: string;
+}
+
 export interface ReminderChannelsStatus {
   email: {
     mode: string;
@@ -176,6 +313,10 @@ export interface Alert {
     href: string;
     label: string;
   };
+  suggestedActions?: Array<{
+    href: string;
+    label: string;
+  }>;
 }
 
 export interface RbacUser {

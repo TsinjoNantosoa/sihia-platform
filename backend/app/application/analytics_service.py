@@ -10,6 +10,8 @@ from app.infrastructure.database import connect, is_postgresql
 DAILY_SLOT_CAPACITY = 48
 BED_CAPACITY = 320
 AVG_REVENUE_PER_APPOINTMENT = 275
+NOSHOW_HIGH_ALERT_THRESHOLD = 3
+OVERLOAD_SLOT_RATIO = 0.9
 
 
 def _utc_now() -> datetime:
@@ -39,6 +41,21 @@ class AnalyticsService:
         ).fetchall()
         conn.close()
         return rows
+
+    def _high_noshow_count(self, horizon_days: int = 7) -> int:
+        try:
+            from app.application.noshow_service import NoShowRiskService
+
+            result = NoShowRiskService().list_risks(
+                horizon_days=horizon_days,
+                min_risk=0.45,
+                risk_level="high",
+                limit=200,
+                offset=0,
+            )
+            return int(result.get("total") or 0)
+        except Exception:  # noqa: BLE001 — les alertes doivent rester disponibles
+            return 0
 
     def kpis(self) -> dict:
         today = _utc_now().date()
@@ -72,7 +89,17 @@ class AnalyticsService:
         ).fetchone()["c"]
         conn.close()
 
-        critical_count = sum(1 for a in self._build_alerts(occupancy, pending, len(today_appts)) if a["level"] == "critical")
+        noshow_high = self._high_noshow_count()
+        critical_count = sum(
+            1
+            for a in self._build_alerts(
+                occupancy,
+                pending,
+                len(today_appts),
+                noshow_high=noshow_high,
+            )
+            if a["level"] == "critical"
+        )
 
         return {
             "patientsToday": patients_today,
@@ -154,9 +181,17 @@ class AnalyticsService:
         scheduled_today = len(today_appts)
         return min(100.0, round((scheduled_today / DAILY_SLOT_CAPACITY) * 100, 1))
 
-    def _build_alerts(self, occupancy: float, pending: int, today_count: int = 0) -> list[dict]:
+    def _build_alerts(
+        self,
+        occupancy: float,
+        pending: int,
+        today_count: int = 0,
+        *,
+        noshow_high: int = 0,
+    ) -> list[dict]:
         now = _utc_now().isoformat()
         alerts: list[dict] = []
+        bed_proxy = round(occupancy / 100 * BED_CAPACITY)
 
         if occupancy >= 85:
             alerts.append(
@@ -164,10 +199,17 @@ class AnalyticsService:
                     "id": "al-occupancy",
                     "level": "critical",
                     "title": "Tension sur les lits",
-                    "description": f"Le taux d'occupation atteint {occupancy}% (seuil 85%).",
+                    "description": (
+                        f"Occupation créneaux {occupancy}% (seuil 85%) — "
+                        f"proxy ~{bed_proxy}/{BED_CAPACITY} lits. Anticiper les sorties."
+                    ),
                     "area": "Hospitalisation",
                     "createdAt": now,
                     "action": {"href": "/analytics", "label": "Analyser l'occupation"},
+                    "suggestedActions": [
+                        {"href": "/analytics", "label": "Voir charge & admissions"},
+                        {"href": "/appointments", "label": "Répartir le planning"},
+                    ],
                 }
             )
         elif occupancy >= 70:
@@ -176,10 +218,76 @@ class AnalyticsService:
                     "id": "al-occupancy-warn",
                     "level": "warning",
                     "title": "Occupation élevée",
-                    "description": f"Occupation à {occupancy}% — surveillance recommandée.",
+                    "description": (
+                        f"Occupation à {occupancy}% — surveillance recommandée "
+                        f"(capacité lits de référence {BED_CAPACITY})."
+                    ),
                     "area": "Hospitalisation",
                     "createdAt": now,
                     "action": {"href": "/analytics", "label": "Voir les indicateurs"},
+                    "suggestedActions": [
+                        {"href": "/analytics", "label": "Surveiller les indicateurs"},
+                    ],
+                }
+            )
+
+        overload_threshold = int(DAILY_SLOT_CAPACITY * OVERLOAD_SLOT_RATIO)
+        if today_count >= DAILY_SLOT_CAPACITY:
+            alerts.append(
+                {
+                    "id": "al-overload",
+                    "level": "critical",
+                    "title": "Surcharge du jour",
+                    "description": (
+                        f"{today_count} RDV aujourd'hui pour {DAILY_SLOT_CAPACITY} créneaux — "
+                        "capacité saturée."
+                    ),
+                    "area": "Planning",
+                    "createdAt": now,
+                    "action": {"href": "/prediction", "label": "Voir les prévisions"},
+                    "suggestedActions": [
+                        {"href": "/appointments", "label": "Réorganiser les RDV"},
+                        {"href": "/prediction", "label": "Anticiper les pics"},
+                    ],
+                }
+            )
+        elif today_count >= overload_threshold:
+            alerts.append(
+                {
+                    "id": "al-overload-warn",
+                    "level": "warning",
+                    "title": "Pic d'affluence imminent",
+                    "description": (
+                        f"{today_count}/{DAILY_SLOT_CAPACITY} créneaux utilisés "
+                        f"(≥ {int(OVERLOAD_SLOT_RATIO * 100)}%). Renforcer l'accueil."
+                    ),
+                    "area": "Planning",
+                    "createdAt": now,
+                    "action": {"href": "/appointments", "label": "Ouvrir le planning"},
+                    "suggestedActions": [
+                        {"href": "/appointments", "label": "Prioriser les arrivées"},
+                        {"href": "/prediction", "label": "Consulter la prévision"},
+                    ],
+                }
+            )
+
+        if noshow_high >= NOSHOW_HIGH_ALERT_THRESHOLD:
+            alerts.append(
+                {
+                    "id": "al-noshow",
+                    "level": "critical" if noshow_high >= NOSHOW_HIGH_ALERT_THRESHOLD * 2 else "warning",
+                    "title": "Risque d'absences (no-show)",
+                    "description": (
+                        f"{noshow_high} rendez-vous à risque élevé d'absence sur 7 jours. "
+                        "Envoyer des rappels ciblés."
+                    ),
+                    "area": "Rappels",
+                    "createdAt": now,
+                    "action": {"href": "/prediction", "label": "Liste à rappeler"},
+                    "suggestedActions": [
+                        {"href": "/prediction", "label": "Ouvrir la liste no-show"},
+                        {"href": "/appointments", "label": "Confirmer les RDV"},
+                    ],
                 }
             )
 
@@ -193,6 +301,9 @@ class AnalyticsService:
                     "area": "Accueil",
                     "createdAt": now,
                     "action": {"href": "/appointments", "label": "Confirmer les rendez-vous"},
+                    "suggestedActions": [
+                        {"href": "/appointments", "label": "Traiter la file"},
+                    ],
                 }
             )
         elif pending > 0:
@@ -208,7 +319,7 @@ class AnalyticsService:
                 }
             )
 
-        if today_count > 0:
+        if today_count > 0 and today_count < overload_threshold:
             alerts.append(
                 {
                     "id": "al-today-appts",
@@ -241,7 +352,13 @@ class AnalyticsService:
         appts = self._active_appointments()
         pending = sum(1 for a in appts if a["status"] == "scheduled")
         today_count = sum(1 for a in appts if _parse_appt_date(a["date"]) == today)
-        alerts = self._build_alerts(occupancy, pending, today_count)
+        noshow_high = self._high_noshow_count()
+        alerts = self._build_alerts(
+            occupancy,
+            pending,
+            today_count,
+            noshow_high=noshow_high,
+        )
         if level_filter:
             return [a for a in alerts if a["level"] == level_filter]
         return alerts

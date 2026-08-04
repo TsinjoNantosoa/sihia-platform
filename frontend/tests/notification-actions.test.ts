@@ -37,4 +37,23 @@ describe("notification deep links", () => {
       label: "Voir les rendez-vous",
     });
   });
+
+  test("falls back for proactive no-show and overload alerts", () => {
+    expect(
+      getAlertDestination({
+        ...baseAlert,
+        id: "al-noshow",
+        title: "Risque d'absences",
+        action: undefined,
+      }),
+    ).toEqual({ href: "/prediction", label: "Liste à rappeler" });
+    expect(
+      getAlertDestination({
+        ...baseAlert,
+        id: "al-overload",
+        title: "Surcharge",
+        action: undefined,
+      }),
+    ).toEqual({ href: "/prediction", label: "Voir les prévisions" });
+  });
 });

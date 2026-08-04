@@ -11,11 +11,15 @@ const SAFE_STATIC_TARGETS = new Set([
   "/analytics",
   "/prediction",
   "/patients",
+  "/notifications",
 ]);
 
 const FALLBACK_DESTINATIONS: Record<string, AlertDestination> = {
   "al-occupancy": { href: "/analytics", label: "Analyser l'occupation" },
   "al-occupancy-warn": { href: "/analytics", label: "Voir les indicateurs" },
+  "al-overload": { href: "/prediction", label: "Voir les prévisions" },
+  "al-overload-warn": { href: "/appointments", label: "Ouvrir le planning" },
+  "al-noshow": { href: "/prediction", label: "Liste à rappeler" },
   "al-backlog": { href: "/appointments", label: "Confirmer les rendez-vous" },
   "al-pending": { href: "/appointments", label: "Voir les rendez-vous" },
   "al-today-appts": { href: "/appointments", label: "Ouvrir le planning" },

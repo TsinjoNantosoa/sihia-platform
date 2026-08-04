@@ -50,6 +50,9 @@ class PatientCreate(BaseModel):
     bloodType: str
     allergies: list[str]
     insurance: str | None = None
+    chronicConditions: str | None = None
+    currentTreatments: str | None = None
+    emergencyContact: str | None = None
 
 
 class PatientUpdate(BaseModel):
@@ -64,6 +67,9 @@ class PatientUpdate(BaseModel):
     allergies: list[str] | None = None
     insurance: str | None = None
     status: Literal["active", "inactive", "admitted"] | None = None
+    chronicConditions: str | None = None
+    currentTreatments: str | None = None
+    emergencyContact: str | None = None
 
 
 class MedicalVisitCreate(BaseModel):
@@ -127,5 +133,15 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = None
     password: str | None = Field(default=None, min_length=6, max_length=128)
     role: UserRole | None = None
-    status: Literal["active", "suspended"] | None = None
     facility: str | None = Field(default=None, min_length=2, max_length=120)
+    status: Literal["active", "suspended"] | None = None
+
+
+class NotificationMarkReadRequest(BaseModel):
+    alertIds: list[str] = Field(default_factory=list, max_length=200)
+
+
+class NotificationPrefsUpdate(BaseModel):
+    alertsEnabled: bool | None = None
+    remindersEnabled: bool | None = None
+    weeklyDigestEnabled: bool | None = None

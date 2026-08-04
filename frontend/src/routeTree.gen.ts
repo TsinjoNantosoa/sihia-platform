@@ -15,9 +15,11 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as R403RouteImport } from './routes/403'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppWaitingRoomRouteImport } from './routes/_app/waiting-room'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppRbacRouteImport } from './routes/_app/rbac'
 import { Route as AppPredictionRouteImport } from './routes/_app/prediction'
+import { Route as AppNotificationsRouteImport } from './routes/_app/notifications'
 import { Route as AppDoctorsRouteImport } from './routes/_app/doctors'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppAppointmentsRouteImport } from './routes/_app/appointments'
@@ -54,6 +56,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWaitingRoomRoute = AppWaitingRoomRouteImport.update({
+  id: '/waiting-room',
+  path: '/waiting-room',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -67,6 +74,11 @@ const AppRbacRoute = AppRbacRouteImport.update({
 const AppPredictionRoute = AppPredictionRouteImport.update({
   id: '/prediction',
   path: '/prediction',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDoctorsRoute = AppDoctorsRouteImport.update({
@@ -110,9 +122,11 @@ export interface FileRoutesByFullPath {
   '/appointments': typeof AppAppointmentsRoute
   '/dashboard': typeof AppDashboardRoute
   '/doctors': typeof AppDoctorsRoute
+  '/notifications': typeof AppNotificationsRoute
   '/prediction': typeof AppPredictionRoute
   '/rbac': typeof AppRbacRoute
   '/settings': typeof AppSettingsRoute
+  '/waiting-room': typeof AppWaitingRoomRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
   '/patients/': typeof AppPatientsIndexRoute
 }
@@ -125,9 +139,11 @@ export interface FileRoutesByTo {
   '/appointments': typeof AppAppointmentsRoute
   '/dashboard': typeof AppDashboardRoute
   '/doctors': typeof AppDoctorsRoute
+  '/notifications': typeof AppNotificationsRoute
   '/prediction': typeof AppPredictionRoute
   '/rbac': typeof AppRbacRoute
   '/settings': typeof AppSettingsRoute
+  '/waiting-room': typeof AppWaitingRoomRoute
   '/': typeof AppIndexRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
   '/patients': typeof AppPatientsIndexRoute
@@ -143,9 +159,11 @@ export interface FileRoutesById {
   '/_app/appointments': typeof AppAppointmentsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/doctors': typeof AppDoctorsRoute
+  '/_app/notifications': typeof AppNotificationsRoute
   '/_app/prediction': typeof AppPredictionRoute
   '/_app/rbac': typeof AppRbacRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_app/waiting-room': typeof AppWaitingRoomRoute
   '/_app/': typeof AppIndexRoute
   '/_app/patients/$patientId': typeof AppPatientsPatientIdRoute
   '/_app/patients/': typeof AppPatientsIndexRoute
@@ -162,9 +180,11 @@ export interface FileRouteTypes {
     | '/appointments'
     | '/dashboard'
     | '/doctors'
+    | '/notifications'
     | '/prediction'
     | '/rbac'
     | '/settings'
+    | '/waiting-room'
     | '/patients/$patientId'
     | '/patients/'
   fileRoutesByTo: FileRoutesByTo
@@ -177,9 +197,11 @@ export interface FileRouteTypes {
     | '/appointments'
     | '/dashboard'
     | '/doctors'
+    | '/notifications'
     | '/prediction'
     | '/rbac'
     | '/settings'
+    | '/waiting-room'
     | '/'
     | '/patients/$patientId'
     | '/patients'
@@ -194,9 +216,11 @@ export interface FileRouteTypes {
     | '/_app/appointments'
     | '/_app/dashboard'
     | '/_app/doctors'
+    | '/_app/notifications'
     | '/_app/prediction'
     | '/_app/rbac'
     | '/_app/settings'
+    | '/_app/waiting-room'
     | '/_app/'
     | '/_app/patients/$patientId'
     | '/_app/patients/'
@@ -254,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/waiting-room': {
+      id: '/_app/waiting-room'
+      path: '/waiting-room'
+      fullPath: '/waiting-room'
+      preLoaderRoute: typeof AppWaitingRoomRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
@@ -273,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/prediction'
       fullPath: '/prediction'
       preLoaderRoute: typeof AppPredictionRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/doctors': {
@@ -325,9 +363,11 @@ interface AppRouteChildren {
   AppAppointmentsRoute: typeof AppAppointmentsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDoctorsRoute: typeof AppDoctorsRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppPredictionRoute: typeof AppPredictionRoute
   AppRbacRoute: typeof AppRbacRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppWaitingRoomRoute: typeof AppWaitingRoomRoute
   AppIndexRoute: typeof AppIndexRoute
   AppPatientsPatientIdRoute: typeof AppPatientsPatientIdRoute
   AppPatientsIndexRoute: typeof AppPatientsIndexRoute
@@ -338,9 +378,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppAppointmentsRoute: AppAppointmentsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDoctorsRoute: AppDoctorsRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppPredictionRoute: AppPredictionRoute,
   AppRbacRoute: AppRbacRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppWaitingRoomRoute: AppWaitingRoomRoute,
   AppIndexRoute: AppIndexRoute,
   AppPatientsPatientIdRoute: AppPatientsPatientIdRoute,
   AppPatientsIndexRoute: AppPatientsIndexRoute,

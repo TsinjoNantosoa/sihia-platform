@@ -259,6 +259,9 @@ class PatientsService:
             insurance=data.insurance,
             status="active",
             last_visit=now,
+            chronic_conditions=data.chronicConditions,
+            current_treatments=data.currentTreatments,
+            emergency_contact=data.emergencyContact,
         )
         return self.patients.create(patient)
 
@@ -290,6 +293,12 @@ class PatientsService:
             patient.insurance = updates["insurance"]
         if "status" in updates:
             patient.status = updates["status"]
+        if "chronicConditions" in updates:
+            patient.chronic_conditions = updates["chronicConditions"]
+        if "currentTreatments" in updates:
+            patient.current_treatments = updates["currentTreatments"]
+        if "emergencyContact" in updates:
+            patient.emergency_contact = updates["emergencyContact"]
 
         return self.patients.update(patient)
 

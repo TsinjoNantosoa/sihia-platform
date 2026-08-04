@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/store";
 import { authService } from "@/lib/api/services";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { GlobalSearch, useGlobalSearchHotkey } from "@/components/shared/GlobalSearch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +22,8 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
   const { locale, setLocale } = useI18n();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  useGlobalSearchHotkey(() => setSearchOpen(true));
 
   const handleLogout = async () => {
     try {
@@ -46,25 +48,22 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
         >
           <Menu className="size-5" aria-hidden />
         </button>
-        <div
+        <button
+          type="button"
           data-onboarding="search"
-          className="flex w-full max-w-md items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
+          onClick={() => setSearchOpen(true)}
+          className="flex w-full max-w-md items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20"
+          aria-label={t("search.aria")}
         >
           <Search className="size-4 text-muted-foreground" aria-hidden />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("common.searchPlaceholder")}
-            aria-label={t("common.search")}
-            className="w-full bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
-          />
+          <span className="flex-1 text-sm text-muted-foreground">{t("common.searchPlaceholder")}</span>
           <kbd
             aria-hidden
             className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:block"
           >
             ⌘K
           </kbd>
-        </div>
+        </button>
       </div>
 
       <div className="flex items-center gap-2">
@@ -133,6 +132,8 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
           </DropdownMenu>
         ) : null}
       </div>
+
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </header>
   );
 }

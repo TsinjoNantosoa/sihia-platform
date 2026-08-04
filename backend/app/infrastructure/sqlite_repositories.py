@@ -101,6 +101,27 @@ class SQLiteUserRepository:
 
 
 class SQLitePatientRepository:
+    def _row_to_patient(self, r: dict[str, Any]) -> Patient:
+        return Patient(
+            id=r["id"],
+            record_number=r["record_number"],
+            first_name=r["first_name"],
+            last_name=r["last_name"],
+            dob=r["dob"],
+            gender=r["gender"],
+            phone=r["phone"],
+            email=r.get("email"),
+            address=r["address"],
+            blood_type=r["blood_type"],
+            allergies=json.loads(r["allergies"] or "[]"),
+            insurance=r.get("insurance"),
+            status=r["status"],
+            last_visit=r.get("last_visit"),
+            chronic_conditions=r.get("chronic_conditions"),
+            current_treatments=r.get("current_treatments"),
+            emergency_contact=r.get("emergency_contact"),
+        )
+
     def list(self, search: str | None = None, status: str | None = None) -> list[Patient]:
         conn = connect()
         query = "SELECT * FROM patients"
@@ -117,10 +138,7 @@ class SQLitePatientRepository:
         query += " ORDER BY id DESC"
         rows = conn.execute(query, params).fetchall()
         conn.close()
-        return [
-            Patient(**{**r, "allergies": json.loads(r["allergies"] or "[]")})
-            for r in rows
-        ]
+        return [self._row_to_patient(r) for r in rows]
 
     def get(self, patient_id: str) -> Patient | None:
         conn = connect()
@@ -128,14 +146,17 @@ class SQLitePatientRepository:
         conn.close()
         if not r:
             return None
-        return Patient(**{**r, "allergies": json.loads(r["allergies"] or "[]")})
+        return self._row_to_patient(r)
 
     def create(self, patient: Patient) -> Patient:
         conn = connect()
         conn.execute(
             """
-            INSERT INTO patients (id,record_number,first_name,last_name,dob,gender,phone,email,address,blood_type,allergies,insurance,status,last_visit)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT INTO patients (
+                id,record_number,first_name,last_name,dob,gender,phone,email,address,blood_type,
+                allergies,insurance,status,last_visit,chronic_conditions,current_treatments,emergency_contact
+            )
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 patient.id,
@@ -152,6 +173,9 @@ class SQLitePatientRepository:
                 patient.insurance,
                 patient.status,
                 patient.last_visit,
+                patient.chronic_conditions,
+                patient.current_treatments,
+                patient.emergency_contact,
             ),
         )
         conn.commit()
@@ -164,7 +188,8 @@ class SQLitePatientRepository:
             """
             UPDATE patients SET
                 first_name=?, last_name=?, dob=?, gender=?, phone=?, email=?,
-                address=?, blood_type=?, allergies=?, insurance=?, status=?, last_visit=?
+                address=?, blood_type=?, allergies=?, insurance=?, status=?, last_visit=?,
+                chronic_conditions=?, current_treatments=?, emergency_contact=?
             WHERE id=?
             """,
             (
@@ -180,6 +205,9 @@ class SQLitePatientRepository:
                 patient.insurance,
                 patient.status,
                 patient.last_visit,
+                patient.chronic_conditions,
+                patient.current_treatments,
+                patient.emergency_contact,
                 patient.id,
             ),
         )
@@ -189,6 +217,7 @@ class SQLitePatientRepository:
 
     def delete(self, patient_id: str) -> None:
         conn = connect()
+        conn.execute("DELETE FROM patient_documents WHERE patient_id=?", (patient_id,))
         conn.execute("DELETE FROM patients WHERE id=?", (patient_id,))
         conn.execute("DELETE FROM medical_visits WHERE patient_id=?", (patient_id,))
         conn.commit()

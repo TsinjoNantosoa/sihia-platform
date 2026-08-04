@@ -9,6 +9,8 @@ import { useT } from "@/lib/i18n/store";
 import { LoadingState, ErrorState } from "@/components/shared/States";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
+import { PatientAiSummaryCard } from "@/components/shared/PatientAiSummaryCard";
+import { PatientDocumentsPanel } from "@/components/shared/PatientDocumentsPanel";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -137,8 +139,26 @@ function PatientDetailPage() {
           {data.insurance ? (
             <Item icon={<ShieldCheck className="size-4" />} label={t("patients.detail.insurance")} value={data.insurance} />
           ) : null}
+          <Item
+            icon={<Stethoscope className="size-4" />}
+            label={t("patients.detail.chronic")}
+            value={data.chronicConditions || "—"}
+          />
+          <Item
+            icon={<FileText className="size-4" />}
+            label={t("patients.detail.treatments")}
+            value={data.currentTreatments || "—"}
+          />
+          <Item
+            icon={<Phone className="size-4" />}
+            label={t("patients.detail.emergency")}
+            value={data.emergencyContact || "—"}
+          />
         </Section>
       </div>
+
+      <PatientAiSummaryCard patientId={patientId} />
+      <PatientDocumentsPanel patientId={patientId} />
 
       {/* Medical history */}
       <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
@@ -240,6 +260,9 @@ function EditPatientDialog({
     allergies: patient.allergies.join(", "),
     insurance: patient.insurance ?? "",
     status: patient.status,
+    chronicConditions: patient.chronicConditions ?? "",
+    currentTreatments: patient.currentTreatments ?? "",
+    emergencyContact: patient.emergencyContact ?? "",
   });
 
   const updateMut = useMutation({
@@ -259,6 +282,9 @@ function EditPatientDialog({
           .filter(Boolean),
         insurance: form.insurance.trim() || undefined,
         status: form.status,
+        chronicConditions: form.chronicConditions.trim() || null,
+        currentTreatments: form.currentTreatments.trim() || null,
+        emergencyContact: form.emergencyContact.trim() || null,
       }),
     onSuccess: () => {
       toast.success("Dossier patient mis à jour");
@@ -334,6 +360,30 @@ function EditPatientDialog({
             <input
               value={form.allergies}
               onChange={(e) => setForm((f) => ({ ...f, allergies: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="sm:col-span-2 flex flex-col gap-1 text-xs font-medium">
+            Pathologies chroniques
+            <input
+              value={form.chronicConditions}
+              onChange={(e) => setForm((f) => ({ ...f, chronicConditions: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="sm:col-span-2 flex flex-col gap-1 text-xs font-medium">
+            Traitements en cours
+            <input
+              value={form.currentTreatments}
+              onChange={(e) => setForm((f) => ({ ...f, currentTreatments: e.target.value }))}
+              className="rounded-lg border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="sm:col-span-2 flex flex-col gap-1 text-xs font-medium">
+            Contact d'urgence
+            <input
+              value={form.emergencyContact}
+              onChange={(e) => setForm((f) => ({ ...f, emergencyContact: e.target.value }))}
               className="rounded-lg border border-border px-3 py-2 text-sm"
             />
           </label>

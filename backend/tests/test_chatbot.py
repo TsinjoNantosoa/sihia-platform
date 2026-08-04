@@ -84,6 +84,27 @@ def test_query_stream_kb_fallback(client):
     assert "Rendez-vous" in r.text or "rendez-vous" in r.text.lower()
     history = client.get("/history?session_id=session-rdv", headers=auth_headers()).json()
     assert any(m["role"] == "bot" for m in history["messages"])
+    bot = next(m for m in history["messages"] if m["role"] == "bot")
+    assert any("appointments" in str(s).lower() or "—" in str(s) for s in bot.get("sources", []))
+
+
+def test_query_stream_protocol_pathway(client):
+    r = client.post(
+        "/query-stream",
+        headers=auth_headers(),
+        json={
+            "query": "explique le parcours de soins et le protocole fièvre",
+            "lang": "fr",
+            "session_id": "session-pathway",
+        },
+    )
+    assert r.status_code == 200
+    body = r.text.lower()
+    assert "parcours" in body or "fièvre" in body or "fievre" in body or "urgence" in body
+    history = client.get("/history?session_id=session-pathway", headers=auth_headers()).json()
+    bot = next(m for m in history["messages"] if m["role"] == "bot")
+    sources = " ".join(str(s) for s in bot.get("sources", [])).lower()
+    assert "pathway" in sources or "protocol" in sources or "—" in sources
 
 
 def test_query_stream_diagnosis_blocked(client):

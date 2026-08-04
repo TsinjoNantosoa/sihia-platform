@@ -63,11 +63,19 @@ class ChatbotService:
         return self.sessions.get_messages(session_id)
 
     def _retrieve_context(self, query: str, lang: str) -> tuple[str, list[str]]:
-        words = {w for w in re.findall(r"\w+", query.lower()) if len(w) > 2}
+        q_lower = query.lower()
+        words = {w for w in re.findall(r"\w+", q_lower) if len(w) > 2}
         scored: list[tuple[int, dict[str, Any]]] = []
         for entry in self._knowledge:
             topics = entry.get("topics", [])
-            score = sum(1 for t in topics if t.lower() in query.lower() or t.lower() in words)
+            score = 0
+            for topic in topics:
+                t = str(topic).lower()
+                if t in q_lower:
+                    # Bonus pour les sujets multi-mots / précis
+                    score += 3 if " " in t or len(t) > 8 else 2
+                elif t in words:
+                    score += 1
             if score:
                 scored.append((score, entry))
         scored.sort(key=lambda x: x[0], reverse=True)
@@ -76,7 +84,9 @@ class ChatbotService:
         chunks: list[str] = []
         key = "en" if lang.startswith("en") else "fr"
         for entry in top:
-            sources.append(str(entry.get("id", "kb")))
+            entry_id = str(entry.get("id", "kb"))
+            title = str(entry.get("title") or entry_id)
+            sources.append(f"{entry_id} — {title}")
             chunks.append(re.sub(r"<[^>]+>", "", str(entry.get(key, ""))))
         return "\n".join(chunks), sources
 

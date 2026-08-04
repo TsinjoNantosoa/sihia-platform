@@ -53,13 +53,13 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 
 | ID | Statut | Fonctionnalité | Intérêt |
 |---|---|---|---|
-| A1 | [ ] | Alertes proactives (seuil lit, no-show, surcharge) + actions suggérées | IA utile, pas seulement un graphique |
-| A2 | [ ] | Prédiction no-show RDV + liste patients à rappeler | Gain opérationnel fort |
+| A1 | [x] | Alertes proactives (seuil lit, no-show, surcharge) + actions suggérées | IA utile, pas seulement un graphique |
+| A2 | [x] | Prédiction no-show RDV + liste patients à rappeler | Gain opérationnel fort |
 | A3 | [ ] | Recommandation de créneaux (meilleur horaire médecin/patient) | Prise de RDV intelligente |
 | A4 | [ ] | Prophet / modèle ML par défaut (au-delà de la régression linéaire) | Prévisions plus crédibles |
 | A5 | [ ] | Détection d’anomalies (admissions, revenus, occupation) | Dashboard qui “pense” |
-| A6 | [ ] | Chatbot RAG enrichi (protocoles, FAQ, parcours) + sources citées | Assistant vraiment utile |
-| A7 | [ ] | Résumé IA du dossier patient (historique → 5 lignes) | Gain de temps clinique |
+| A6 | [x] | Chatbot RAG enrichi (protocoles, FAQ, parcours) + sources citées | Assistant vraiment utile |
+| A7 | [x] | Résumé IA du dossier patient (historique → 5 lignes) | Gain de temps clinique |
 | A8 | [ ] | Triage / priorisation file d’attente (urgence relative) | Intelligence opérationnelle |
 | A9 | [ ] | Explainability (pourquoi cette prévision / alerte) | Confiance métier |
 | A10 | [ ] | Feedback loop (valider/rejeter une reco → améliore le modèle) | IA qui apprend |
@@ -70,9 +70,9 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 
 | ID | Statut | Fonctionnalité | Intérêt |
 |---|---|---|---|
-| B1 | [ ] | Recherche globale ⌘K (patient / médecin / RDV / dossier) | Barre de recherche réellement utile |
+| B1 | [x] | Recherche globale ⌘K (patient / médecin / RDV / dossier) | Barre de recherche réellement utile |
 | B2 | [x] | Notifications riches (clic → ouvrir RDV / patient / action) | Actions API explicites, deep-links internes contrôlés, lecture unitaire et clavier |
-| B3 | [ ] | Centre de notifications (lues/non lues, filtres, Settings branchés) | Inbox réelle |
+| B3 | [x] | Centre de notifications (lues/non lues, filtres, Settings branchés) | Inbox réelle |
 | B4 | [x] | Rappels RDV visibles dans l’UI (envoyé / échec / retry) | Statut par canal, dernière tentative, historique, erreur et retry ciblé |
 | B5 | [x] | Workflow confirmation RDV (planifié → confirmé → arrivé → terminé) | Transitions API contrôlées, états terminaux protégés, actions UI et audit |
 | B6 | [x] | Calendrier multi-médecins + drag & drop | Vue journalière filtrable, créneaux 30 min, replanification contrôlée et auditée |
@@ -89,12 +89,12 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 
 | ID | Statut | Fonctionnalité | Intérêt |
 |---|---|---|---|
-| C1 | [ ] | Dossier patient enrichi (allergies, traitements, documents, assurance) | HIS réel |
-| C2 | [ ] | Upload documents (ordonnance, radio, PDF) + visionneuse | Indispensable terrain |
+| C1 | [x] | Dossier patient enrichi (allergies, traitements, documents, assurance) | HIS réel |
+| C2 | [x] | Upload documents (ordonnance, radio, PDF) + visionneuse | Indispensable terrain |
 | C3 | [ ] | Prescription / ordonnance (même simple) | Différenciant |
 | C4 | [ ] | Hospitalisation / lits (affectation, entrée/sortie) | Occupancy réelle |
 | C5 | [ ] | Facturation / paiements liés aux RDV | Analytics revenus crédibles |
-| C6 | [ ] | File d’attente / salle d’attente (appel patient) | Utilisable le jour J |
+| C6 | [x] | File d’attente / salle d’attente (appel patient) | Utilisable le jour J |
 | C7 | [ ] | Multi-établissements / multi-services | SaaS B2B |
 | C8 | [ ] | HL7 / FHIR (interop labos / autres SI) | Vraie plateforme santé |
 | C9 | [ ] | Consentement RGPD + journal d’accès dossier | Conformité santé |

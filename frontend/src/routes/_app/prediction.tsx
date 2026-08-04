@@ -15,6 +15,7 @@ import { MlMetricsPanel } from "@/components/shared/MlMetricsPanel";
 import { formatMlModelLabel } from "@/lib/ml/format";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { mlService, alertsService } from "@/lib/api/services";
+import { NoShowRiskPanel } from "@/components/shared/NoShowRiskPanel";
 
 export const Route = createFileRoute("/_app/prediction")({
   beforeLoad: requireRoutePermission("view_prediction"),
@@ -92,6 +93,7 @@ function PredictionPage() {
 
           <MlForecastMeta data={pred.data} />
           {metrics.data ? <MlMetricsPanel data={metrics.data} /> : metrics.isLoading ? <LoadingState /> : null}
+          <NoShowRiskPanel />
           {pred.data.drift_score !== undefined ? (
             <div className="rounded-xl border border-border bg-muted/20 px-5 py-2 text-xs text-muted-foreground">
               Dérive détectée :{" "}

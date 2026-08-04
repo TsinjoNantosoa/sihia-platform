@@ -10,6 +10,8 @@ import {
   Settings,
   HeartPulse,
   WifiOff,
+  Bell,
+  Armchair,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT, useI18n } from "@/lib/i18n/store";
@@ -28,12 +30,24 @@ const groups = [
         exact: true,
         permission: "dashboard:read",
       },
+      {
+        to: "/notifications",
+        labelKey: "nav.notifications",
+        icon: Bell,
+        permission: "dashboard:read",
+      },
       { to: "/patients", labelKey: "nav.patients", icon: Users, permission: "patients:read" },
       { to: "/doctors", labelKey: "nav.doctors", icon: Stethoscope, permission: "doctors:read" },
       {
         to: "/appointments",
         labelKey: "nav.appointments",
         icon: CalendarDays,
+        permission: "appointments:read",
+      },
+      {
+        to: "/waiting-room",
+        labelKey: "nav.waitingRoom",
+        icon: Armchair,
         permission: "appointments:read",
       },
     ],

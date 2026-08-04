@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -10,7 +10,7 @@ import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { useAuth } from "@/lib/auth/store";
 import { Bell, CircleHelp, Globe, User, Building, LogOut, Shield, Database } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { appointmentsService, authService } from "@/lib/api/services";
+import { appointmentsService, authService, notificationsService } from "@/lib/api/services";
 import { toast } from "sonner";
 import { requestOnboardingRestart } from "@/lib/onboarding/state";
 
@@ -30,6 +30,22 @@ function SettingsPage() {
     queryKey: ["reminder-status"],
     queryFn: appointmentsService.reminderStatus,
     retry: false,
+  });
+
+  const notifPrefs = useQuery({
+    queryKey: ["notification-prefs"],
+    queryFn: notificationsService.getPrefs,
+  });
+
+  const qc = useQueryClient();
+  const updatePrefs = useMutation({
+    mutationFn: notificationsService.updatePrefs,
+    onSuccess: () => {
+      toast.success(t("settings.notif.saved"));
+      void qc.invalidateQueries({ queryKey: ["notification-prefs"] });
+      void qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: () => toast.error(t("settings.notif.saveFail")),
   });
 
   const handleLogoutCurrent = async () => {
@@ -104,20 +120,36 @@ function SettingsPage() {
 
       <Section icon={<Bell className="size-4" />} title={t("settings.notifications")}>
         <div className="flex flex-col gap-3">
-          {[
-            { label: t("settings.notif.alerts"), on: true },
-            { label: t("settings.notif.reminders"), on: true },
-            { label: t("settings.notif.weekly"), on: false },
-          ].map((opt) => (
-            <label
-              key={opt.label}
-              className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
-            >
-              <span className="text-sm">{opt.label}</span>
-              <input type="checkbox" defaultChecked={opt.on} className="size-4 accent-primary" />
-            </label>
-          ))}
+          {(
+            [
+              { key: "alertsEnabled" as const, label: t("settings.notif.alerts") },
+              { key: "remindersEnabled" as const, label: t("settings.notif.reminders") },
+              { key: "weeklyDigestEnabled" as const, label: t("settings.notif.weekly") },
+            ] as const
+          ).map((opt) => {
+            const checked = notifPrefs.data?.[opt.key] ?? opt.key !== "weeklyDigestEnabled";
+            return (
+              <label
+                key={opt.key}
+                className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
+              >
+                <span className="text-sm">{opt.label}</span>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={notifPrefs.isLoading || updatePrefs.isPending}
+                  onChange={(e) => updatePrefs.mutate({ [opt.key]: e.target.checked })}
+                  className="size-4 accent-primary"
+                />
+              </label>
+            );
+          })}
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          <a href="/notifications" className="font-semibold text-primary hover:underline">
+            {t("notif.center.openInbox")}
+          </a>
+        </p>
         <PermissionGuard permission="appointments:update">
           <div className="mt-4">
             {reminderStatus.data ? (

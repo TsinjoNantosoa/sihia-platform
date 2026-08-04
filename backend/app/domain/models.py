@@ -41,6 +41,23 @@ class Patient:
     insurance: str | None
     status: PatientStatus
     last_visit: str | None
+    chronic_conditions: str | None = None
+    current_treatments: str | None = None
+    emergency_contact: str | None = None
+
+
+@dataclass
+class PatientDocument:
+    id: str
+    patient_id: str
+    filename: str
+    content_type: str
+    size_bytes: int
+    category: str
+    storage_path: str
+    uploaded_by: str | None
+    uploaded_at: str
+    notes: str | None = None
 
 
 @dataclass

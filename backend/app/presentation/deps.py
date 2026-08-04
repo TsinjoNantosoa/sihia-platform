@@ -5,7 +5,13 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.application.chatbot_service import ChatbotService
 from app.application.analytics_service import AnalyticsService
+from app.application.notification_service import NotificationService
+from app.application.search_service import SearchService
 from app.application.ml_service import MlForecastService
+from app.application.noshow_service import NoShowRiskService
+from app.application.waiting_room_service import WaitingRoomService
+from app.application.patient_document_service import PatientDocumentService
+from app.application.patient_summary_service import PatientAiSummaryService
 from app.application.rbac_service import RbacService
 from app.application.pipeline_service import PipelineService
 from app.application.reminder_service import ReminderService
@@ -15,6 +21,8 @@ from app.core.security import decode_access_token
 from app.infrastructure.chatbot_session_store import ChatbotSessionStore
 from app.presentation.chatbot_rate_limit import ChatbotRateLimiter
 from app.infrastructure.reminder_repository import ReminderRepository
+from app.infrastructure.notification_repository import NotificationRepository
+from app.infrastructure.patient_document_repository import PatientDocumentRepository
 from app.infrastructure.database import bootstrap_database
 from app.infrastructure.sqlite_repositories import (
     SQLiteAppointmentRepository,
@@ -39,10 +47,16 @@ auth_service = AuthService(users_repo, refresh_sessions_repo)
 patients_service = PatientsService(patients_repo)
 doctors_service = DoctorsService(doctors_repo)
 appointments_service = AppointmentsService(appointments_repo)
+waiting_room_service = WaitingRoomService(appointments_service)
 medical_history_service = MedicalHistoryService(medical_history_repo)
 analytics_service = AnalyticsService()
 rbac_service = RbacService(users_repo)
 ml_service = MlForecastService(analytics_service)
+noshow_service = NoShowRiskService()
+patient_summary_service = PatientAiSummaryService()
+patient_document_service = PatientDocumentService(patients_service, PatientDocumentRepository())
+notification_service = NotificationService(analytics_service, NotificationRepository())
+search_service = SearchService()
 pipeline_service = PipelineService()
 reminder_service = ReminderService(
     appointments_repo,

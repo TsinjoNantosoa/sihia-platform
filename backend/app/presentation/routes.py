@@ -2,8 +2,8 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from io import BytesIO
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import Response, StreamingResponse
 
 from app.application.schemas import (
     AppointmentCreate,
@@ -15,6 +15,8 @@ from app.application.schemas import (
     LoginResponse,
     LogoutRequest,
     MedicalVisitCreate,
+    NotificationMarkReadRequest,
+    NotificationPrefsUpdate,
     PatientCreate,
     DoctorUpdate,
     PatientUpdate,
@@ -27,11 +29,17 @@ from app.application.schemas import (
 from app.presentation.deps import (
     analytics_service,
     appointments_service,
+    waiting_room_service,
     auth_service,
     doctors_service,
     medical_history_service,
     patients_service,
     ml_service,
+    noshow_service,
+    notification_service,
+    patient_summary_service,
+    patient_document_service,
+    search_service,
     pipeline_service,
     rbac_service,
     reminder_service,
@@ -75,6 +83,9 @@ def _patient_payload(p) -> dict:
         "insurance": p.insurance,
         "status": p.status,
         "lastVisit": p.last_visit,
+        "chronicConditions": p.chronic_conditions,
+        "currentTreatments": p.current_treatments,
+        "emergencyContact": p.emergency_contact,
     }
 
 api_router = APIRouter(prefix="/api")
@@ -202,6 +213,67 @@ def get_patient_history(patient_id: str, _claims: dict = Depends(require_permiss
         }
         for v in visits
     ]
+
+
+@api_router.post("/patients/{patient_id}/ai-summary")
+def patient_ai_summary(
+    patient_id: str,
+    lang: str = Query("fr", pattern="^(fr|en|ar)$"),
+    _claims: dict = Depends(require_permission("patients:read")),
+):
+    """Résumé IA du dossier (~5 lignes) — aide à la décision, pas un diagnostic."""
+    patient = patients_service.get(patient_id)
+    visits = medical_history_service.list(patient_id)
+    return patient_summary_service.summarize(patient, visits, lang=lang)
+
+
+@api_router.get("/patients/{patient_id}/documents")
+def list_patient_documents(patient_id: str, _claims: dict = Depends(require_permission("patients:read"))):
+    return patient_document_service.list(patient_id)
+
+
+@api_router.post("/patients/{patient_id}/documents", status_code=status.HTTP_201_CREATED)
+async def upload_patient_document(
+    patient_id: str,
+    file: UploadFile = File(...),
+    category: str = Form("other"),
+    notes: str | None = Form(None),
+    claims: dict = Depends(require_permission("patients:update")),
+):
+    data = await file.read()
+    return patient_document_service.upload(
+        patient_id,
+        filename=file.filename or "document",
+        content_type=file.content_type or "application/octet-stream",
+        data=data,
+        category=category,
+        notes=notes,
+        uploaded_by=str(claims.get("id") or claims.get("sub") or ""),
+    )
+
+
+@api_router.get("/patients/{patient_id}/documents/{document_id}/download")
+def download_patient_document(
+    patient_id: str,
+    document_id: str,
+    _claims: dict = Depends(require_permission("patients:read")),
+):
+    doc, payload = patient_document_service.get_file(patient_id, document_id)
+    return Response(
+        content=payload,
+        media_type=doc.content_type,
+        headers={"Content-Disposition": f'inline; filename="{doc.filename}"'},
+    )
+
+
+@api_router.delete("/patients/{patient_id}/documents/{document_id}", status_code=status.HTTP_200_OK)
+def delete_patient_document(
+    patient_id: str,
+    document_id: str,
+    _claims: dict = Depends(require_permission("patients:update")),
+):
+    patient_document_service.delete(patient_id, document_id)
+    return {"ok": True}
 
 
 @api_router.post("/patients/{patient_id}/history")
@@ -555,9 +627,97 @@ def ml_metrics(_claims: dict = Depends(require_permission("ml:read"))):
     return ml_service.metrics()
 
 
+@api_router.get("/ml/noshow-risk")
+def noshow_risk(
+    horizonDays: int = Query(7, ge=1, le=60),
+    minRisk: float = Query(0.0, ge=0.0, le=1.0),
+    riskLevel: str | None = Query(None, pattern="^(high|medium|low)$"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    _claims: dict = Depends(require_permission("ml:read")),
+):
+    """Liste des RDV à risque d'absence (score heuristique, aide à la décision)."""
+    return noshow_service.list_risks(
+        horizon_days=horizonDays,
+        min_risk=minRisk,
+        risk_level=riskLevel,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@api_router.get("/waiting-room")
+def waiting_room(_claims: dict = Depends(require_permission("appointments:read"))):
+    return waiting_room_service.snapshot()
+
+
+@api_router.post("/waiting-room/call-next")
+def waiting_room_call_next(
+    doctorId: str | None = Query(None),
+    _claims: dict = Depends(require_permission("appointments:update")),
+):
+    return waiting_room_service.call_next(doctor_id=doctorId)
+
+
 @api_router.get("/alerts")
 def alerts(_claims: dict = Depends(require_permission("dashboard:read"))):
     return analytics_service.alerts()
+
+
+@api_router.get("/search")
+def global_search(
+    q: str = Query("", max_length=120),
+    limit: int = Query(8, ge=1, le=20),
+    _claims: dict = Depends(require_permission("dashboard:read")),
+):
+    """Recherche globale patients / médecins / RDV."""
+    return search_service.search(q, limit=limit)
+
+
+@api_router.get("/notifications")
+def list_notifications(
+    level: str | None = Query(None, pattern="^(critical|warning|info)$"),
+    unreadOnly: bool = Query(False),
+    area: str | None = Query(None, max_length=80),
+    claims: dict = Depends(require_permission("dashboard:read")),
+):
+    user_id = str(claims.get("id") or claims.get("sub") or "")
+    return notification_service.list_for_user(
+        user_id,
+        level=level,
+        unread_only=unreadOnly,
+        area=area,
+    )
+
+
+@api_router.post("/notifications/read")
+def mark_notifications_read(
+    payload: NotificationMarkReadRequest,
+    claims: dict = Depends(require_permission("dashboard:read")),
+):
+    user_id = str(claims.get("id") or claims.get("sub") or "")
+    return notification_service.mark_read(user_id, payload.alertIds)
+
+
+@api_router.post("/notifications/read-all")
+def mark_all_notifications_read(claims: dict = Depends(require_permission("dashboard:read"))):
+    user_id = str(claims.get("id") or claims.get("sub") or "")
+    return notification_service.mark_all_read(user_id)
+
+
+@api_router.get("/notifications/prefs")
+def get_notification_prefs(claims: dict = Depends(require_permission("settings:read"))):
+    user_id = str(claims.get("id") or claims.get("sub") or "")
+    return notification_service.get_prefs(user_id)
+
+
+@api_router.patch("/notifications/prefs")
+def update_notification_prefs(
+    payload: NotificationPrefsUpdate,
+    claims: dict = Depends(require_permission("settings:read")),
+):
+    user_id = str(claims.get("id") or claims.get("sub") or "")
+    return notification_service.update_prefs(user_id, payload.model_dump(exclude_none=True))
 
 
 @api_router.get("/rbac/users")

@@ -1,42 +1,91 @@
 [
   {
     "id": "welcome",
+    "title": "Accueil assistant",
     "topics": ["bonjour", "hello", "salut", "aide", "help"],
-    "fr": "<p>Bienvenue sur <strong>SIH IA — Hôpital Central</strong>. Je peux vous orienter vers les services, les rendez-vous et les informations pratiques. <em>Je ne pose pas de diagnostic médical.</em></p>",
-    "en": "<p>Welcome to <strong>SIH IA — Central Hospital</strong>. I can help with services, appointments and practical information. <em>I do not provide medical diagnosis.</em></p>"
+    "fr": "<p>Bienvenue sur <strong>SIH IA — Hôpital Central</strong>. Je peux vous orienter vers les services, les rendez-vous, les parcours de soins et les informations pratiques. <em>Je ne pose pas de diagnostic médical.</em></p>",
+    "en": "<p>Welcome to <strong>SIH IA — Central Hospital</strong>. I can help with services, appointments, care pathways and practical information. <em>I do not provide medical diagnosis.</em></p>"
   },
   {
     "id": "appointments",
+    "title": "Prise de rendez-vous",
     "topics": ["rendez-vous", "rdv", "appointment", "consultation", "prendre rendez-vous"],
-    "fr": "<p>Pour un rendez-vous : connectez-vous à l'application, menu <strong>Rendez-vous</strong>, puis <strong>Nouveau RDV</strong>. En cas d'urgence vitale, appelez le <strong>15</strong> (SAMU) ou le <strong>112</strong>.</p>",
-    "en": "<p>For an appointment: sign in, open <strong>Appointments</strong>, then <strong>New appointment</strong>. For life-threatening emergencies call <strong>15</strong> (SAMU) or <strong>112</strong>.</p>"
+    "fr": "<p>Pour un rendez-vous : connectez-vous à l'application, menu <strong>Rendez-vous</strong>, puis <strong>Nouveau RDV</strong>. Vérifiez les conflits de créneaux. En urgence vitale, appelez le <strong>15</strong> ou le <strong>112</strong>.</p>",
+    "en": "<p>For an appointment: sign in, open <strong>Appointments</strong>, then <strong>New appointment</strong>. Slot conflicts are checked automatically. For life-threatening emergencies call <strong>15</strong> or <strong>112</strong>.</p>"
   },
   {
     "id": "hours",
+    "title": "Horaires",
     "topics": ["horaires", "ouvert", "hours", "accueil", "urgences"],
     "fr": "<p><strong>Accueil</strong> : lun–ven 8h–18h, sam 8h–12h. <strong>Urgences</strong> : 24h/24. Consultez le tableau de bord pour les prochains créneaux disponibles.</p>",
     "en": "<p><strong>Reception</strong>: Mon–Fri 8am–6pm, Sat 8am–12pm. <strong>Emergency</strong>: 24/7. Check the dashboard for upcoming slots.</p>"
   },
   {
     "id": "departments",
+    "title": "Services et spécialités",
     "topics": ["service", "spécialité", "cardiologie", "pédiatrie", "department", "specialty"],
     "fr": "<p>Services disponibles : cardiologie, pédiatrie, médecine générale, imagerie. Utilisez le menu <strong>Médecins</strong> pour voir les spécialités et disponibilités.</p>",
     "en": "<p>Available departments: cardiology, pediatrics, general medicine, imaging. Use <strong>Doctors</strong> to browse specialties and availability.</p>"
   },
   {
     "id": "patients",
+    "title": "Dossier patient",
     "topics": ["dossier", "patient", "historique", "medical record", "history"],
-    "fr": "<p>Les professionnels autorisés accèdent aux dossiers via <strong>Patients</strong> → détail patient → <strong>Historique médical</strong>. Les données sont confidentielles (RGPD).</p>",
-    "en": "<p>Authorized staff access records via <strong>Patients</strong> → patient detail → <strong>Medical history</strong>. Data is confidential (GDPR).</p>"
+    "fr": "<p>Les professionnels autorisés accèdent aux dossiers via <strong>Patients</strong> → détail → <strong>Historique médical</strong>. Un <strong>résumé IA</strong> peut synthétiser les visites (aide à la décision, validation humaine obligatoire). Données confidentielles (RGPD).</p>",
+    "en": "<p>Authorized staff access records via <strong>Patients</strong> → detail → <strong>Medical history</strong>. An <strong>AI summary</strong> can synthesize visits (decision support only, human validation required). Data is confidential (GDPR).</p>"
   },
   {
     "id": "reminders",
+    "title": "Rappels RDV",
     "topics": ["rappel", "sms", "email", "notification", "reminder"],
-    "fr": "<p>Les rappels de rendez-vous (email/SMS) sont envoyés ~24h avant. Vérifiez la colonne <strong>Rappel</strong> sur la page Rendez-vous ou contactez l'accueil.</p>",
-    "en": "<p>Appointment reminders (email/SMS) are sent ~24h before. Check the <strong>Reminder</strong> column on Appointments or contact reception.</p>"
+    "fr": "<p>Les rappels (email/SMS) partent ~24h avant. Sur <strong>Prédiction IA</strong>, la liste no-show propose des rappels ciblés pour les patients à risque d'absence.</p>",
+    "en": "<p>Reminders (email/SMS) are sent ~24h before. On <strong>AI Prediction</strong>, the no-show list suggests targeted reminders for at-risk patients.</p>"
+  },
+  {
+    "id": "pathway-consultation",
+    "title": "Parcours consultation externe",
+    "topics": ["parcours", "pathway", "consultation", "arrivée", "accueil patient", "check-in"],
+    "fr": "<p><strong>Parcours type</strong> : 1) Accueil / confirmation RDV → 2) Salle d'attente → 3) Consultation → 4) Prescription éventuelle → 5) Sortie / prochain RDV. Statuts SIH IA : planifié → confirmé → arrivé → terminé.</p>",
+    "en": "<p><strong>Typical pathway</strong>: 1) Check-in / confirm appointment → 2) Waiting area → 3) Consultation → 4) Possible prescription → 5) Discharge / follow-up. SIH IA statuses: scheduled → confirmed → arrived → completed.</p>"
+  },
+  {
+    "id": "protocol-fever",
+    "title": "Protocole orientation fièvre (FAQ)",
+    "topics": ["fièvre", "fever", "protocole", "protocol", "urgence relative", "triage"],
+    "fr": "<p><strong>Orientation informative (pas un diagnostic)</strong> : fièvre élevée + signes de gravité (essoufflement, confusion, raideur de nuque) → urgences / 15. Sinon, consultation médecine générale via RDV. Toujours faire valider par un professionnel.</p>",
+    "en": "<p><strong>Informative guidance (not a diagnosis)</strong>: high fever with red flags (shortness of breath, confusion, neck stiffness) → ER / 15. Otherwise book GP appointment. Always validate with a clinician.</p>"
+  },
+  {
+    "id": "protocol-noshow",
+    "title": "Réduction des absences",
+    "topics": ["no-show", "noshow", "absence", "absent", "risque"],
+    "fr": "<p>Pour réduire les absences : confirmer le RDV, envoyer un rappel J-1, prioriser la liste <strong>Risque d'absence</strong> sur Prédiction IA, proposer un créneau alternatif si besoin.</p>",
+    "en": "<p>To reduce no-shows: confirm the appointment, send a J-1 reminder, prioritize the <strong>No-show risk</strong> list on AI Prediction, offer an alternative slot if needed.</p>"
+  },
+  {
+    "id": "faq-insurance",
+    "title": "FAQ assurance",
+    "topics": ["assurance", "insurance", "mutuelle", "couverture", "prise en charge"],
+    "fr": "<p>Les informations d'assurance figurent sur la fiche patient. La facturation détaillée sera étendue dans une version ultérieure. Pour une question de prise en charge, contactez l'accueil.</p>",
+    "en": "<p>Insurance details appear on the patient record. Detailed billing will come in a later release. For coverage questions, contact reception.</p>"
+  },
+  {
+    "id": "faq-gdpr",
+    "title": "FAQ confidentialité",
+    "topics": ["rgpd", "gdpr", "confidentialité", "privacy", "données", "consentement"],
+    "fr": "<p>Les accès aux dossiers sont contrôlés par RBAC et audités. Ne partagez jamais d'identifiants. En cas de suspicion d'accès non autorisé, contactez un administrateur.</p>",
+    "en": "<p>Record access is RBAC-controlled and audited. Never share credentials. If you suspect unauthorized access, contact an administrator.</p>"
+  },
+  {
+    "id": "prediction",
+    "title": "Prévisions et alertes",
+    "topics": ["prédiction", "prediction", "affluence", "alerte", "alert", "occupation", "surcharge"],
+    "fr": "<p>Le module <strong>Prédiction IA</strong> estime l'affluence 7j/30j et liste les risques no-show. Le tableau de bord affiche des <strong>alertes proactives</strong> (occupation, surcharge, absences) avec actions suggérées.</p>",
+    "en": "<p>The <strong>AI Prediction</strong> module forecasts 7d/30d load and lists no-show risks. The dashboard shows <strong>proactive alerts</strong> (occupancy, overload, absences) with suggested actions.</p>"
   },
   {
     "id": "contact",
+    "title": "Contact",
     "topics": ["contact", "téléphone", "phone", "adresse", "address"],
     "fr": "<p><strong>Hôpital Central SIH IA</strong> — Tél. accueil : +212 5 22 00 00 00. Email : contact@sihia.health</p>",
     "en": "<p><strong>SIH IA Central Hospital</strong> — Reception: +212 5 22 00 00 00. Email: contact@sihia.health</p>"
