@@ -3,6 +3,10 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "vite dev --port 5174 --strictPort",
     "build": "vite build",
