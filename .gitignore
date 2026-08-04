@@ -36,6 +36,10 @@ frontend/.tanstack/**
 frontend/.wrangler/
 .dev.vars
 
+# Vercel / Nitro
+.vercel/
+frontend/.vercel/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

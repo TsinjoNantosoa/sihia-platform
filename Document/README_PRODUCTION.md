@@ -202,7 +202,52 @@ VITE_CHATBOT_API_TOKEN=<même secret>
 
 ---
 
-## 9. Déploiement Docker (base)
+## 9. Déploiement frontend sur Vercel
+
+Le frontend est **TanStack Start (Vite)**, pas Next.js. Un preset « Next.js » sur Vercel échoue avec `No Next.js version detected`.
+
+### Configuration projet Vercel (dashboard)
+
+| Réglage | Valeur |
+|---|---|
+| **Root Directory** | `frontend` (recommandé) **ou** racine du monorepo avec `vercel.json` |
+| **Framework Preset** | **Other** / laisser `null` (ne pas choisir Next.js) |
+| **Build Command** | `npm run build` (si Root = `frontend`) |
+| **Output Directory** | `.vercel/output` (sortie Nitro Build Output API) |
+| **Install Command** | `npm ci` |
+
+Fichiers déjà dans le repo :
+
+- [`vercel.json`](../vercel.json) — monorepo (install/build dans `frontend/`)
+- [`frontend/vercel.json`](../frontend/vercel.json) — si Root Directory = `frontend`
+- [`frontend/vite.config.ts`](../frontend/vite.config.ts) — Nitro `preset: "vercel"` quand `VERCEL=1`
+
+### Variables d’environnement Vercel (Production + Preview)
+
+```env
+VITE_API_URL=https://<url-api-backend-publique>
+VITE_USE_MOCKS=false
+VITE_CHATBOT_API_TOKEN=<secret aligné backend>
+```
+
+Sans `VITE_API_URL` pointant vers une API HTTPS joignable, le front se déploie mais le login / les données échouent.
+
+### Backend
+
+Vercel héberge **uniquement le frontend**. Déployer FastAPI ailleurs (Railway, Render, Fly.io, VM Docker) et autoriser l’origine Vercel dans `CORS_ORIGINS`.
+
+### Rebuild local (vérif sortie Vercel)
+
+```bash
+cd frontend
+$env:NITRO_PRESET='vercel'   # PowerShell
+npm run build
+# doit produire frontend/.vercel/output/{config.json,static,functions}
+```
+
+---
+
+## 10. Déploiement Docker (base)
 
 ```bash
 docker compose up -d postgres
@@ -216,7 +261,7 @@ Pour la prod : images versionnées, healthchecks, rolling update, secrets inject
 
 ---
 
-## 10. Sécurité clinique & IA
+## 11. Sécurité clinique & IA
 
 - Toute aide IA (résumé, chatbot, no-show) est une **aide à la décision**, pas un diagnostic.  
 - Disclaimer affiché côté UI / réponses.  
@@ -225,7 +270,7 @@ Pour la prod : images versionnées, healthchecks, rolling update, secrets inject
 
 ---
 
-## 11. Prochaines étapes recommandées (ordre)
+## 12. Prochaines étapes recommandées (ordre)
 
 1. **F1** — Staging cloud + CI deploy  
 2. **F2 / F5** — Secrets + backup/restore Postgres  
@@ -235,7 +280,7 @@ Pour la prod : images versionnées, healthchecks, rolling update, secrets inject
 
 ---
 
-## 12. Contacts & docs
+## 13. Contacts & docs
 
 | Doc | Rôle |
 |---|---|
