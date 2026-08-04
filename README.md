@@ -18,8 +18,11 @@ Plateforme complète avec :
 - 🛡 **RBAC** : utilisateurs, rôles, permissions
 - ⚙️ **Paramètres** : profil, établissement, notifications, langue
 - 🌍 **i18n FR / EN / AR** avec **mode RTL** automatique pour l'arabe
+- 🌓 **Thème clair / sombre / système** (Paramètres + bouton topbar)
 - 🎨 Design system **Calm Care** (tokens oklch, shadcn UI customisé)
 - 🤖 **Chatbot médical** : widget flottant (streaming SSE, guardrails, RAG, FR/EN)
+
+> **Production :** voir le guide complet [`Document/README_PRODUCTION.md`](Document/README_PRODUCTION.md) (implémentations livrées, checklist go-live, env, sécurité).
 
 ## 🚀 Démarrage
 

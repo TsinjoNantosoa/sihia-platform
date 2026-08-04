@@ -6,8 +6,17 @@
 
 | Champ | Valeur |
 |---|---|
-| **Statut session** | Lot 1 + Lot 2 (B1, C1/C2, C6) **livrés** |
+| **Statut session** | Thème clair/sombre + README production |
 | **Prochaine** | C3 — Prescriptions |
+
+---
+
+## Terminées (rappel)
+
+Lot 1 + Lot 2 (B1, C1/C2, C6) + **thème clair/sombre/système**.
+
+### Docs production
+- [`Document/README_PRODUCTION.md`](./README_PRODUCTION.md) — implémentations, checklist go-live, env, sécurité
 
 ---
 

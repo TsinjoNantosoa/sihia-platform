@@ -8,6 +8,7 @@ import { authService } from "@/lib/api/services";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { GlobalSearch, useGlobalSearchHotkey } from "@/components/shared/GlobalSearch";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,6 +93,8 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <ThemeToggle variant="compact" />
 
         <div data-onboarding="notifications">
           <NotificationBell />

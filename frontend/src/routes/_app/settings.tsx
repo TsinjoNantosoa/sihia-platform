@@ -8,11 +8,12 @@ import { PipelineAdminPanel } from "@/components/shared/PipelineAdminPanel";
 import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBanner";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { useAuth } from "@/lib/auth/store";
-import { Bell, CircleHelp, Globe, User, Building, LogOut, Shield, Database } from "lucide-react";
+import { Bell, CircleHelp, Globe, User, Building, LogOut, Shield, Database, Palette } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { appointmentsService, authService, notificationsService } from "@/lib/api/services";
 import { toast } from "sonner";
 import { requestOnboardingRestart } from "@/lib/onboarding/state";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export const Route = createFileRoute("/_app/settings")({
   beforeLoad: requireRoutePermission("view_settings"),
@@ -98,6 +99,11 @@ function SettingsPage() {
             </button>
           ))}
         </div>
+      </Section>
+
+      <Section icon={<Palette className="size-4" />} title={t("settings.theme")}>
+        <p className="mb-3 text-xs text-muted-foreground">{t("settings.theme.hint")}</p>
+        <ThemeToggle variant="full" />
       </Section>
 
       <Section icon={<User className="size-4" />} title={t("settings.profile")}>

@@ -7,7 +7,9 @@ import {
 } from "@tanstack/react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { I18nHydrator } from "@/components/I18nHydrator";
+import { ThemeHydrator } from "@/components/ThemeHydrator";
 import { Toaster } from "@/components/ui/sonner";
+import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme/store";
 
 import appCss from "../styles.css?url";
 import type { RouterAppContext } from "../router";
@@ -64,9 +66,10 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
@@ -86,9 +89,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <I18nHydrator>
-        <Outlet />
-      </I18nHydrator>
+      <ThemeHydrator>
+        <I18nHydrator>
+          <Outlet />
+        </I18nHydrator>
+      </ThemeHydrator>
       <Toaster position="top-right" />
     </QueryClientProvider>
   );
