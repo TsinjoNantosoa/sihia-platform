@@ -154,10 +154,11 @@ cp .env.example .env
 
 | Variable | Description |
 |---|---|
-| `VITE_API_URL` | URL du backend FastAPI (vide = mocks) |
-| `VITE_USE_MOCKS` | `true` pour utiliser les mocks intégrés |
-| `VITE_CLIENT_ID` | Slug chatbot (`sihia` par défaut) |
-| `VITE_CHATBOT_API_TOKEN` | Token chatbot (identique à `CHATBOT_API_TOKEN` backend) |
+| `VITE_API_URL` | URL du backend FastAPI |
+| `VITE_USE_MOCKS` | `true` pour utiliser les mocks intégrés (ignoré en prod) |
+| `VITE_CLIENT_ID` | Slug chatbot (`sihia` par défaut, non secret) |
+
+> Le chatbot utilise le **JWT de session**. Ne pas exposer `CHATBOT_API_TOKEN` via une variable `VITE_*`.
 
 ## Roadmap a suivre
 
