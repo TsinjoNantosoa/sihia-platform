@@ -212,19 +212,18 @@ Le frontend est **TanStack Start (Vite) + Nitro**, pas Next.js. Un preset « Nex
 
 ### Configuration projet Vercel (dashboard) — recommandé
 
+Pas de `vercel.json` dans le dépôt : tout se configure dans le dashboard.
+
 | Réglage | Valeur |
 |---|---|
 | **Root Directory** | `frontend` |
-| **Framework Preset** | **Other** (`null`) — pas Next.js |
-| **Install Command** | `npm ci` |
-| **Build Command** | `npm run build` |
-| **Output** | Nitro écrit `.vercel/output` (Build Output API) — ne pas forcer `dist` |
+| **Framework Preset** | **Other** — pas Next.js, **pas Vite** (Vite force `dist`) |
+| **Install Command** | défaut (pas d’override) |
+| **Build Command** | `npm run build` (ou défaut) |
+| **Output Directory** | **`.vercel/output`** (override ON) — Nitro y écrit le Build Output API |
+| **Node.js Version** | **22.x** (évite npm 11 / Node 24 qui casse `npm ci` sur le lockfile actuel) |
 
-Fichiers :
-
-- [`frontend/vercel.json`](../frontend/vercel.json) — si Root Directory = `frontend`
-- [`vercel.json`](../vercel.json) — fallback monorepo (Root = dépôt)
-- [`frontend/vite.config.ts`](../frontend/vite.config.ts) — Nitro `preset: "vercel"` quand `VERCEL=1`
+[`frontend/vite.config.ts`](../frontend/vite.config.ts) active Nitro `preset: "vercel"` automatiquement quand `VERCEL=1`.
 
 ### Variables d’environnement Vercel (Production + Preview)
 

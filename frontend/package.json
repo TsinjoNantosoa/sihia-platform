@@ -9,7 +9,7 @@
   "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "vite dev --port 5174 --strictPort",
-    "build": "vite build",
+    "build": "vite build --output dist",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
