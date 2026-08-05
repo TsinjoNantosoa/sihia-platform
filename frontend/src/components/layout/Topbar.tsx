@@ -57,7 +57,9 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
           aria-label={t("search.aria")}
         >
           <Search className="size-4 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-sm text-muted-foreground">{t("common.searchPlaceholder")}</span>
+          <span className="flex-1 text-sm text-muted-foreground">
+            {t("common.searchPlaceholder")}
+          </span>
           <kbd
             aria-hidden
             className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:block"

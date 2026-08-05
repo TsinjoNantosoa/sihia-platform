@@ -10,11 +10,19 @@ import type {
   Patient,
   PatientAiSummaryResponse,
   PatientDocument,
+  PatientHistoryVisit,
   NotificationPrefs,
   NotificationsInboxResponse,
   SearchResponse,
   WaitingRoomSnapshot,
   RbacUser,
+  Doctor,
+  MlForecastResponse,
+  MlMetricsResponse,
+  ReminderChannelsStatus,
+  PipelineStatusResponse,
+  Alert,
+  KpiPoint,
 } from "./types";
 import { useAuth } from "../auth/store"; // Import the actual store instance
 import {
@@ -331,7 +339,7 @@ async function fetchWithAuth<T = unknown>(
   endpoint: string,
   options: RequestInit = {},
   hasRetried = false,
-): Promise<T | null> {
+): Promise<T> {
   const headers = buildAuthHeaders(options);
 
   try {
@@ -341,18 +349,18 @@ async function fetchWithAuth<T = unknown>(
     });
 
     if (response.status === 204) {
-      return null;
+      return undefined as T;
     }
 
     if (!response.ok) {
       return (await handleFailedResponse(response, endpoint, options, hasRetried, () =>
         fetchWithAuth<T>(endpoint, options, true),
-      )) as T | null;
+      )) as T;
     }
 
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
-      return null;
+      return undefined as T;
     }
     return (await response.json()) as T;
   } catch (error) {
@@ -470,11 +478,11 @@ export const patientsService = {
     const params = new URLSearchParams();
     if (query?.search) params.append("search", query.search);
     if (query?.status) params.append("status", query.status);
-    return fetchWithAuth(`/api/patients?${params.toString()}`);
+    return fetchWithAuth<Patient[]>(`/api/patients?${params.toString()}`);
   },
-  get: (id: string) => fetchWithAuth(`/api/patients/${id}`),
+  get: (id: string) => fetchWithAuth<Patient>(`/api/patients/${id}`),
   create: (input: Omit<Patient, "id" | "recordNumber" | "lastVisit" | "status">) =>
-    fetchWithAuth("/api/patients", {
+    fetchWithAuth<Patient>("/api/patients", {
       method: "POST",
       body: JSON.stringify(input),
     }),
@@ -482,17 +490,16 @@ export const patientsService = {
     id: string,
     input: Partial<Omit<Patient, "id" | "recordNumber" | "lastVisit">> & { lastVisit?: string },
   ) =>
-    fetchWithAuth(`/api/patients/${id}`, {
+    fetchWithAuth<Patient>(`/api/patients/${id}`, {
       method: "PATCH",
       body: JSON.stringify(input),
     }),
-  remove: (id: string) => fetchWithAuth(`/api/patients/${id}`, { method: "DELETE" }),
-  history: (id: string) => fetchWithAuth(`/api/patients/${id}/history`),
+  remove: (id: string) => fetchWithAuth<null>(`/api/patients/${id}`, { method: "DELETE" }),
+  history: (id: string) => fetchWithAuth<PatientHistoryVisit[]>(`/api/patients/${id}/history`),
   aiSummary: (id: string, lang: "fr" | "en" | "ar" = "fr") =>
-    fetchWithAuth<PatientAiSummaryResponse>(
-      `/api/patients/${id}/ai-summary?lang=${lang}`,
-      { method: "POST" },
-    ),
+    fetchWithAuth<PatientAiSummaryResponse>(`/api/patients/${id}/ai-summary?lang=${lang}`, {
+      method: "POST",
+    }),
   listDocuments: (id: string) => fetchWithAuth<PatientDocument[]>(`/api/patients/${id}/documents`),
   uploadDocument: async (id: string, file: File, category = "other", notes?: string) => {
     const token = useAuth.getState().token;
@@ -512,7 +519,7 @@ export const patientsService = {
     return (await res.json()) as PatientDocument;
   },
   deleteDocument: (patientId: string, documentId: string) =>
-    fetchWithAuth(`/api/patients/${patientId}/documents/${documentId}`, { method: "DELETE" }),
+    fetchWithAuth<null>(`/api/patients/${patientId}/documents/${documentId}`, { method: "DELETE" }),
   documentDownloadUrl: (patientId: string, documentId: string) =>
     `${API_URL}/api/patients/${patientId}/documents/${documentId}/download`,
   addVisit: (
@@ -527,15 +534,15 @@ export const patientsService = {
       notes?: string;
     },
   ) =>
-    fetchWithAuth(`/api/patients/${id}/history`, {
+    fetchWithAuth<PatientHistoryVisit>(`/api/patients/${id}/history`, {
       method: "POST",
       body: JSON.stringify(visit),
     }),
 };
 
 export const doctorsService = {
-  list: () => fetchWithAuth("/api/doctors"),
-  get: (id: string) => fetchWithAuth(`/api/doctors/${id}`),
+  list: () => fetchWithAuth<Doctor[]>("/api/doctors"),
+  get: (id: string) => fetchWithAuth<Doctor>(`/api/doctors/${id}`),
   update: (
     id: string,
     input: {
@@ -544,7 +551,7 @@ export const doctorsService = {
       schedule?: { day: string; slots: string[] }[];
     },
   ) =>
-    fetchWithAuth(`/api/doctors/${id}`, {
+    fetchWithAuth<Doctor>(`/api/doctors/${id}`, {
       method: "PATCH",
       body: JSON.stringify(input),
     }),
@@ -553,7 +560,7 @@ export const doctorsService = {
 export const appointmentsService = {
   list: () => fetchWithAuth<Appointment[]>("/api/appointments"),
   create: (input: Omit<Appointment, "id" | "reminderSummary">) =>
-    fetchWithAuth("/api/appointments", {
+    fetchWithAuth<Appointment>("/api/appointments", {
       method: "POST",
       body: JSON.stringify(input),
     }),
@@ -589,20 +596,35 @@ export const appointmentsService = {
       "/api/admin/reminders/run",
       { method: "POST" },
     ),
-  reminderStatus: () => fetchWithAuth("/api/admin/reminders/status"),
+  reminderStatus: () => fetchWithAuth<ReminderChannelsStatus>("/api/admin/reminders/status"),
 };
 
 export const pipelineService = {
-  status: () => fetchWithAuth("/api/admin/pipeline/status"),
-  run: (dagId: string) => fetchWithAuth(`/api/admin/pipeline/run/${dagId}`, { method: "POST" }),
+  status: () => fetchWithAuth<PipelineStatusResponse>("/api/admin/pipeline/status"),
+  run: (dagId: string) =>
+    fetchWithAuth<{
+      dagId: string;
+      runId: string;
+      status: string;
+      metrics: Record<string, unknown>;
+    }>(`/api/admin/pipeline/run/${dagId}`, { method: "POST" }),
 };
 
 export const analyticsService = {
-  kpis: () => fetchWithAuth("/api/analytics/kpis"),
+  kpis: () =>
+    fetchWithAuth<{
+      patientsToday: number;
+      patientsTrend: number;
+      occupancy: number;
+      occupancyCapacity: number;
+      appointments: number;
+      appointmentsCapacity: number;
+      criticalAlerts: number;
+    }>("/api/analytics/kpis"),
   monthlyRevenue: (period: "3m" | "6m" | "12m" = "6m") =>
-    fetchWithAuth(`/api/analytics/revenue?period=${period}`),
-  admissionsByDept: () => fetchWithAuth("/api/analytics/admissions-dept"),
-  satisfaction: () => fetchWithAuth("/api/analytics/satisfaction"),
+    fetchWithAuth<KpiPoint[]>(`/api/analytics/revenue?period=${period}`),
+  admissionsByDept: () => fetchWithAuth<KpiPoint[]>("/api/analytics/admissions-dept"),
+  satisfaction: () => fetchWithAuth<KpiPoint[]>("/api/analytics/satisfaction"),
   exportExcel: async (period: "3m" | "6m" | "12m" = "6m") => {
     const blob = await fetchBlobWithAuth(`/api/analytics/export/excel?period=${period}`);
     const url = URL.createObjectURL(blob);
@@ -624,9 +646,9 @@ export const analyticsService = {
 };
 
 export const mlService = {
-  predict7d: () => fetchWithAuth("/api/ml/predict-7d"),
-  predict30d: () => fetchWithAuth("/api/ml/predict-30d"),
-  metrics: () => fetchWithAuth("/api/ml/metrics"),
+  predict7d: () => fetchWithAuth<MlForecastResponse>("/api/ml/predict-7d"),
+  predict30d: () => fetchWithAuth<MlForecastResponse>("/api/ml/predict-30d"),
+  metrics: () => fetchWithAuth<MlMetricsResponse>("/api/ml/metrics"),
   noshowRisk: (params?: {
     horizonDays?: number;
     minRisk?: number;
@@ -641,14 +663,12 @@ export const mlService = {
     if (params?.limit != null) q.set("limit", String(params.limit));
     if (params?.offset != null) q.set("offset", String(params.offset));
     const qs = q.toString();
-    return fetchWithAuth<NoShowRiskResponse>(
-      `/api/ml/noshow-risk${qs ? `?${qs}` : ""}`,
-    );
+    return fetchWithAuth<NoShowRiskResponse>(`/api/ml/noshow-risk${qs ? `?${qs}` : ""}`);
   },
 };
 
 export const alertsService = {
-  list: () => fetchWithAuth("/api/alerts"),
+  list: () => fetchWithAuth<Alert[]>("/api/alerts"),
 };
 
 export const notificationsService = {

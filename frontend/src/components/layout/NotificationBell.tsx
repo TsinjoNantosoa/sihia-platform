@@ -57,10 +57,7 @@ export function NotificationBell() {
   const items = useMemo(() => inbox.data?.items ?? [], [inbox.data?.items]);
 
   const badgeCount = useMemo(
-    () =>
-      items.filter(
-        (a) => (a.level === "critical" || a.level === "warning") && !a.read,
-      ).length,
+    () => items.filter((a) => (a.level === "critical" || a.level === "warning") && !a.read).length,
     [items],
   );
 
@@ -97,9 +94,13 @@ export function NotificationBell() {
         <DropdownMenuSeparator className="m-0" />
         <div className="max-h-80 overflow-y-auto">
           {inbox.isLoading ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+              {t("common.loading")}
+            </p>
           ) : items.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">{t("notif.empty")}</p>
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+              {t("notif.empty")}
+            </p>
           ) : (
             <ul className="divide-y divide-border">
               {items.slice(0, 8).map((a) => {
@@ -117,13 +118,19 @@ export function NotificationBell() {
                         >
                           {a.title}
                         </p>
-                        {!a.read ? <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" /> : null}
+                        {!a.read ? (
+                          <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
+                        ) : null}
                       </div>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{a.description}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                        {a.description}
+                      </p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
                         <span>{a.area}</span>
                         <span aria-hidden>·</span>
-                        <span className="normal-case tracking-normal">{formatAlertTime(a.createdAt)}</span>
+                        <span className="normal-case tracking-normal">
+                          {formatAlertTime(a.createdAt)}
+                        </span>
                       </div>
                       {destination ? (
                         <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
@@ -135,7 +142,13 @@ export function NotificationBell() {
                   </>
                 );
                 return (
-                  <li key={a.id} className={cn("transition-colors hover:bg-muted/50", !a.read && "bg-primary-soft/40")}>
+                  <li
+                    key={a.id}
+                    className={cn(
+                      "transition-colors hover:bg-muted/50",
+                      !a.read && "bg-primary-soft/40",
+                    )}
+                  >
                     {destination ? (
                       <a
                         href={destination.href}
@@ -146,7 +159,11 @@ export function NotificationBell() {
                         {content}
                       </a>
                     ) : (
-                      <button type="button" onClick={() => handleAlertOpen(a)} className="flex w-full gap-3 px-3 py-3 text-left">
+                      <button
+                        type="button"
+                        onClick={() => handleAlertOpen(a)}
+                        className="flex w-full gap-3 px-3 py-3 text-left"
+                      >
                         {content}
                       </button>
                     )}

@@ -89,11 +89,15 @@ export function PatientDocumentsPanel({ patientId }: { patientId: string }) {
       ) : (
         <ul className="divide-y divide-border">
           {docs.data.map((doc) => (
-            <li key={doc.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+            <li
+              key={doc.id}
+              className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
+            >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{doc.filename}</p>
                 <p className="text-xs text-muted-foreground">
-                  {doc.category} · {Math.round(doc.sizeBytes / 1024)} Ko · {doc.uploadedAt.slice(0, 16)}
+                  {doc.category} · {Math.round(doc.sizeBytes / 1024)} Ko ·{" "}
+                  {doc.uploadedAt.slice(0, 16)}
                 </p>
               </div>
               <div className="flex gap-2">

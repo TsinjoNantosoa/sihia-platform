@@ -187,62 +187,64 @@ SMTP_HOST=...
 SMS_MODE=twilio   # ou log
 OPENAI_API_KEY=   # optionnel chatbot / résumé
 ML_USE_PROPHET=true
-CHATBOT_API_TOKEN=<secret aligné front>
+# Secret serveur uniquement (embeds). L'UI web utilise le JWT de session.
+CHATBOT_API_TOKEN=<secret fort, jamais exposé au front>
 ```
 
-### Frontend (`frontend/.env` build)
+### Frontend (`frontend/.env` / Vercel build)
 
 ```env
 VITE_API_URL=https://api.votredomaine.tld
 VITE_USE_MOCKS=false
-VITE_CHATBOT_API_TOKEN=<même secret>
+VITE_CLIENT_ID=sihia
 ```
 
+**Ne jamais** mettre de secret dans une variable `VITE_*` (embarqué dans le JS public).  
 **Ne jamais committer** `.env`, clés API, dumps patients réels.
+
+> **Rotation :** si un `VITE_CHATBOT_API_TOKEN` ou un token a été commités historiquement, régénérez `CHATBOT_API_TOKEN` côté backend.
 
 ---
 
 ## 9. Déploiement frontend sur Vercel
 
-Le frontend est **TanStack Start (Vite)**, pas Next.js. Un preset « Next.js » sur Vercel échoue avec `No Next.js version detected`.
+Le frontend est **TanStack Start (Vite) + Nitro**, pas Next.js. Un preset « Next.js » échoue avec `No Next.js version detected`.
 
-### Configuration projet Vercel (dashboard)
+### Configuration projet Vercel (dashboard) — recommandé
 
 | Réglage | Valeur |
 |---|---|
-| **Root Directory** | `frontend` (recommandé) **ou** racine du monorepo avec `vercel.json` |
-| **Framework Preset** | **Other** / laisser `null` (ne pas choisir Next.js) |
-| **Build Command** | `npm run build` (si Root = `frontend`) |
-| **Output Directory** | `.vercel/output` (sortie Nitro Build Output API) |
+| **Root Directory** | `frontend` |
+| **Framework Preset** | **Other** (`null`) — pas Next.js |
 | **Install Command** | `npm ci` |
+| **Build Command** | `npm run build` |
+| **Output** | Nitro écrit `.vercel/output` (Build Output API) — ne pas forcer `dist` |
 
-Fichiers déjà dans le repo :
+Fichiers :
 
-- [`vercel.json`](../vercel.json) — monorepo (install/build dans `frontend/`)
 - [`frontend/vercel.json`](../frontend/vercel.json) — si Root Directory = `frontend`
+- [`vercel.json`](../vercel.json) — fallback monorepo (Root = dépôt)
 - [`frontend/vite.config.ts`](../frontend/vite.config.ts) — Nitro `preset: "vercel"` quand `VERCEL=1`
 
 ### Variables d’environnement Vercel (Production + Preview)
 
-```env
-VITE_API_URL=https://<url-api-backend-publique>
-VITE_USE_MOCKS=false
-VITE_CHATBOT_API_TOKEN=<secret aligné backend>
-```
+| Variable | Exemple | Notes |
+|---|---|---|
+| `VITE_API_URL` | `https://api.votredomaine.tld` | URL HTTPS publique du backend FastAPI |
+| `VITE_USE_MOCKS` | `false` | Ignoré en prod même si `true` |
+| `VITE_CLIENT_ID` | `sihia` | Slug branding chatbot (non secret) |
 
-Sans `VITE_API_URL` pointant vers une API HTTPS joignable, le front se déploie mais le login / les données échouent.
-
-### Backend
-
-Vercel héberge **uniquement le frontend**. Déployer FastAPI ailleurs (Railway, Render, Fly.io, VM Docker) et autoriser l’origine Vercel dans `CORS_ORIGINS`.
+Côté **backend** (hors Vercel) : `CORS_ORIGINS` doit inclure le domaine Vercel ; `CHATBOT_API_TOKEN` reste serveur-only.
 
 ### Rebuild local (vérif sortie Vercel)
 
 ```bash
 cd frontend
-$env:NITRO_PRESET='vercel'   # PowerShell
+# PowerShell
+$env:NITRO_PRESET='vercel'
+npm ci
 npm run build
-# doit produire frontend/.vercel/output/{config.json,static,functions}
+# doit produire .vercel/output/{config.json,static,functions}
 ```
 
 ---

@@ -13,7 +13,10 @@ export function I18nHydrator({ children }: { children: React.ReactNode }) {
 
   if (!hasHydrated) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-background" aria-busy="true">
+      <div
+        className="flex min-h-[100dvh] items-center justify-center bg-background"
+        aria-busy="true"
+      >
         <p className="text-sm text-muted-foreground">Chargement…</p>
       </div>
     );

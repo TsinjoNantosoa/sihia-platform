@@ -156,7 +156,10 @@ function ResetPasswordPage() {
               {loading ? <Loader2 className="size-4 animate-spin" /> : null}
               {t("auth.verifyCode")}
             </button>
-            <Link to="/forgot-password" className="text-center text-sm text-primary hover:underline">
+            <Link
+              to="/forgot-password"
+              className="text-center text-sm text-primary hover:underline"
+            >
               {t("auth.requestNewCode")}
             </Link>
           </form>

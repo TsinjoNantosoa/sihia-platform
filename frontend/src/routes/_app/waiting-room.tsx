@@ -29,6 +29,7 @@ function WaitingRoomPage() {
   const callNext = useMutation({
     mutationFn: () => waitingRoomService.callNext(),
     onSuccess: (data) => {
+      if (!data?.message) return;
       toast.success(data.message);
       void qc.invalidateQueries({ queryKey: ["waiting-room"] });
       void qc.invalidateQueries({ queryKey: ["appointments"] });
@@ -67,9 +68,21 @@ function WaitingRoomPage() {
         <Stat label={t("waiting.statUpcoming")} value={data.counts.upcoming} />
       </div>
 
-      <QueueSection title={t("waiting.queueWaiting")} items={data.waiting} empty={t("waiting.emptyWaiting")} />
-      <QueueSection title={t("waiting.queueInProgress")} items={data.inProgress} empty={t("waiting.emptyInProgress")} />
-      <QueueSection title={t("waiting.queueUpcoming")} items={data.upcoming} empty={t("waiting.emptyUpcoming")} />
+      <QueueSection
+        title={t("waiting.queueWaiting")}
+        items={data.waiting}
+        empty={t("waiting.emptyWaiting")}
+      />
+      <QueueSection
+        title={t("waiting.queueInProgress")}
+        items={data.inProgress}
+        empty={t("waiting.emptyInProgress")}
+      />
+      <QueueSection
+        title={t("waiting.queueUpcoming")}
+        items={data.upcoming}
+        empty={t("waiting.emptyUpcoming")}
+      />
     </div>
   );
 }
@@ -110,7 +123,10 @@ function QueueSection({
       ) : (
         <ul className="divide-y divide-border">
           {items.map((item) => (
-            <li key={item.appointmentId} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+            <li
+              key={item.appointmentId}
+              className="flex flex-wrap items-center justify-between gap-2 px-5 py-3"
+            >
               <div>
                 <p className="text-sm font-semibold">{item.patientName}</p>
                 <p className="text-xs text-muted-foreground">

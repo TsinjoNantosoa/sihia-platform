@@ -78,7 +78,11 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
         <CommandEmpty>{t("search.empty")}</CommandEmpty>
         <CommandGroup heading={t("search.nav")}>
           {NAV_ITEMS.map((item) => (
-            <CommandItem key={item.href} value={`${t(item.labelKey)} ${item.href}`} onSelect={() => go(item.href)}>
+            <CommandItem
+              key={item.href}
+              value={`${t(item.labelKey)} ${item.href}`}
+              onSelect={() => go(item.href)}
+            >
               <item.icon className="mr-2 size-4" aria-hidden />
               {t(item.labelKey)}
             </CommandItem>
@@ -90,7 +94,11 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
             {canPatients && patients.length > 0 ? (
               <CommandGroup heading={t("search.patients")}>
                 {patients.map((p) => (
-                  <CommandItem key={p.id} value={`${p.title} ${p.subtitle}`} onSelect={() => go(p.href)}>
+                  <CommandItem
+                    key={p.id}
+                    value={`${p.title} ${p.subtitle}`}
+                    onSelect={() => go(p.href)}
+                  >
                     <Users className="mr-2 size-4" aria-hidden />
                     <div className="flex flex-col">
                       <span>{p.title}</span>
@@ -103,7 +111,11 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
             {canDoctors && doctors.length > 0 ? (
               <CommandGroup heading={t("search.doctors")}>
                 {doctors.map((d) => (
-                  <CommandItem key={d.id} value={`${d.title} ${d.subtitle}`} onSelect={() => go(d.href)}>
+                  <CommandItem
+                    key={d.id}
+                    value={`${d.title} ${d.subtitle}`}
+                    onSelect={() => go(d.href)}
+                  >
                     <Stethoscope className="mr-2 size-4" aria-hidden />
                     <div className="flex flex-col">
                       <span>{d.title}</span>
@@ -116,7 +128,11 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
             {canAppts && appointments.length > 0 ? (
               <CommandGroup heading={t("search.appointments")}>
                 {appointments.map((a) => (
-                  <CommandItem key={a.id} value={`${a.title} ${a.subtitle}`} onSelect={() => go(a.href)}>
+                  <CommandItem
+                    key={a.id}
+                    value={`${a.title} ${a.subtitle}`}
+                    onSelect={() => go(a.href)}
+                  >
                     <CalendarDays className="mr-2 size-4" aria-hidden />
                     <div className="flex flex-col">
                       <span>{a.title}</span>

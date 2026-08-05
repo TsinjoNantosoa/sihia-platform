@@ -8,7 +8,17 @@ import { PipelineAdminPanel } from "@/components/shared/PipelineAdminPanel";
 import { ReminderChannelsBanner } from "@/components/shared/ReminderChannelsBanner";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { useAuth } from "@/lib/auth/store";
-import { Bell, CircleHelp, Globe, User, Building, LogOut, Shield, Database, Palette } from "lucide-react";
+import {
+  Bell,
+  CircleHelp,
+  Globe,
+  User,
+  Building,
+  LogOut,
+  Shield,
+  Database,
+  Palette,
+} from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { appointmentsService, authService, notificationsService } from "@/lib/api/services";
 import { toast } from "sonner";

@@ -35,6 +35,17 @@ export interface PatientDocument {
   downloadUrl: string;
 }
 
+export interface PatientHistoryVisit {
+  id: string;
+  date: string;
+  reason: string;
+  doctorName: string;
+  specialty: string;
+  diagnosis: string;
+  treatment?: string;
+  notes?: string;
+}
+
 export interface Doctor {
   id: string;
   firstName: string;
@@ -50,12 +61,7 @@ export interface Doctor {
 }
 
 export type AppointmentStatus =
-  | "scheduled"
-  | "confirmed"
-  | "arrived"
-  | "completed"
-  | "cancelled"
-  | "noshow";
+  "scheduled" | "confirmed" | "arrived" | "completed" | "cancelled" | "noshow";
 
 export type ReminderChannelStatus = "none" | "sent" | "failed";
 

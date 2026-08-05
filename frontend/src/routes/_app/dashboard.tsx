@@ -155,102 +155,118 @@ function DashboardPage() {
       ) : null}
 
       {/* Chart + Alerts */}
-      <div
-        className={`grid grid-cols-1 gap-4 ${canMl ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}
-      >
+      <div className={`grid grid-cols-1 gap-4 ${canMl ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}>
         {/* Forecast chart */}
         {canMl ? (
-        <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-border p-5">
-            <div className="flex items-center gap-2">
-              <Activity className="size-4 text-primary" />
-              <h2 className="text-sm font-semibold">{t("dash.predictionTitle")}</h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-sm bg-muted-foreground/40" />
-                {t("dash.predictionLegendHist")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-sm bg-primary" />
-                {t("dash.predictionLegendForecast")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-sm bg-primary/30" />
-                {t("dash.predictionLegendBand")}
-              </span>
-              {prediction.data ? (
-                <span className="rounded-full bg-muted px-2 py-0.5 font-semibold normal-case text-foreground">
-                  {formatMlConfidence(prediction.data.confidence)}
+          <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:col-span-2">
+            <div className="flex items-center justify-between border-b border-border p-5">
+              <div className="flex items-center gap-2">
+                <Activity className="size-4 text-primary" />
+                <h2 className="text-sm font-semibold">{t("dash.predictionTitle")}</h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-sm bg-muted-foreground/40" />
+                  {t("dash.predictionLegendHist")}
                 </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-sm bg-primary" />
+                  {t("dash.predictionLegendForecast")}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-sm bg-primary/30" />
+                  {t("dash.predictionLegendBand")}
+                </span>
+                {prediction.data ? (
+                  <span className="rounded-full bg-muted px-2 py-0.5 font-semibold normal-case text-foreground">
+                    {formatMlConfidence(prediction.data.confidence)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            {prediction.data ? <MlForecastMeta data={prediction.data} compact /> : null}
+            <div className="h-72 p-4">
+              {prediction.isLoading ? (
+                <LoadingState />
+              ) : prediction.data ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={prediction.data.points}
+                    margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="dashBandFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.18} />
+                        <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--color-border)"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke="var(--color-muted-foreground)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => format(parseISO(v), "dd/MM")}
+                    />
+                    <YAxis
+                      stroke="var(--color-muted-foreground)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "var(--color-card)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                    />
+                    <ReferenceLine
+                      x={prediction.data.points.find((p) => p.actual && !p.forecast)?.date}
+                      stroke="var(--color-border)"
+                      strokeDasharray="4 4"
+                      label={{
+                        value: t("common.today"),
+                        fontSize: 10,
+                        fill: "var(--color-muted-foreground)",
+                      }}
+                    />
+                    <Area type="monotone" dataKey="upper" stroke="none" fill="url(#dashBandFill)" />
+                    <Area type="monotone" dataKey="lower" stroke="none" fill="var(--color-card)" />
+                    <Line
+                      type="monotone"
+                      dataKey="actual"
+                      stroke="var(--color-muted-foreground)"
+                      strokeWidth={2.5}
+                      dot={{ r: 2 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="forecast"
+                      stroke="var(--color-primary)"
+                      strokeWidth={2.5}
+                      strokeDasharray="6 4"
+                      dot={{ r: 2 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
               ) : null}
             </div>
-          </div>
-          {prediction.data ? <MlForecastMeta data={prediction.data} compact /> : null}
-          <div className="h-72 p-4">
-            {prediction.isLoading ? (
-              <LoadingState />
-            ) : prediction.data ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={prediction.data.points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="dashBandFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.18} />
-                      <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    stroke="var(--color-muted-foreground)"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => format(parseISO(v), "dd/MM")}
-                  />
-                  <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--color-card)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                  />
-                  <ReferenceLine
-                    x={prediction.data.points.find((p) => p.actual && !p.forecast)?.date}
-                    stroke="var(--color-border)"
-                    strokeDasharray="4 4"
-                    label={{ value: t("common.today"), fontSize: 10, fill: "var(--color-muted-foreground)" }}
-                  />
-                  <Area type="monotone" dataKey="upper" stroke="none" fill="url(#dashBandFill)" />
-                  <Area type="monotone" dataKey="lower" stroke="none" fill="var(--color-card)" />
-                  <Line
-                    type="monotone"
-                    dataKey="actual"
-                    stroke="var(--color-muted-foreground)"
-                    strokeWidth={2.5}
-                    dot={{ r: 2 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="forecast"
-                    stroke="var(--color-primary)"
-                    strokeWidth={2.5}
-                    strokeDasharray="6 4"
-                    dot={{ r: 2 }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
+            {prediction.data?.recommendation ? (
+              <div className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">
+                  {t("dash.predictionRecommendation")} :{" "}
+                </span>
+                {prediction.data.recommendation}
+              </div>
             ) : null}
           </div>
-          {prediction.data?.recommendation ? (
-            <div className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">{t("dash.predictionRecommendation")} : </span>
-              {prediction.data.recommendation}
-            </div>
-          ) : null}
-        </div>
         ) : null}
 
         {/* Alerts */}
@@ -300,7 +316,10 @@ function DashboardPage() {
                       <span>{a.area}</span>
                       <span>•</span>
                       <span>
-                        {new Date(a.createdAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
+                        {new Date(a.createdAt).toLocaleTimeString(locale, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
                       {a.action?.href ? (
                         <>

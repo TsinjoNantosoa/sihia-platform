@@ -1,22 +1,14 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from tests.helpers_patients import auth_headers, ensure_patient_id
 
 client = TestClient(app)
 
 
-def _headers() -> dict[str, str]:
-    res = client.post("/api/auth/login", json={"email": "admin@sihia.health", "password": "admin123"})
-    return {"Authorization": f"Bearer {res.json()['access_token']}"}
-
-
-def _patient_id(headers: dict) -> str:
-    return client.get("/api/patients", headers=headers).json()[0]["id"]
-
-
 def test_enrich_patient_fields() -> None:
-    headers = _headers()
-    pid = _patient_id(headers)
+    headers = auth_headers(client)
+    pid = ensure_patient_id(client, headers)
     res = client.patch(
         f"/api/patients/{pid}",
         headers=headers,
@@ -34,8 +26,8 @@ def test_enrich_patient_fields() -> None:
 
 
 def test_document_upload_list_download_delete() -> None:
-    headers = _headers()
-    pid = _patient_id(headers)
+    headers = auth_headers(client)
+    pid = ensure_patient_id(client, headers)
     files = {"file": ("ordo.txt", b"Ordonnance demo SIH IA", "text/plain")}
     data = {"category": "ordonnance", "notes": "Demo"}
     up = client.post(f"/api/patients/{pid}/documents", headers=headers, files=files, data=data)

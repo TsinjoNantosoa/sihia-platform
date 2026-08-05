@@ -34,6 +34,8 @@ def _try_prophet_forecast(
     daily: list[tuple[date, int]],
     horizon: int,
 ) -> tuple[list[int], float] | None:
+    if not prophet_enabled():
+        return None
     try:
         import pandas as pd
         from prophet import Prophet
@@ -43,19 +45,22 @@ def _try_prophet_forecast(
     if len(daily) < 7:
         return None
 
-    frame = pd.DataFrame({"ds": [d.isoformat() for d, _ in daily], "y": [c for _, c in daily]})
-    model = Prophet(
-        daily_seasonality=False,
-        weekly_seasonality=True,
-        yearly_seasonality=False,
-    )
-    model.fit(frame)
-    future = model.make_future_dataframe(periods=horizon)
-    forecast = model.predict(future)
-    tail = forecast.tail(horizon)["yhat"].tolist()
-    values = [max(0, round(v)) for v in tail]
-    confidence = 0.9 if len(daily) >= 14 else 0.82
-    return values, confidence
+    try:
+        frame = pd.DataFrame({"ds": [d.isoformat() for d, _ in daily], "y": [c for _, c in daily]})
+        model = Prophet(
+            daily_seasonality=False,
+            weekly_seasonality=True,
+            yearly_seasonality=False,
+        )
+        model.fit(frame)
+        future = model.make_future_dataframe(periods=horizon)
+        forecast = model.predict(future)
+        tail = forecast.tail(horizon)["yhat"].tolist()
+        values = [max(0, round(v)) for v in tail]
+        confidence = 0.9 if len(daily) >= 14 else 0.82
+        return values, confidence
+    except Exception:
+        return None
 
 
 def _mae(actual: list[int], predicted: list[int]) -> float:

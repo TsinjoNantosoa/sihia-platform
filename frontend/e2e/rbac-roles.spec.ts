@@ -9,7 +9,9 @@ test.describe("RBAC par rôle (E2E UI)", () => {
     await loginViaUi(page, "admin@sihia.health", "admin123");
     await page.getByRole("link", { name: /Contrôle d'accès|Access Control/i }).click();
     await expect(page).toHaveURL(/\/rbac/);
-    await expect(page.getByRole("button", { name: /Ajouter un utilisateur|Add user/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Ajouter un utilisateur|Add user/i }),
+    ).toBeVisible();
   });
 
   test("staff : analytics et RBAC masqués dans le menu", async ({ page }) => {

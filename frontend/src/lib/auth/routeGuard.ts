@@ -36,12 +36,12 @@ function waitForAuthHydration(timeoutMs = 5000): Promise<void> {
 
   return new Promise((resolve) => {
     let settled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timerHolder: { id?: ReturnType<typeof setTimeout> } = {};
 
     const finish = () => {
       if (settled) return;
       settled = true;
-      if (timer) clearTimeout(timer);
+      if (timerHolder.id) clearTimeout(timerHolder.id);
       unsubStore();
       unsubPersist?.();
       resolve();
@@ -52,7 +52,7 @@ function waitForAuthHydration(timeoutMs = 5000): Promise<void> {
       if (next.hasHydrated) finish();
     });
 
-    timer = setTimeout(finish, timeoutMs);
+    timerHolder.id = setTimeout(finish, timeoutMs);
   });
 }
 

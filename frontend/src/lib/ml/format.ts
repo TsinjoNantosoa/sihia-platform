@@ -16,7 +16,9 @@ export function formatMlConfidence(confidence: number): string {
   return `${Math.round(confidence * 100)}%`;
 }
 
-export function mlForecastSummary(data: Pick<MlForecastResponse, "model" | "confidence" | "source" | "generatedAt">) {
+export function mlForecastSummary(
+  data: Pick<MlForecastResponse, "model" | "confidence" | "source" | "generatedAt">,
+) {
   return {
     model: formatMlModelLabel(data.model),
     confidence: formatMlConfidence(data.confidence),

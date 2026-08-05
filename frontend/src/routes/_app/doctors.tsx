@@ -12,7 +12,12 @@ import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { doctorsService } from "@/lib/api/services";
 import type { Doctor } from "@/lib/api/types";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -40,10 +45,7 @@ function DoctorsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title={t("doctors.title")}
-        subtitle={t("doctors.subtitle")}
-      />
+      <PageHeader title={t("doctors.title")} subtitle={t("doctors.subtitle")} />
       <p className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
         {t("doctors.syncHint")}
       </p>
@@ -225,14 +227,18 @@ function EditDoctorDialog({
                 <label
                   key={day}
                   className={`flex cursor-pointer flex-col items-center rounded-lg border px-2 py-2 text-xs ${
-                    activeDays[day] ? "border-primary bg-primary-soft text-primary" : "border-border"
+                    activeDays[day]
+                      ? "border-primary bg-primary-soft text-primary"
+                      : "border-border"
                   }`}
                 >
                   <input
                     type="checkbox"
                     className="sr-only"
                     checked={!!activeDays[day]}
-                    onChange={(e) => setActiveDays((prev) => ({ ...prev, [day]: e.target.checked }))}
+                    onChange={(e) =>
+                      setActiveDays((prev) => ({ ...prev, [day]: e.target.checked }))
+                    }
                   />
                   <span className="font-semibold">{day}</span>
                 </label>

@@ -56,7 +56,9 @@ export function KpiCard({
           <div
             className={cn(
               "flex size-8 items-center justify-center rounded-lg",
-              variant === "default" ? "bg-primary-soft text-primary" : `bg-${variant}-soft ${variantText[variant]}`,
+              variant === "default"
+                ? "bg-primary-soft text-primary"
+                : `bg-${variant}-soft ${variantText[variant]}`,
             )}
           >
             {icon}
@@ -64,7 +66,9 @@ export function KpiCard({
         ) : null}
       </div>
       <div className="mt-3 flex items-baseline gap-2">
-        <span className={cn("text-3xl font-semibold tabular-nums tracking-tight", variantText[variant])}>
+        <span
+          className={cn("text-3xl font-semibold tabular-nums tracking-tight", variantText[variant])}
+        >
           {value}
         </span>
         {unit ? <span className="text-base text-muted-foreground">{unit}</span> : null}

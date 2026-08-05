@@ -8,10 +8,7 @@ import { LoadingState, EmptyState } from "@/components/shared/States";
 import { appointmentsService, mlService } from "@/lib/api/services";
 import type { NoShowRiskItem, NoShowRiskLevel } from "@/lib/api/types";
 import { useT } from "@/lib/i18n/store";
-import {
-  formatNoshowPercent,
-  noshowRiskBadgeClass,
-} from "@/lib/ml/noshowFormat";
+import { formatNoshowPercent, noshowRiskBadgeClass } from "@/lib/ml/noshowFormat";
 
 type FilterLevel = "all" | NoShowRiskLevel;
 
@@ -31,7 +28,8 @@ export function NoShowRiskPanel() {
     queryFn: () =>
       mlService.noshowRisk({
         horizonDays: 14,
-        minRisk: filter === "all" ? 0.25 : filter === "high" ? 0.45 : filter === "medium" ? 0.25 : 0,
+        minRisk:
+          filter === "all" ? 0.25 : filter === "high" ? 0.45 : filter === "medium" ? 0.25 : 0,
         riskLevel: filter === "all" ? undefined : filter,
         limit: 40,
       }),
@@ -71,7 +69,11 @@ export function NoShowRiskPanel() {
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">{t("prediction.noshow.subtitle")}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("prediction.noshow.filterAria")}>
+        <div
+          className="flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={t("prediction.noshow.filterAria")}
+        >
           {(["all", "high", "medium", "low"] as FilterLevel[]).map((level) => (
             <button
               key={level}
@@ -84,13 +86,9 @@ export function NoShowRiskPanel() {
                   : "border-border bg-card text-muted-foreground hover:text-foreground"
               }`}
             >
-              {level === "all"
-                ? t("prediction.noshow.filterAll")
-                : riskLabel(t, level)}
+              {level === "all" ? t("prediction.noshow.filterAll") : riskLabel(t, level)}
               {level !== "all" ? (
-                <span className="ml-1 opacity-80">
-                  ({data.summary[level]})
-                </span>
+                <span className="ml-1 opacity-80">({data.summary[level]})</span>
               ) : null}
             </button>
           ))}
@@ -98,10 +96,24 @@ export function NoShowRiskPanel() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 border-b border-border p-4 sm:grid-cols-4">
-        <Stat label={t("prediction.noshow.statHigh")} value={String(data.summary.high)} tone="destructive" />
-        <Stat label={t("prediction.noshow.statMedium")} value={String(data.summary.medium)} tone="warning" />
-        <Stat label={t("prediction.noshow.statAvg")} value={formatNoshowPercent(data.summary.avgRisk)} />
-        <Stat label={t("prediction.noshow.statFacility")} value={formatNoshowPercent(data.facilityNoshowRate)} />
+        <Stat
+          label={t("prediction.noshow.statHigh")}
+          value={String(data.summary.high)}
+          tone="destructive"
+        />
+        <Stat
+          label={t("prediction.noshow.statMedium")}
+          value={String(data.summary.medium)}
+          tone="warning"
+        />
+        <Stat
+          label={t("prediction.noshow.statAvg")}
+          value={formatNoshowPercent(data.summary.avgRisk)}
+        />
+        <Stat
+          label={t("prediction.noshow.statFacility")}
+          value={formatNoshowPercent(data.facilityNoshowRate)}
+        />
       </div>
 
       {items.length === 0 ? (
@@ -219,7 +231,9 @@ function NoShowRow({
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <BellRing className={`size-3.5 ${reminding ? "animate-pulse" : ""}`} aria-hidden />
-          {item.reminderSent ? t("prediction.noshow.alreadyReminded") : t("prediction.noshow.remind")}
+          {item.reminderSent
+            ? t("prediction.noshow.alreadyReminded")
+            : t("prediction.noshow.remind")}
         </button>
       </div>
     </li>

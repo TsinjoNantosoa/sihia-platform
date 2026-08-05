@@ -1,21 +1,21 @@
-import React from 'react'
-import { motion } from 'framer-motion'
+import React from "react";
+import { motion } from "framer-motion";
 
 type Suggestion = {
-  icon: string
-  label: string
-}
+  icon: string;
+  label: string;
+};
 
 type Props = {
-  suggestions: Suggestion[]
-  onSelect: (label: string) => void
-}
+  suggestions: Suggestion[];
+  onSelect: (label: string) => void;
+};
 
 export default function DynamicSuggestions({ suggestions, onSelect }: Props) {
-  if (!suggestions || suggestions.length === 0) return null
+  if (!suggestions || suggestions.length === 0) return null;
 
   return (
-    <motion.div 
+    <motion.div
       className="dynamic-suggestions"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -41,5 +41,5 @@ export default function DynamicSuggestions({ suggestions, onSelect }: Props) {
         ))}
       </div>
     </motion.div>
-  )
+  );
 }

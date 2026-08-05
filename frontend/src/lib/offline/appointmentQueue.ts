@@ -1,8 +1,5 @@
 export type OfflineAppointmentMutationKind =
-  | "appointment.status"
-  | "appointment.schedule"
-  | "appointment.cancel"
-  | "appointment.remind";
+  "appointment.status" | "appointment.schedule" | "appointment.cancel" | "appointment.remind";
 
 export type OfflineAppointmentMutation = {
   id: string;

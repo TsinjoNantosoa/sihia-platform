@@ -27,7 +27,9 @@ export function MlMetricsPanel({ data }: MlMetricsPanelProps) {
           <h2 className="text-sm font-semibold">{t("ml.metrics.title")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("ml.metrics.subtitle")}</p>
         </div>
-        <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusTone}`}>
+        <div
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusTone}`}
+        >
           <StatusIcon className="size-3.5" />
           {t(`ml.metrics.status.${data.status}`)}
         </div>
@@ -52,7 +54,9 @@ export function MlMetricsPanel({ data }: MlMetricsPanelProps) {
               <Target className="size-3" />
               {t("ml.metrics.mape")}
             </div>
-            <div className={`text-2xl font-semibold ${data.withinTarget ? "text-success" : "text-warning"}`}>
+            <div
+              className={`text-2xl font-semibold ${data.withinTarget ? "text-success" : "text-warning"}`}
+            >
               {data.mape.toFixed(1)}%
             </div>
             <div className="mt-1 text-xs text-muted-foreground">

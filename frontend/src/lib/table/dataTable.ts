@@ -89,9 +89,8 @@ export function loadTablePreferences<Key extends string>(
     if (parsed?.version !== PREFERENCES_VERSION || !Array.isArray(parsed.visibleColumns)) {
       return defaults;
     }
-    const visibleColumns = availableColumns.filter((column) =>
-      parsed.visibleColumns?.includes(column),
-    );
+    const visibleFromStorage = parsed.visibleColumns as Key[];
+    const visibleColumns = availableColumns.filter((column) => visibleFromStorage.includes(column));
     return {
       visibleColumns: visibleColumns.length ? visibleColumns : defaults.visibleColumns,
       dense: typeof parsed.dense === "boolean" ? parsed.dense : defaultDense,

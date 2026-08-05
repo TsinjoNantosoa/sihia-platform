@@ -13,10 +13,7 @@ export function PatientAiSummaryCard({ patientId }: { patientId: string }) {
 
   const mut = useMutation({
     mutationFn: () =>
-      patientsService.aiSummary(
-        patientId,
-        locale === "en" || locale === "ar" ? locale : "fr",
-      ),
+      patientsService.aiSummary(patientId, locale === "en" || locale === "ar" ? locale : "fr"),
     onSuccess: (data) => {
       setSummary(data);
       toast.success(t("patients.aiSummary.ok"));
@@ -38,7 +35,9 @@ export function PatientAiSummaryCard({ patientId }: { patientId: string }) {
             <h2 id="ai-summary-heading" className="text-sm font-semibold">
               {t("patients.aiSummary.title")}
             </h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t("patients.aiSummary.subtitle")}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t("patients.aiSummary.subtitle")}
+            </p>
           </div>
         </div>
         <button

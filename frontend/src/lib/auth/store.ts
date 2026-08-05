@@ -40,7 +40,7 @@ const parseJwt = (token: string) => {
         .atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch {
@@ -85,17 +85,18 @@ const buildSessionFromToken = (
 
 export const useAuth = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       refreshToken: null,
       permissions: [],
       isAuthenticated: false,
       hasHydrated: false,
-      setHasHydrated: (value) => set({ hasHydrated: value }),
-      setToken: (token) => set(buildSessionFromToken(token, useAuth.getState().refreshToken)),
-      setSession: (token, refreshToken) => set(buildSessionFromToken(token, refreshToken)),
-      login: async (email, password) => {
+      setHasHydrated: (value: boolean) => set({ hasHydrated: value }),
+      setToken: (token: string) => set(buildSessionFromToken(token, get().refreshToken)),
+      setSession: (token: string, refreshToken: string | null) =>
+        set(buildSessionFromToken(token, refreshToken)),
+      login: async (email: string, password: string): Promise<void> => {
         const USE_MOCKS = shouldUseMocks();
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedPassword = password;
@@ -108,13 +109,16 @@ export const useAuth = create<AuthState>()(
           });
 
           if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            const detail = err.detail;
+            const err = await res.json().catch(() => ({}) as Record<string, unknown>);
+            const detail = err.detail as unknown;
             const message =
               (typeof err.message === "string" && err.message) ||
               (typeof detail === "string" && detail) ||
-              (typeof detail === "object" && detail?.message) ||
-              err.code ||
+              (typeof detail === "object" &&
+                detail !== null &&
+                typeof (detail as { message?: unknown }).message === "string" &&
+                (detail as { message: string }).message) ||
+              (typeof err.code === "string" && err.code) ||
               `HTTP_${res.status}`;
             throw new Error(message);
           }
@@ -137,8 +141,11 @@ export const useAuth = create<AuthState>()(
               : email.includes("staff")
                 ? "staff"
                 : "doctor";
-          const name = email.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-          
+          const name = email
+            .split("@")[0]
+            .replace(/\./g, " ")
+            .replace(/\b\w/g, (c: string) => c.toUpperCase());
+
           set({
             token: "mock-jwt-" + Math.random().toString(36).slice(2),
             refreshToken: "mock-refresh-" + Math.random().toString(36).slice(2),
@@ -155,14 +162,25 @@ export const useAuth = create<AuthState>()(
           });
         }
       },
-      logout: () => set({ user: null, token: null, refreshToken: null, permissions: [], isAuthenticated: false }),
+      logout: () =>
+        set({
+          user: null,
+          token: null,
+          refreshToken: null,
+          permissions: [],
+          isAuthenticated: false,
+        }),
     }),
     {
       name: "sih-ia-auth",
       onRehydrateStorage: () => (state) => {
         if (state?.token && (!state.permissions || state.permissions.length === 0)) {
           const session = buildSessionFromToken(state.token, state.refreshToken, state.user?.email);
-          useAuth.setState(session);
+          state.token = session.token;
+          state.refreshToken = session.refreshToken;
+          state.permissions = session.permissions;
+          state.isAuthenticated = session.isAuthenticated;
+          state.user = session.user;
         }
         state?.setHasHydrated(true);
       },

@@ -14,7 +14,10 @@ type ReminderChannelsBannerProps = {
   showMailhogLink?: boolean;
 };
 
-export function ReminderChannelsBanner({ status, showMailhogLink = false }: ReminderChannelsBannerProps) {
+export function ReminderChannelsBanner({
+  status,
+  showMailhogLink = false,
+}: ReminderChannelsBannerProps) {
   const t = useT();
   const emailMode = channelModeLabel(status.email.mode, status.email.ready, t);
   const smsMode = channelModeLabel(status.sms.mode, status.sms.ready, t);

@@ -135,7 +135,9 @@ function LoginPage() {
                     type="button"
                     onClick={() => setLocale(l.code as Locale)}
                     className={`rounded px-1.5 py-0.5 text-[10px] uppercase ${
-                      locale === l.code ? "bg-primary-soft font-bold text-primary" : "hover:text-foreground"
+                      locale === l.code
+                        ? "bg-primary-soft font-bold text-primary"
+                        : "hover:text-foreground"
                     }`}
                   >
                     {l.code}
@@ -178,7 +180,10 @@ function LoginPage() {
                 { v: "<200ms", l: "Latence API" },
                 { v: "10k", l: "Patients simul." },
               ].map((s) => (
-                <div key={s.l} className="rounded-xl border border-white/15 bg-white/10 p-3 backdrop-blur">
+                <div
+                  key={s.l}
+                  className="rounded-xl border border-white/15 bg-white/10 p-3 backdrop-blur"
+                >
                   <div className="text-xl font-semibold">{s.v}</div>
                   <div className="text-[10px] uppercase tracking-wider opacity-80">{s.l}</div>
                 </div>

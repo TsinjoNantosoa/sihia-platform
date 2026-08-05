@@ -36,7 +36,7 @@ export function PipelineAdminPanel() {
     mutationFn: (dagId: string) => pipelineService.run(dagId),
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["pipeline-status"] });
-      toast.success(t("pipeline.toastOk").replace("{dag}", result.dagId ?? "pipeline"));
+      toast.success(t("pipeline.toastOk").replace("{dag}", result?.dagId ?? "pipeline"));
     },
     onError: () => toast.error(t("common.error")),
   });
@@ -53,14 +53,21 @@ export function PipelineAdminPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${overallTone}`}>
+      <div
+        className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${overallTone}`}
+      >
         <div className="flex items-center gap-2 text-sm font-semibold">
-          {data.status === "ok" ? <CheckCircle2 className="size-4" /> : <AlertTriangle className="size-4" />}
+          {data.status === "ok" ? (
+            <CheckCircle2 className="size-4" />
+          ) : (
+            <AlertTriangle className="size-4" />
+          )}
           {t(`pipeline.status.${data.status}`)}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>
-            {t("pipeline.mlFeatures")}: <strong className="text-foreground">{data.mlFeaturesDays}</strong>
+            {t("pipeline.mlFeatures")}:{" "}
+            <strong className="text-foreground">{data.mlFeaturesDays}</strong>
           </span>
           <button
             type="button"

@@ -219,7 +219,8 @@ const fr: Dict = {
   "patients.aiSummary.subtitle": "Synthèse indicative (~5 lignes) pour le personnel soignant",
   "patients.aiSummary.generate": "Générer le résumé",
   "patients.aiSummary.refresh": "Actualiser",
-  "patients.aiSummary.hint": "Générez un résumé à partir de l'historique médical (aide à la décision).",
+  "patients.aiSummary.hint":
+    "Générez un résumé à partir de l'historique médical (aide à la décision).",
   "patients.aiSummary.ok": "Résumé généré",
   "patients.aiSummary.fail": "Impossible de générer le résumé",
   "patients.new": "Nouveau patient",
@@ -387,7 +388,8 @@ const fr: Dict = {
   "prediction.noshow.alreadyReminded": "Déjà rappelé",
   "prediction.noshow.remindOk": "Rappel envoyé",
   "prediction.noshow.remindFail": "Échec de l'envoi du rappel",
-  "prediction.noshow.disclaimer": "Score indicatif d'aide à la décision. Ne remplace pas le jugement du personnel.",
+  "prediction.noshow.disclaimer":
+    "Score indicatif d'aide à la décision. Ne remplace pas le jugement du personnel.",
 
   "ml.meta.model": "Modèle",
   "ml.meta.confidence": "Confiance",
@@ -857,7 +859,8 @@ const en: Dict = {
   "prediction.noshow.alreadyReminded": "Already reminded",
   "prediction.noshow.remindOk": "Reminder sent",
   "prediction.noshow.remindFail": "Failed to send reminder",
-  "prediction.noshow.disclaimer": "Indicative decision-support score. Does not replace staff judgment.",
+  "prediction.noshow.disclaimer":
+    "Indicative decision-support score. Does not replace staff judgment.",
 
   "ml.meta.model": "Model",
   "ml.meta.confidence": "Confidence",

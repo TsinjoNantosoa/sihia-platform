@@ -31,22 +31,14 @@ export function EmptyState({
       </div>
       <div>
         <p className="text-sm font-medium text-foreground">{title ?? t("common.empty")}</p>
-        {description ? (
-          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-        ) : null}
+        {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
       </div>
       {action}
     </div>
   );
 }
 
-export function ErrorState({
-  message,
-  onRetry,
-}: {
-  message?: string;
-  onRetry?: () => void;
-}) {
+export function ErrorState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   const t = useT();
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">

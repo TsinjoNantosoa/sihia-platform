@@ -51,10 +51,9 @@ export async function parseApiError(response: Response): Promise<ParsedApiError>
           ? record.detail
           : undefined,
   };
-};
+}
 
-const currentPath = () =>
-  typeof window !== "undefined" ? window.location.pathname : "/";
+const currentPath = () => (typeof window !== "undefined" ? window.location.pathname : "/");
 
 /** Toast + redirection cohérents pour 401/403 (évite double traitement en aval). */
 export function handleAuthHttpError(

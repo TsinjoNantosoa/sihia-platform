@@ -86,14 +86,28 @@ function NotificationsPage() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("notif.center.filtersAria")}>
+      <div
+        className="flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label={t("notif.center.filtersAria")}
+      >
         <Filter className="size-4 text-muted-foreground" aria-hidden />
         {(["all", "critical", "warning", "info"] as LevelFilter[]).map((l) => (
-          <FilterChip key={l} active={level === l} onClick={() => setLevel(l)} label={t(`notif.center.level.${l}`)} />
+          <FilterChip
+            key={l}
+            active={level === l}
+            onClick={() => setLevel(l)}
+            label={t(`notif.center.level.${l}`)}
+          />
         ))}
         <span className="mx-1 h-4 w-px bg-border" aria-hidden />
         {(["all", "unread", "read"] as ReadFilter[]).map((r) => (
-          <FilterChip key={r} active={readFilter === r} onClick={() => setReadFilter(r)} label={t(`notif.center.read.${r}`)} />
+          <FilterChip
+            key={r}
+            active={readFilter === r}
+            onClick={() => setReadFilter(r)}
+            label={t(`notif.center.read.${r}`)}
+          />
         ))}
         {inbox.data ? (
           <span className="ml-auto text-xs text-muted-foreground">
@@ -177,12 +191,18 @@ function NotificationRow({
       <div
         className={cn(
           "mt-1.5 size-2 shrink-0 rounded-full",
-          item.level === "critical" ? "bg-destructive" : item.level === "warning" ? "bg-warning" : "bg-primary",
+          item.level === "critical"
+            ? "bg-destructive"
+            : item.level === "warning"
+              ? "bg-warning"
+              : "bg-primary",
         )}
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className={cn("text-sm font-semibold", item.level === "critical" && "text-destructive")}>
+          <p
+            className={cn("text-sm font-semibold", item.level === "critical" && "text-destructive")}
+          >
             {item.title}
           </p>
           {!item.read ? (

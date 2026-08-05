@@ -20,9 +20,7 @@ export function ThemeToggle({ variant = "compact" }: Props) {
       <button
         type="button"
         onClick={toggle}
-        aria-label={
-          resolved === "dark" ? t("settings.theme.toLight") : t("settings.theme.toDark")
-        }
+        aria-label={resolved === "dark" ? t("settings.theme.toLight") : t("settings.theme.toDark")}
         title={resolved === "dark" ? t("settings.theme.toLight") : t("settings.theme.toDark")}
         className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
@@ -42,11 +40,7 @@ export function ThemeToggle({ variant = "compact" }: Props) {
   ];
 
   return (
-    <div
-      className="flex flex-wrap gap-2"
-      role="radiogroup"
-      aria-label={t("settings.theme")}
-    >
+    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("settings.theme")}>
       {options.map((opt) => {
         const Icon = opt.icon;
         const active = mode === opt.id;

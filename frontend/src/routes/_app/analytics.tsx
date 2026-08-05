@@ -2,7 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 import { Download, FileText, FileSpreadsheet, Table } from "lucide-react";
 import { useT } from "@/lib/i18n/store";
@@ -26,10 +34,13 @@ export const Route = createFileRoute("/_app/analytics")({
 
 type Period = "3m" | "6m" | "12m";
 
-function exportCsv(filename: string, rows: Record<string, unknown>[]) {
+function exportCsv(filename: string, rows: Array<{ label: string; value: number }>) {
   if (!rows.length) return;
   const headers = Object.keys(rows[0]);
-  const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => r[h]).join(","))].join("\n");
+  const csv = [
+    headers.join(","),
+    ...rows.map((r) => headers.map((h) => r[h as keyof typeof r]).join(",")),
+  ].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -42,7 +53,10 @@ function exportCsv(filename: string, rows: Record<string, unknown>[]) {
 function AnalyticsPage() {
   const t = useT();
   const [period, setPeriod] = useState<Period>("6m");
-  const revenue = useQuery({ queryKey: ["revenue", period], queryFn: () => analyticsService.monthlyRevenue(period) });
+  const revenue = useQuery({
+    queryKey: ["revenue", period],
+    queryFn: () => analyticsService.monthlyRevenue(period),
+  });
   const admissions = useQuery({ queryKey: ["adm"], queryFn: analyticsService.admissionsByDept });
   const satisfaction = useQuery({ queryKey: ["sat"], queryFn: analyticsService.satisfaction });
 
@@ -87,7 +101,9 @@ function AnalyticsPage() {
                 <DropdownMenuItem onClick={() => analyticsService.exportExcel(period)}>
                   <FileSpreadsheet className="mr-2 size-4" /> Excel
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => revenue.data && exportCsv(`revenus-${period}.csv`, revenue.data)}>
+                <DropdownMenuItem
+                  onClick={() => revenue.data && exportCsv(`revenus-${period}.csv`, revenue.data)}
+                >
                   <Table className="mr-2 size-4" /> CSV
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -98,60 +114,191 @@ function AnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard label={t("analytics.avgStay")} value="4.2" unit="jours" hint="−0.3 vs M-1" />
-        <KpiCard label={t("analytics.satisfaction")} value="92" unit="%" variant="success" trend={{ value: 3.1, positive: true }} />
-        <KpiCard label={t("analytics.occupancy")} value="87.5" unit="%" variant="warning" progress={87.5} />
+        <KpiCard
+          label={t("analytics.satisfaction")}
+          value="92"
+          unit="%"
+          variant="success"
+          trend={{ value: 3.1, positive: true }}
+        />
+        <KpiCard
+          label={t("analytics.occupancy")}
+          value="87.5"
+          unit="%"
+          variant="warning"
+          progress={87.5}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard title={`${t("analytics.revenue")} (${period === "3m" ? "3 mois" : period === "6m" ? "6 mois" : "12 mois"})`}>
-          {revenue.isLoading ? <LoadingState /> : (
+        <ChartCard
+          title={`${t("analytics.revenue")} (${period === "3m" ? "3 mois" : period === "6m" ? "6 mois" : "12 mois"})`}
+        >
+          {revenue.isLoading ? (
+            <LoadingState />
+          ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={revenue.data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="label" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 12, fontSize: 12 }} />
-                <Line type="monotone" dataKey="value" stroke="var(--color-primary)" strokeWidth={2.5} dot={{ r: 3 }} />
+              <LineChart
+                data={revenue.data ?? []}
+                margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--color-border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  stroke="var(--color-muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="var(--color-muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--color-card)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: 12,
+                    fontSize: 12,
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="var(--color-primary)"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           )}
         </ChartCard>
         <ChartCard title={t("analytics.admissions")}>
-          {admissions.isLoading ? <LoadingState /> : (
+          {admissions.isLoading ? (
+            <LoadingState />
+          ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={admissions.data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="label" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 12, fontSize: 12 }} />
+              <BarChart
+                data={admissions.data ?? []}
+                margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--color-border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  stroke="var(--color-muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="var(--color-muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--color-card)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: 12,
+                    fontSize: 12,
+                  }}
+                />
                 <Bar dataKey="value" fill="var(--color-accent)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </ChartCard>
         <ChartCard title={t("analytics.satisfaction")}>
-          {satisfaction.isLoading ? <LoadingState /> : (
+          {satisfaction.isLoading ? (
+            <LoadingState />
+          ) : (
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={satisfaction.data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="label" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} domain={[70, 100]} />
-                <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 12, fontSize: 12 }} />
-                <Line type="monotone" dataKey="value" stroke="var(--color-success)" strokeWidth={2.5} dot={{ r: 3 }} />
+              <LineChart
+                data={satisfaction.data ?? []}
+                margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--color-border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  stroke="var(--color-muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="var(--color-muted-foreground)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={[70, 100]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--color-card)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: 12,
+                    fontSize: 12,
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="var(--color-success)"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           )}
         </ChartCard>
         <ChartCard title="Répartition par âge">
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={[
-              { label: "0-17", value: 18 }, { label: "18-34", value: 32 }, { label: "35-54", value: 41 },
-              { label: "55-74", value: 28 }, { label: "75+", value: 15 },
-            ]}>
+            <BarChart
+              data={[
+                { label: "0-17", value: 18 },
+                { label: "18-34", value: 32 },
+                { label: "35-54", value: 41 },
+                { label: "55-74", value: 28 },
+                { label: "75+", value: 15 },
+              ]}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis dataKey="label" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 12, fontSize: 12 }} />
+              <XAxis
+                dataKey="label"
+                stroke="var(--color-muted-foreground)"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="var(--color-muted-foreground)"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--color-card)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+              />
               <Bar dataKey="value" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

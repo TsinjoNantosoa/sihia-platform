@@ -1,7 +1,19 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Phone, Mail, MapPin, Droplet, ShieldCheck, Calendar, Plus, Stethoscope, FileText, Pencil } from "lucide-react";
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  MapPin,
+  Droplet,
+  ShieldCheck,
+  Calendar,
+  Plus,
+  Stethoscope,
+  FileText,
+  Pencil,
+} from "lucide-react";
 import type { Patient } from "@/lib/api/types";
 import { patientsService } from "@/lib/api/services";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
@@ -12,7 +24,12 @@ import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { PatientAiSummaryCard } from "@/components/shared/PatientAiSummaryCard";
 import { PatientDocumentsPanel } from "@/components/shared/PatientDocumentsPanel";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -80,7 +97,8 @@ function PatientDetailPage() {
       {/* Header card */}
       <div className="flex flex-col items-start gap-4 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:flex-row sm:items-center">
         <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-2xl font-bold text-primary-foreground">
-          {data.firstName.charAt(0)}{data.lastName.charAt(0)}
+          {data.firstName.charAt(0)}
+          {data.lastName.charAt(0)}
         </div>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -88,7 +106,13 @@ function PatientDetailPage() {
               {data.firstName} {data.lastName}
             </h1>
             <StatusBadge
-              tone={data.status === "active" ? "success" : data.status === "admitted" ? "warning" : "neutral"}
+              tone={
+                data.status === "active"
+                  ? "success"
+                  : data.status === "admitted"
+                    ? "warning"
+                    : "neutral"
+              }
               dot
             >
               {t(`patients.status.${data.status}`)}
@@ -114,14 +138,32 @@ function PatientDetailPage() {
       {/* Infos grid */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Section title={t("patients.detail.demographics")}>
-          <Item icon={<Calendar className="size-4" />} label={t("patients.detail.dob")} value={data.dob} />
-          <Item icon={<Phone className="size-4" />} label={t("patients.col.phone")} value={data.phone} />
-          {data.email ? <Item icon={<Mail className="size-4" />} label="Email" value={data.email} /> : null}
-          <Item icon={<MapPin className="size-4" />} label={t("patients.detail.address")} value={data.address} />
+          <Item
+            icon={<Calendar className="size-4" />}
+            label={t("patients.detail.dob")}
+            value={data.dob}
+          />
+          <Item
+            icon={<Phone className="size-4" />}
+            label={t("patients.col.phone")}
+            value={data.phone}
+          />
+          {data.email ? (
+            <Item icon={<Mail className="size-4" />} label="Email" value={data.email} />
+          ) : null}
+          <Item
+            icon={<MapPin className="size-4" />}
+            label={t("patients.detail.address")}
+            value={data.address}
+          />
         </Section>
 
         <Section title={t("patients.detail.medical")}>
-          <Item icon={<Droplet className="size-4" />} label={t("patients.detail.bloodType")} value={data.bloodType} />
+          <Item
+            icon={<Droplet className="size-4" />}
+            label={t("patients.detail.bloodType")}
+            value={data.bloodType}
+          />
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium uppercase text-muted-foreground">
               {t("patients.detail.allergies")}
@@ -131,13 +173,19 @@ function PatientDetailPage() {
                 <span className="text-sm text-muted-foreground">Aucune connue</span>
               ) : (
                 data.allergies.map((a: string) => (
-                  <StatusBadge key={a} tone="warning">{a}</StatusBadge>
+                  <StatusBadge key={a} tone="warning">
+                    {a}
+                  </StatusBadge>
                 ))
               )}
             </div>
           </div>
           {data.insurance ? (
-            <Item icon={<ShieldCheck className="size-4" />} label={t("patients.detail.insurance")} value={data.insurance} />
+            <Item
+              icon={<ShieldCheck className="size-4" />}
+              label={t("patients.detail.insurance")}
+              value={data.insurance}
+            />
           ) : null}
           <Item
             icon={<Stethoscope className="size-4" />}
@@ -178,41 +226,53 @@ function PatientDetailPage() {
         </div>
 
         {histLoading ? (
-          <div className="p-6"><LoadingState /></div>
+          <div className="p-6">
+            <LoadingState />
+          </div>
         ) : !history || history.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Aucun antécédent enregistré</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            Aucun antécédent enregistré
+          </div>
         ) : (
           <div className="divide-y divide-border">
-            {history.map((v: {
-              id: string; date: string; reason: string; doctorName: string;
-              specialty: string; diagnosis: string; treatment?: string; notes?: string;
-            }) => (
-              <div key={v.id} className="flex gap-4 p-5">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                  <FileText className="size-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-semibold">{v.reason}</span>
-                    <span className="font-mono text-xs text-muted-foreground">{v.date}</span>
+            {history.map(
+              (v: {
+                id: string;
+                date: string;
+                reason: string;
+                doctorName: string;
+                specialty: string;
+                diagnosis: string;
+                treatment?: string;
+                notes?: string;
+              }) => (
+                <div key={v.id} className="flex gap-4 p-5">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                    <FileText className="size-4" />
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {v.doctorName} · <span className="italic">{v.specialty}</span>
-                  </p>
-                  <p className="mt-2 text-sm">{v.diagnosis}</p>
-                  {v.treatment && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      <span className="font-medium">Traitement :</span> {v.treatment}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-semibold">{v.reason}</span>
+                      <span className="font-mono text-xs text-muted-foreground">{v.date}</span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {v.doctorName} · <span className="italic">{v.specialty}</span>
                     </p>
-                  )}
-                  {v.notes && (
-                    <p className="mt-1 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
-                      💬 {v.notes}
-                    </p>
-                  )}
+                    <p className="mt-2 text-sm">{v.diagnosis}</p>
+                    {v.treatment && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        <span className="font-medium">Traitement :</span> {v.treatment}
+                      </p>
+                    )}
+                    {v.notes && (
+                      <p className="mt-1 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
+                        💬 {v.notes}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         )}
       </div>
@@ -331,7 +391,9 @@ function EditPatientDialog({
             Statut
             <select
               value={form.status}
-              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as Patient["status"] }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, status: e.target.value as Patient["status"] }))
+              }
               className="rounded-lg border border-border px-3 py-2 text-sm"
             >
               <option value="active">Actif</option>
@@ -402,11 +464,22 @@ function EditPatientDialog({
 }
 
 function AddVisitDialog({
-  open, onOpenChange, onSubmit, isPending,
+  open,
+  onOpenChange,
+  onSubmit,
+  isPending,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  onSubmit: (v: { date: string; reason: string; doctorName: string; specialty: string; diagnosis: string; treatment?: string; notes?: string }) => void;
+  onSubmit: (v: {
+    date: string;
+    reason: string;
+    doctorName: string;
+    specialty: string;
+    diagnosis: string;
+    treatment?: string;
+    notes?: string;
+  }) => void;
   isPending: boolean;
 }) {
   const [form, setForm] = useState({
@@ -423,7 +496,8 @@ function AddVisitDialog({
   const field = (key: keyof typeof form, label: string, required = false, multiline = false) => (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-medium">
-        {label}{required && <span className="text-destructive"> *</span>}
+        {label}
+        {required && <span className="text-destructive"> *</span>}
       </label>
       {multiline ? (
         <textarea
@@ -473,11 +547,15 @@ function AddVisitDialog({
           {field("doctorName", "Médecin", true)}
           {field("specialty", "Spécialité", true)}
           <div className="sm:col-span-2">{field("diagnosis", "Diagnostic", true, true)}</div>
-          <div className="sm:col-span-2">{field("treatment", "Traitement prescrit", false, true)}</div>
+          <div className="sm:col-span-2">
+            {field("treatment", "Traitement prescrit", false, true)}
+          </div>
           <div className="sm:col-span-2">{field("notes", "Notes / Suivi", false, true)}</div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
           <Button onClick={submit} disabled={isPending}>
             {isPending ? "Enregistrement…" : "Enregistrer"}
           </Button>
@@ -503,7 +581,9 @@ function Item({ icon, label, value }: { icon: React.ReactNode; label: string; va
         {icon}
       </div>
       <div className="min-w-0">
-        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
         <div className="truncate text-sm">{value}</div>
       </div>
     </div>

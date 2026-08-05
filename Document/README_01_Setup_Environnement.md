@@ -111,10 +111,11 @@ cd backend
 | `DATABASE_URL` | `backend/.env` | `app.db` (dev SQLite) ou URL Postgres |
 | `JWT_SECRET` | `backend/.env` | Secret JWT (obligatoire en prod) |
 | `CORS_ORIGINS` | `backend/.env` | Origines front autorisées |
-| `VITE_API_URL` | `.env` racine | URL API (`http://127.0.0.1:8000`) |
-| `CHATBOT_API_TOKEN` | `backend/.env` | Auth widget chatbot |
+| `VITE_API_URL` | `frontend/.env` | URL API (`http://127.0.0.1:8001`) |
+| `CHATBOT_API_TOKEN` | `backend/.env` | Secret serveur (embeds) — jamais en `VITE_*` |
 | `OPENAI_API_KEY` | `backend/.env` | LLM chatbot (streaming) |
-| `VITE_CHATBOT_API_TOKEN` | `.env` racine | Même token que backend |
+| `VITE_CLIENT_ID` | `frontend/.env` | Slug branding chatbot (non secret) |
+| `VITE_USE_MOCKS` | `frontend/.env` | Mocks locaux uniquement (`false` en prod) |
 
 ## Critères de validation (pilote S12)
 

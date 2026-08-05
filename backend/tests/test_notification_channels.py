@@ -20,6 +20,7 @@ def test_reminder_channels_status_log_mode() -> None:
 
 
 def test_send_email_smtp_mode(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(settings, "email_mode", "smtp")
     monkeypatch.setattr(settings, "reminder_email_mode", "smtp")
     monkeypatch.setattr(settings, "smtp_host", "localhost")
     monkeypatch.setattr(settings, "smtp_port", 1025)
@@ -50,6 +51,7 @@ def test_send_email_smtp_mode(monkeypatch, tmp_path) -> None:
 
 
 def test_send_email_smtp_without_host_raises(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "email_mode", "smtp")
     monkeypatch.setattr(settings, "reminder_email_mode", "smtp")
     monkeypatch.setattr(settings, "smtp_host", "")
 
@@ -58,6 +60,7 @@ def test_send_email_smtp_without_host_raises(monkeypatch) -> None:
 
 
 def test_send_email_log_mode_writes_body(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(settings, "email_mode", "log")
     monkeypatch.setattr(settings, "reminder_email_mode", "log")
     monkeypatch.setattr(settings, "reminder_log_path", str(tmp_path / "reminders.jsonl"))
 

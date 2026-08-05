@@ -46,6 +46,26 @@ def test_ui_config_requires_token(client):
     assert r.status_code == 401
 
 
+def test_ui_config_accepts_user_jwt(client, monkeypatch):
+    from app.core.security import create_access_token
+
+    monkeypatch.setattr(settings, "jwt_secret", "ci-test-secret-minimum-32-characters-long")
+    token = create_access_token(
+        "u1",
+        {"email": "admin@sihia.health", "role": "admin", "permissions": ["dashboard:read"]},
+    )
+    r = client.get(
+        "/ui-config?client_id=sihia",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "X-Client-ID": "sihia",
+            "X-Tenant-ID": "1",
+        },
+    )
+    assert r.status_code == 200
+    assert r.json()["bot_name"] == "SIH IA Assistant"
+
+
 def test_history_empty(client):
     r = client.get("/history?session_id=session-test-1", headers=auth_headers())
     assert r.status_code == 200

@@ -6,7 +6,14 @@ import { formatMlConfidence, formatMlModelLabel, formatMlSourceLabel } from "@/l
 type MlForecastMetaProps = {
   data: Pick<
     MlForecastResponse,
-    "model" | "model_version" | "confidence" | "source" | "generatedAt" | "historyDays" | "engine" | "horizon"
+    | "model"
+    | "model_version"
+    | "confidence"
+    | "source"
+    | "generatedAt"
+    | "historyDays"
+    | "engine"
+    | "horizon"
   >;
   compact?: boolean;
 };
@@ -23,7 +30,11 @@ export function MlForecastMeta({ data, compact = false }: MlForecastMetaProps) {
   });
 
   const confidenceTone =
-    data.confidence >= 0.85 ? "text-success" : data.confidence >= 0.7 ? "text-foreground" : "text-warning";
+    data.confidence >= 0.85
+      ? "text-success"
+      : data.confidence >= 0.7
+        ? "text-foreground"
+        : "text-warning";
 
   if (compact) {
     return (
@@ -61,7 +72,9 @@ export function MlForecastMeta({ data, compact = false }: MlForecastMetaProps) {
       </div>
       <div>
         <div className="mb-1 uppercase tracking-wide">{t("ml.meta.confidence")}</div>
-        <div className={`text-lg font-semibold ${confidenceTone}`}>{formatMlConfidence(data.confidence)}</div>
+        <div className={`text-lg font-semibold ${confidenceTone}`}>
+          {formatMlConfidence(data.confidence)}
+        </div>
         <div className="mt-0.5 text-[10px]">{t("ml.meta.confidenceBand")}</div>
       </div>
       <div>

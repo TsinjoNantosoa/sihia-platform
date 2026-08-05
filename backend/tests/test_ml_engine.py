@@ -1,5 +1,7 @@
 from datetime import date, timedelta
 
+import pytest
+
 from app.application import ml_engine, ml_service
 from app.application.ml_service import _mae, _mape
 from app.core.config import settings
@@ -19,6 +21,8 @@ def test_prophet_disabled_falls_back_to_linear(monkeypatch) -> None:
 
 
 def test_prophet_forecast_returns_values_when_available(monkeypatch) -> None:
+    pytest.importorskip("pandas")
+
     class FakeProphet:
         def __init__(self, **kwargs):
             self.kwargs = kwargs
@@ -40,6 +44,7 @@ def test_prophet_forecast_returns_values_when_available(monkeypatch) -> None:
     import types
 
     monkeypatch.setattr(settings, "ml_use_prophet", True)
+    monkeypatch.setattr(ml_engine, "is_prophet_installed", lambda: True)
     fake_prophet = types.ModuleType("prophet")
     fake_prophet.Prophet = FakeProphet
     monkeypatch.setitem(sys.modules, "prophet", fake_prophet)
