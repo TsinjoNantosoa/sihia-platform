@@ -217,13 +217,12 @@ Pas de `vercel.json` dans le dépôt : tout se configure dans le dashboard.
 | Réglage | Valeur |
 |---|---|
 | **Root Directory** | `frontend` |
-| **Framework Preset** | **Other** — pas Next.js, **pas Vite** (Vite force `dist`) |
-| **Install Command** | défaut (pas d’override) |
-| **Build Command** | `npm run build` (ou défaut) |
-| **Output Directory** | **`.vercel/output`** (override ON) — Nitro y écrit le Build Output API |
-| **Node.js Version** | **22.x** (évite npm 11 / Node 24 qui casse `npm ci` sur le lockfile actuel) |
+| **Framework Preset** | **TanStack Start** (sinon **Other**) — **pas Vite**, pas Next.js |
+| **Install / Build** | défaut (`npm run build`) — **pas** `--outDir dist` |
+| **Output Directory** | **désactiver l’override** — Nitro écrit `.vercel/output` (Build Output API). Ne jamais forcer `dist` (sinon 404 NOT_FOUND) |
+| **Node.js Version** | **22.x** |
 
-[`frontend/vite.config.ts`](../frontend/vite.config.ts) active Nitro `preset: "vercel"` automatiquement quand `VERCEL=1`.
+[`frontend/vite.config.ts`](../frontend/vite.config.ts) enregistre le plugin Nitro (`preset: "vercel"` quand `VERCEL=1`).
 
 ### Variables d’environnement Vercel (Production + Preview)
 
