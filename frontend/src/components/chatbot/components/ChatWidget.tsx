@@ -34,11 +34,20 @@ type Message = {
 
   html: string;
 
-  sources?: string[];
+  sources?: ChatSource[];
 
   is_refusal?: boolean;
 
   has_contact_link?: boolean;
+};
+
+type ChatSource = {
+  document_id: string;
+  filename: string;
+  page?: number | null;
+  section?: string | null;
+  score?: number;
+  excerpt?: string;
 };
 
 type Reply = { icon: string; label: string };
@@ -418,6 +427,10 @@ export default function ChatWidget({
 
       let accumulated = "";
 
+      let currentSources: ChatSource[] = [];
+
+      let sseBuffer = "";
+
       let firstToken = true;
 
       while (true) {
@@ -425,11 +438,13 @@ export default function ChatWidget({
 
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
+        sseBuffer += decoder.decode(value, { stream: true });
+        const events = sseBuffer.split("\n\n");
+        sseBuffer = events.pop() ?? "";
 
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
+        for (const event of events) {
+          const line = event.split("\n").find((part) => part.startsWith("data: "));
+          if (!line) continue;
           if (!line.startsWith("data: ")) continue;
 
           const payload = line.slice(6).trim();
@@ -438,6 +453,16 @@ export default function ChatWidget({
 
           try {
             const parsed = JSON.parse(payload);
+
+            if (Array.isArray(parsed.sources)) {
+              currentSources = parsed.sources as ChatSource[];
+              setMessages((items) =>
+                items.map((message) =>
+                  message.id === botMsgId ? { ...message, sources: currentSources } : message,
+                ),
+              );
+              continue;
+            }
 
             const token: string = parsed.token ?? "";
             const replace: boolean = Boolean(parsed.replace);
@@ -460,12 +485,19 @@ export default function ChatWidget({
               setMessages((m) => [
                 ...m,
 
-                { id: botMsgId, role: "bot", html: sanitizeBot(accumulated) },
+                {
+                  id: botMsgId,
+                  role: "bot",
+                  html: sanitizeBot(accumulated),
+                  sources: currentSources,
+                },
               ]);
             } else {
               setMessages((m) =>
                 m.map((msg) =>
-                  msg.id === botMsgId ? { ...msg, html: sanitizeBot(accumulated) } : msg,
+                  msg.id === botMsgId
+                    ? { ...msg, html: sanitizeBot(accumulated), sources: currentSources }
+                    : msg,
                 ),
               );
             }

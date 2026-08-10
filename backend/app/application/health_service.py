@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import httpx
 from datetime import datetime, timezone
 
 from sqlalchemy import text
@@ -53,10 +54,23 @@ def pipeline_status() -> dict:
         return {"status": "error", "message": str(exc)}
 
 
+def qdrant_status() -> dict:
+    if not settings.rag_enabled:
+        return {"status": "disabled"}
+    started = time.perf_counter()
+    try:
+        response = httpx.get(f"{settings.qdrant_url.rstrip('/')}/healthz", timeout=2.0)
+        response.raise_for_status()
+        return {"status": "ok", "latency_ms": round((time.perf_counter() - started) * 1000, 1)}
+    except Exception:
+        return {"status": "error", "message": "vector store unavailable"}
+
+
 def build_health_details() -> dict:
     db = check_database()
     pipeline = pipeline_status()
-    overall = "ok" if db.get("status") == "ok" else "degraded"
+    qdrant = qdrant_status()
+    overall = "ok" if db.get("status") == "ok" and qdrant.get("status") in {"ok", "disabled"} else "degraded"
 
     return {
         "status": overall,
@@ -70,6 +84,7 @@ def build_health_details() -> dict:
             "pipeline": pipeline,
             "reminders": reminder_channels_status(),
             "auth": {"status": "ok", "algorithm": settings.jwt_algorithm},
+            "qdrant": qdrant,
         },
         "config": {
             "database_url_scheme": sqlalchemy_url().split("://", 1)[0],

@@ -53,3 +53,4 @@ frontend/.vercel/
 
 # Uploads patients (locaux)
 backend/data/uploads/
+backend/data/knowledge/

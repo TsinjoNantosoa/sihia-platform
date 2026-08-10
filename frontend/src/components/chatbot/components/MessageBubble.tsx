@@ -6,9 +6,18 @@ type Message = {
   id: string;
   role: "user" | "bot";
   html: string;
-  sources?: string[];
+  sources?: ChatSource[];
   is_refusal?: boolean;
   has_contact_link?: boolean;
+};
+
+type ChatSource = {
+  document_id: string;
+  filename: string;
+  page?: number | null;
+  section?: string | null;
+  score?: number;
+  excerpt?: string;
 };
 
 function getTime() {
@@ -157,11 +166,12 @@ export default function MessageBubble({
           <div className="message-sources">
             <small>Sources :</small>
             <ul>
-              {message.sources.map((s, i) => (
-                <li key={i}>
-                  <a href={s} target="_blank" rel="noreferrer">
-                    {s}
-                  </a>
+              {message.sources.map((source, i) => (
+                <li key={`${source.document_id}-${i}`} className="message-source-card">
+                  <strong>{source.filename}</strong>
+                  {source.page ? <span> — page {source.page}</span> : null}
+                  {source.section ? <span> — {source.section}</span> : null}
+                  {source.excerpt ? <p>{source.excerpt}</p> : null}
                 </li>
               ))}
             </ul>

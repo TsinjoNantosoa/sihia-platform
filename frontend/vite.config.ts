@@ -14,7 +14,10 @@ export default defineConfig({
     plugins: [
       nitro({
         // Sur Vercel (VERCEL=1), Nitro écrit le Build Output API dans .vercel/output
-        preset: process.env.VERCEL === "1" || process.env.NITRO_PRESET === "vercel" ? "vercel" : undefined,
+        preset:
+          process.env.VERCEL === "1" || process.env.NITRO_PRESET === "vercel"
+            ? "vercel"
+            : undefined,
       }),
     ],
   },

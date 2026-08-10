@@ -1,0 +1,27 @@
+[
+  {
+    "question": "Comment prendre un rendez-vous ?",
+    "expected_answer": "Ouvrir le menu Rendez-vous puis Nouveau RDV.",
+    "expected_sources": ["appointments"]
+  },
+  {
+    "question": "Quels sont les horaires des urgences ?",
+    "expected_answer": "Les urgences sont ouvertes 24 heures sur 24.",
+    "expected_sources": ["hours"]
+  },
+  {
+    "question": "Quel est le parcours d'une consultation externe ?",
+    "expected_answer": "Accueil, salle d'attente, consultation puis sortie ou prochain rendez-vous.",
+    "expected_sources": ["pathway-consultation"]
+  },
+  {
+    "question": "How are appointment reminders sent?",
+    "expected_answer": "Email or SMS reminders are sent around 24 hours before the appointment.",
+    "expected_sources": ["reminders"]
+  },
+  {
+    "question": "Comment les dossiers patients sont-ils protégés ?",
+    "expected_answer": "Les accès sont contrôlés par RBAC et audités.",
+    "expected_sources": ["faq-gdpr", "patients"]
+  }
+]

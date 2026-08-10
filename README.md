@@ -1,20 +1,52 @@
 # SIH IA — Plateforme (Frontend + Backend)
 
+> Le chatbot utilise désormais une architecture RAG orientée production : ingestion sécurisée, métadonnées SQL, vecteurs Qdrant, recherche hybride BM25, reranking configurable, génération ancrée et citations structurées. Voir [docs/RAG_ARCHITECTURE.md](docs/RAG_ARCHITECTURE.md).
+
 **SIH IA** (Système Intelligent de Gestion Hospitalière) — SaaS B2B HealthTech.
 
 Plateforme complète avec :
 - Frontend en **React + TypeScript + TanStack Start + Vite + Tailwind CSS**
-- Backend en **FastAPI + SQLite + JWT**
+- Backend en **FastAPI + PostgreSQL/SQLite + JWT + Qdrant**
+
+## RAG — démarrage et démonstration
+
+```bash
+cp .env.example .env
+# Renseigner OPENAI_API_KEY, ou choisir EMBEDDING_PROVIDER=local
+docker compose up --build
+docker compose exec backend python scripts/import_chatbot_knowledge.py
+```
+
+Connectez-vous avec l'administrateur de démonstration, ouvrez **Base de connaissances**, ajoutez un PDF/TXT/Markdown, puis posez une question au widget. Les sources apparaissent sous la réponse. Testez aussi une question absente : l'assistant doit signaler que les preuves sont insuffisantes.
+
+Endpoints administratifs (JWT et RBAC requis) : `POST/GET /api/knowledge/documents`, `GET/DELETE /api/knowledge/documents/{id}`, et `POST /api/knowledge/documents/{id}/reindex`. Le chatbot conserve `POST /query-stream` et émet un événement `sources` structuré avant les tokens.
+
+Validation et évaluation :
+
+```bash
+cd backend
+alembic upgrade head
+python -m pytest tests -q
+python -m app.rag.evaluation
+# Après ingestion dans Qdrant :
+python -m app.rag.evaluation --live
+cd ../frontend
+npm test
+npm run lint
+npm run build
+```
+
+Les variables RAG/Qdrant et fournisseurs sont documentées dans `.env.example`. Les limites actuelles sont l'absence d'OCR, de génération Ollama et de job d'ingestion asynchrone; consultez [l'architecture RAG](docs/RAG_ARCHITECTURE.md) pour les responsabilités, échecs et considérations de sécurité.
 
 ## ✨ Fonctionnalités
 
-- 🔐 **Login** mocké (n'importe quel email/mdp fonctionne)
+- 🔐 **Authentification JWT** avec rotation des refresh tokens et RBAC
 - 📊 **Dashboard** : KPIs temps réel, prédiction de flux 7j, alertes critiques, prochains RDV
 - 👤 **Patients** : liste paginée + filtres + recherche, détail, formulaire de création, suppression
 - 🩺 **Médecins** : annuaire avec disponibilités, planning hebdo et statistiques
 - 📅 **Rendez-vous** : vue liste + vue calendrier hebdomadaire, création avec **détection de conflits**
 - 📈 **Analytique** : revenus, admissions, satisfaction, démographie (Recharts)
-- 🧠 **Prédiction IA** : prévision LSTM 7 jours avec intervalle de confiance + recommandations
+- 🧠 **Prédiction IA** : prévisions 7/30 jours avec métadonnées de modèle et recommandations
 - 🛡 **RBAC** : utilisateurs, rôles, permissions
 - ⚙️ **Paramètres** : profil, établissement, notifications, langue
 - 🌍 **i18n FR / EN / AR** avec **mode RTL** automatique pour l'arabe

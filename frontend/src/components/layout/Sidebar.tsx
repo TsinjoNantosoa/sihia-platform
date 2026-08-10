@@ -12,6 +12,7 @@ import {
   WifiOff,
   Bell,
   Armchair,
+  BookOpenText,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT, useI18n } from "@/lib/i18n/store";
@@ -73,6 +74,7 @@ const groups = [
   {
     labelKey: "nav.section.system",
     items: [
+      { to: "/knowledge", labelKey: "nav.knowledge", icon: BookOpenText, permission: "users:read" },
       { to: "/rbac", labelKey: "nav.rbac", icon: ShieldCheck, permission: "users:read" },
       { to: "/settings", labelKey: "nav.settings", icon: Settings, permission: "settings:read" },
     ],

@@ -66,6 +66,23 @@ class Settings(BaseModel):
     chatbot_api_token: str = ""
     chatbot_query_rate_limit: int = 20
     chatbot_audit_log_path: str = "logs/chatbot.jsonl"
+    rag_enabled: bool = True
+    rag_top_k: int = 10
+    rag_final_k: int = 5
+    rag_score_threshold: float = 0.25
+    rag_chunk_size: int = 700
+    rag_chunk_overlap: int = 100
+    rag_rerank_enabled: bool = True
+    rag_hybrid_enabled: bool = True
+    rag_max_upload_mb: int = 20
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: str = ""
+    qdrant_collection: str = "sihia_medical_knowledge"
+    embedding_provider: str = "openai"
+    embedding_model: str = "text-embedding-3-small"
+    embedding_dimensions: int = 1536
+    local_embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    llm_provider: str = "openai"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5174",
@@ -128,6 +145,23 @@ class Settings(BaseModel):
             chatbot_api_token=os.getenv("CHATBOT_API_TOKEN", ""),
             chatbot_query_rate_limit=int(os.getenv("CHATBOT_QUERY_RATE_LIMIT", "20")),
             chatbot_audit_log_path=os.getenv("CHATBOT_AUDIT_LOG_PATH", "logs/chatbot.jsonl"),
+            rag_enabled=_env_bool("RAG_ENABLED", True),
+            rag_top_k=int(os.getenv("RAG_TOP_K", "10")),
+            rag_final_k=int(os.getenv("RAG_FINAL_K", "5")),
+            rag_score_threshold=float(os.getenv("RAG_SCORE_THRESHOLD", "0.25")),
+            rag_chunk_size=int(os.getenv("RAG_CHUNK_SIZE", "700")),
+            rag_chunk_overlap=int(os.getenv("RAG_CHUNK_OVERLAP", "100")),
+            rag_rerank_enabled=_env_bool("RAG_RERANK_ENABLED", True),
+            rag_hybrid_enabled=_env_bool("RAG_HYBRID_ENABLED", True),
+            rag_max_upload_mb=int(os.getenv("RAG_MAX_UPLOAD_MB", "20")),
+            qdrant_url=os.getenv("QDRANT_URL", "http://localhost:6333"),
+            qdrant_api_key=os.getenv("QDRANT_API_KEY", ""),
+            qdrant_collection=os.getenv("QDRANT_COLLECTION", "sihia_medical_knowledge"),
+            embedding_provider=os.getenv("EMBEDDING_PROVIDER", "openai").strip().lower(),
+            embedding_model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"),
+            embedding_dimensions=int(os.getenv("EMBEDDING_DIMENSIONS", "1536")),
+            local_embedding_model=os.getenv("LOCAL_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"),
+            llm_provider=os.getenv("LLM_PROVIDER", "openai").strip().lower(),
             cors_origins=origins or ["http://localhost:5174"],
             environment=os.getenv("ENVIRONMENT", "development"),
         )

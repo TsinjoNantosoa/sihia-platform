@@ -12,6 +12,7 @@ COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini .
 COPY scripts ./scripts
+COPY data ./data
 
 EXPOSE 8000
 

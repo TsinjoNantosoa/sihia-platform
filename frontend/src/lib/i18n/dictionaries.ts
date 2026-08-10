@@ -27,6 +27,7 @@ const fr: Dict = {
   "nav.prediction": "Prédiction IA",
   "nav.rbac": "Contrôle d'accès",
   "nav.settings": "Paramètres",
+  "nav.knowledge": "Base de connaissances",
   "nav.logout": "Déconnexion",
 
   "common.search": "Rechercher",
@@ -500,6 +501,7 @@ const en: Dict = {
   "nav.prediction": "AI Prediction",
   "nav.rbac": "Access Control",
   "nav.settings": "Settings",
+  "nav.knowledge": "Knowledge base",
   "nav.logout": "Sign out",
 
   "common.search": "Search",
@@ -970,6 +972,7 @@ const ar: Dict = {
   "nav.prediction": "التنبؤ بالذكاء الاصطناعي",
   "nav.rbac": "صلاحيات الوصول",
   "nav.settings": "الإعدادات",
+  "nav.knowledge": "قاعدة المعرفة",
   "nav.logout": "تسجيل الخروج",
 
   "common.search": "بحث",

@@ -33,6 +33,18 @@ services:
       postgres:
         condition: service_healthy
 
+  qdrant:
+    image: qdrant/qdrant:v1.15.3
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/6333'"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
   backend:
     build:
       context: ./backend
@@ -44,8 +56,19 @@ services:
       ENVIRONMENT: development
       CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
       DATABASE_URL: postgresql://sihia:sihia@postgres:5432/sihia
+      RAG_ENABLED: ${RAG_ENABLED:-true}
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-sihia_medical_knowledge}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      LOCAL_EMBEDDING_MODEL: ${LOCAL_EMBEDDING_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     depends_on:
       postgres:
+        condition: service_healthy
+      qdrant:
         condition: service_healthy
 
   frontend:
@@ -95,3 +118,4 @@ volumes:
   pg_data:
   pgadmin_data:
   airflow_home:
+  qdrant_data:

@@ -24,6 +24,7 @@ from app.infrastructure.reminder_repository import ReminderRepository
 from app.infrastructure.notification_repository import NotificationRepository
 from app.infrastructure.patient_document_repository import PatientDocumentRepository
 from app.infrastructure.database import bootstrap_database
+from app.rag.factory import RAGServices
 from app.infrastructure.sqlite_repositories import (
     SQLiteAppointmentRepository,
     SQLiteDoctorRepository,
@@ -65,7 +66,8 @@ reminder_service = ReminderService(
     hours_before=settings.reminder_hours_before,
 )
 chatbot_sessions = ChatbotSessionStore()
-chatbot_service = ChatbotService(settings, chatbot_sessions)
+rag_services = RAGServices(settings)
+chatbot_service = ChatbotService(settings, chatbot_sessions, rag_services.retriever)
 chatbot_rate_limiter = ChatbotRateLimiter(max_per_minute=settings.chatbot_query_rate_limit)
 
 bearer_scheme = HTTPBearer(auto_error=True)

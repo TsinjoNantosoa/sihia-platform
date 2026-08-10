@@ -375,6 +375,34 @@ async function fetchWithAuth<T = unknown>(
   }
 }
 
+export type KnowledgeDocument = {
+  id: string;
+  filename: string;
+  source: string;
+  content_type: string;
+  size_bytes: number;
+  checksum: string;
+  status: "processing" | "ready" | "failed";
+  chunk_count: number;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const knowledgeService = {
+  list: () =>
+    fetchWithAuth<{ items: KnowledgeDocument[]; count: number }>("/api/knowledge/documents"),
+  upload: (file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    return fetchWithAuth<KnowledgeDocument>("/api/knowledge/documents", { method: "POST", body });
+  },
+  reindex: (id: string) =>
+    fetchWithAuth<KnowledgeDocument>(`/api/knowledge/documents/${id}/reindex`, { method: "POST" }),
+  remove: (id: string) =>
+    fetchWithAuth<void>(`/api/knowledge/documents/${id}`, { method: "DELETE" }),
+};
+
 const currentOfflineUserKey = () => {
   const user = useAuth.getState().user;
   return user?.id || user?.email || "anonymous";

@@ -19,6 +19,7 @@ import { Route as AppAnalyticsRouteImport } from './routes/_app/analytics'
 import { Route as AppAppointmentsRouteImport } from './routes/_app/appointments'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDoctorsRouteImport } from './routes/_app/doctors'
+import { Route as AppKnowledgeRouteImport } from './routes/_app/knowledge'
 import { Route as AppNotificationsRouteImport } from './routes/_app/notifications'
 import { Route as AppPredictionRouteImport } from './routes/_app/prediction'
 import { Route as AppRbacRouteImport } from './routes/_app/rbac'
@@ -76,6 +77,11 @@ const AppDoctorsRoute = AppDoctorsRouteImport.update({
   path: '/doctors',
   getParentRoute: () => AppRoute,
 } as any)
+const AppKnowledgeRoute = AppKnowledgeRouteImport.update({
+  id: '/knowledge',
+  path: '/knowledge',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNotificationsRoute = AppNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/appointments': typeof AppAppointmentsRoute
   '/dashboard': typeof AppDashboardRoute
   '/doctors': typeof AppDoctorsRoute
+  '/knowledge': typeof AppKnowledgeRoute
   '/notifications': typeof AppNotificationsRoute
   '/prediction': typeof AppPredictionRoute
   '/rbac': typeof AppRbacRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/appointments': typeof AppAppointmentsRoute
   '/dashboard': typeof AppDashboardRoute
   '/doctors': typeof AppDoctorsRoute
+  '/knowledge': typeof AppKnowledgeRoute
   '/notifications': typeof AppNotificationsRoute
   '/prediction': typeof AppPredictionRoute
   '/rbac': typeof AppRbacRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/_app/appointments': typeof AppAppointmentsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/doctors': typeof AppDoctorsRoute
+  '/_app/knowledge': typeof AppKnowledgeRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/prediction': typeof AppPredictionRoute
   '/_app/rbac': typeof AppRbacRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/appointments'
     | '/dashboard'
     | '/doctors'
+    | '/knowledge'
     | '/notifications'
     | '/prediction'
     | '/rbac'
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/appointments'
     | '/dashboard'
     | '/doctors'
+    | '/knowledge'
     | '/notifications'
     | '/prediction'
     | '/rbac'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/_app/appointments'
     | '/_app/dashboard'
     | '/_app/doctors'
+    | '/_app/knowledge'
     | '/_app/notifications'
     | '/_app/prediction'
     | '/_app/rbac'
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDoctorsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/knowledge': {
+      id: '/_app/knowledge'
+      path: '/knowledge'
+      fullPath: '/knowledge'
+      preLoaderRoute: typeof AppKnowledgeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/notifications': {
       id: '/_app/notifications'
       path: '/notifications'
@@ -363,6 +382,7 @@ interface AppRouteChildren {
   AppAppointmentsRoute: typeof AppAppointmentsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDoctorsRoute: typeof AppDoctorsRoute
+  AppKnowledgeRoute: typeof AppKnowledgeRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppPredictionRoute: typeof AppPredictionRoute
   AppRbacRoute: typeof AppRbacRoute
@@ -378,6 +398,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAppointmentsRoute: AppAppointmentsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDoctorsRoute: AppDoctorsRoute,
+  AppKnowledgeRoute: AppKnowledgeRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppPredictionRoute: AppPredictionRoute,
   AppRbacRoute: AppRbacRoute,
