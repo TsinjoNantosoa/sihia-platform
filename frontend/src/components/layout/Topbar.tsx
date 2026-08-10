@@ -36,8 +36,8 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-xl sm:px-6">
-      <div className="flex flex-1 items-center gap-3">
+    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/80 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 xl:px-6">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <button
           id="mobile-menu-trigger"
           data-onboarding="navigation"
@@ -53,23 +53,23 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
           type="button"
           data-onboarding="search"
           onClick={() => setSearchOpen(true)}
-          className="flex w-full max-w-md items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20"
+          className="flex size-10 min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 min-[480px]:h-auto min-[480px]:w-full min-[480px]:max-w-md min-[480px]:justify-start min-[480px]:px-3"
           aria-label={t("search.aria")}
         >
           <Search className="size-4 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-sm text-muted-foreground">
+          <span className="hidden min-w-0 flex-1 truncate text-sm text-muted-foreground min-[480px]:block">
             {t("common.searchPlaceholder")}
           </span>
           <kbd
             aria-hidden
-            className="hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:block"
+            className="hidden shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground lg:block"
           >
             ⌘K
           </kbd>
         </button>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         {/* Language switcher */}
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -115,7 +115,7 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
               >
                 {user.name.charAt(0)}
               </div>
-              <div className="hidden text-start leading-tight sm:block">
+              <div className="hidden max-w-28 text-start leading-tight xl:block">
                 <div className="text-xs font-semibold">{user.name}</div>
                 <div className="text-[10px] uppercase text-muted-foreground">{user.role}</div>
               </div>

@@ -1286,6 +1286,14 @@
   border-color: #cbd5e1;
 }
 
+/* The welcome callout competes with dashboard content on tablets. Keep the
+   compact launcher available and reveal the full widget only on demand. */
+@media (max-width: 768px) {
+  .chat-callout {
+    display: none;
+  }
+}
+
 /* Keyframes Animations */
 @keyframes float {
   0%,

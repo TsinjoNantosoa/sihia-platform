@@ -131,17 +131,34 @@ export function OnboardingTour() {
         transform: "translate(-50%, -50%)",
       };
     }
-    const cardWidth = Math.min(360, window.innerWidth - 32);
+    if (window.innerWidth < 640) {
+      return {
+        left: 16,
+        right: 16,
+        top: "auto",
+        bottom: 16,
+        transform: "none",
+      };
+    }
+    const cardWidth = Math.min(420, window.innerWidth - 32);
     const left = Math.min(
       Math.max(16, targetRect.left),
       Math.max(16, window.innerWidth - cardWidth - 16),
     );
-    const placeBelow = targetRect.top + targetRect.height + 260 < window.innerHeight;
+    const estimatedCardHeight = 300;
+    const placeBelow =
+      targetRect.top + targetRect.height + estimatedCardHeight + 14 < window.innerHeight;
     return {
       left,
       top: placeBelow
         ? targetRect.top + targetRect.height + 14
-        : Math.max(16, targetRect.top - 230),
+        : Math.max(
+            16,
+            Math.min(
+              targetRect.top - estimatedCardHeight - 14,
+              window.innerHeight - estimatedCardHeight - 16,
+            ),
+          ),
       transform: "none",
     };
   }, [targetRect]);
@@ -218,7 +235,7 @@ export function OnboardingTour() {
           if (event.key === "ArrowRight") next();
           if (event.key === "ArrowLeft") previous();
         }}
-        className="pointer-events-auto fixed w-[calc(100%_-_2rem)] max-w-[360px] rounded-2xl border border-border bg-card p-5 text-foreground shadow-2xl outline-none"
+        className="pointer-events-auto fixed w-auto max-w-[420px] rounded-2xl border border-border bg-card p-4 text-foreground shadow-2xl outline-none sm:w-[calc(100%_-_2rem)] sm:p-5"
         style={cardPosition}
       >
         <div className="mb-4 flex items-start gap-3">
@@ -240,8 +257,8 @@ export function OnboardingTour() {
           {t(step.descriptionKey)}
         </p>
 
-        <div className="mt-5 flex items-center justify-between gap-3">
-          <div className="flex gap-1.5" aria-hidden>
+        <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex justify-center gap-1.5 sm:justify-start" aria-hidden>
             {steps.map((item, index) => (
               <span
                 key={item.titleKey}
@@ -251,8 +268,8 @@ export function OnboardingTour() {
               />
             ))}
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={finish}>
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+            <Button className="mr-auto sm:mr-0" variant="ghost" size="sm" onClick={finish}>
               {t("onboarding.skip")}
             </Button>
             {stepIndex > 0 ? (
