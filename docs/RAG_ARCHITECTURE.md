@@ -29,7 +29,7 @@ PDF (PyMuPDF), UTF-8 TXT, and Markdown are supported. Scanned PDFs require OCR f
 
 ## 3. Retrieval architecture
 
-Qdrant cosine search supports exact metadata filters. BM25-style lexical search uses SQL chunks. Reciprocal-rank fusion merges candidates; a replaceable deterministic reranker scores query-term coverage and phrases. Top-k, final-k, threshold, hybrid retrieval, and reranking are configurable. Provider/Qdrant outages degrade to the SQL lexical index, never unsupported LLM memory.
+Qdrant cosine search supports exact metadata filters. BM25-style lexical search uses SQL chunks. Reciprocal-rank fusion merges candidates. The default semantic reranker is FastEmbed's CPU `TextCrossEncoder` using `Xenova/ms-marco-MiniLM-L-6-v2`; it is lazy-loaded and reused. A model download or inference failure falls back to the deterministic lexical reranker. `RAG_RERANK_ENABLED=false` bypasses reranking and `RAG_RERANKER=lightweight` selects the lexical implementation explicitly. Top-k, final-k, threshold, hybrid retrieval, model name, and reranking are configurable. Provider/Qdrant outages degrade to the SQL lexical index, never unsupported LLM memory.
 
 Short follow-ups are contextualized with the latest user turn. Full history is not used as a retrieval query; up to eight recent messages remain available for response continuity after retrieval.
 
@@ -52,7 +52,9 @@ Alembic revision `008` creates `knowledge_documents` and `knowledge_chunks`.
 
 ## 7. Evaluation architecture
 
-`python -m app.rag.evaluation` runs a deterministic network-free migration-corpus evaluation; `--live` evaluates the configured index. JSON includes retrieval hit rate, context precision/recall, relevancy proxy, faithfulness for an extractive baseline, and per-case evidence. Independent generated-answer RAGAS/LLM-judge evaluation remains a staging gate because it requires credentials and cost.
+`python -m app.rag.evaluation` runs a deterministic, network-free benchmark over 30 French/English cases. It measures hit@k, precision@k, recall@k, reciprocal rank, no-answer accuracy and records per-case sources. `--live` evaluates the configured SQL/Qdrant index.
+
+Generated answers have a separate staging path. After installing `requirements-eval.txt`, `--live --generated` runs the real SIHIA retrieval, grounding prompt and OpenAI-compatible generation, then uses RAGAS for faithfulness, factual correctness, context precision/recall and response relevancy. Explicit source hit rate and source recall verify citation IDs against the expected documents. This mode is excluded from unit tests because it requires credentials, network access and incurs provider cost. Reports go to ignored `backend/reports/`.
 
 ## 8. Failure handling
 
@@ -66,8 +68,8 @@ Read/upload/reindex/delete require existing `users:read/create/update/delete` pe
 
 - background workers and object storage;
 - OCR/table-aware extraction and DOCX;
-- multilingual cross-encoder reranking;
+- a medically tuned multilingual cross-encoder;
 - Redis session/rate-limit state for replicas;
 - Ollama/vLLM generation;
-- independent generated-answer RAGAS/DeepEval staging gates;
+- CI thresholds for the existing RAGAS staging evaluation;
 - mandatory tenant vector filters and encrypted retention policies.

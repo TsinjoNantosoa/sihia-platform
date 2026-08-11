@@ -6,9 +6,14 @@ blob-report/
 # Python
 backend/venv/
 __pycache__/
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
 *.py[cod]
 *.db
 .env
+.runtime/
 
 # Logs
 logs
@@ -54,3 +59,4 @@ frontend/.vercel/
 # Uploads patients (locaux)
 backend/data/uploads/
 backend/data/knowledge/
+backend/reports/

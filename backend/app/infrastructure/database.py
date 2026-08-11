@@ -94,18 +94,19 @@ class DBConnection:
 
     def _upsert_refresh_session(self, params: Sequence[Any] | Mapping[str, Any] | None) -> Result[Any]:
         _, named = _to_named_params(
-            "INSERT OR REPLACE INTO refresh_sessions (session_id,user_id,expires_at_ts,revoked) VALUES (?,?,?,0)",
+            "INSERT OR REPLACE INTO refresh_sessions (session_id,user_id,expires_at_ts,created_at_ns,revoked) VALUES (?,?,?,?,0)",
             params,
         )
         if is_postgresql():
             return self._conn.execute(
                 text(
                     """
-                    INSERT INTO refresh_sessions (session_id, user_id, expires_at_ts, revoked)
-                    VALUES (:p0, :p1, :p2, 0)
+                    INSERT INTO refresh_sessions (session_id, user_id, expires_at_ts, created_at_ns, revoked)
+                    VALUES (:p0, :p1, :p2, :p3, 0)
                     ON CONFLICT (session_id) DO UPDATE SET
                         user_id = EXCLUDED.user_id,
                         expires_at_ts = EXCLUDED.expires_at_ts,
+                        created_at_ns = EXCLUDED.created_at_ns,
                         revoked = 0
                     """
                 ),
@@ -113,7 +114,7 @@ class DBConnection:
             )
         return self._conn.execute(
             text(
-                "INSERT OR REPLACE INTO refresh_sessions (session_id,user_id,expires_at_ts,revoked) VALUES (:p0,:p1,:p2,0)"
+                "INSERT OR REPLACE INTO refresh_sessions (session_id,user_id,expires_at_ts,created_at_ns,revoked) VALUES (:p0,:p1,:p2,:p3,0)"
             ),
             named,
         )

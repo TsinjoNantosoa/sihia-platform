@@ -76,7 +76,7 @@ import {
 type ChatWidgetProps = {
   apiBaseUrl: string;
 
-  /** UI slug for branding / tenant_ui_config (e.g. "aaa") */
+  /** UI slug for SIHIA tenant configuration. */
   clientId: string;
 
   /** Numeric tenants.tenant_id for PostgreSQL (e.g. "1") — team best practice */
@@ -875,16 +875,16 @@ export default function ChatWidget({
                   {language === "fr" ? (
                     <>
                       {theme?.welcomeFr ||
-                        "Bonjour 👋 Bienvenue dans l'écosystème Alan Allman Associates. Comment puis-je vous orienter aujourd'hui ?"}
+                        "Bonjour 👋 Je suis l'assistant SIHIA. Comment puis-je vous orienter aujourd'hui ?"}
                       <br />
-                      <strong>{theme?.botName ?? "ALAN.AI"} est là pour vous.</strong>
+                      <strong>{theme?.botName ?? "SIH IA Assistant"} est là pour vous.</strong>
                     </>
                   ) : (
                     <>
                       {theme?.welcomeEn ||
-                        "Hello 👋 Welcome to the Alan Allman Associates ecosystem. How can I assist you today?"}
+                        "Hello 👋 I am the SIHIA assistant. How can I help you today?"}
                       <br />
-                      <strong>{theme?.botName ?? "ALAN.AI"} is here for you.</strong>
+                      <strong>{theme?.botName ?? "SIH IA Assistant"} is here for you.</strong>
                     </>
                   )}
                 </div>

@@ -73,6 +73,8 @@ class Settings(BaseModel):
     rag_chunk_size: int = 700
     rag_chunk_overlap: int = 100
     rag_rerank_enabled: bool = True
+    rag_reranker: str = "cross-encoder"
+    rag_rerank_model: str = "Xenova/ms-marco-MiniLM-L-6-v2"
     rag_hybrid_enabled: bool = True
     rag_max_upload_mb: int = 20
     qdrant_url: str = "http://localhost:6333"
@@ -152,6 +154,8 @@ class Settings(BaseModel):
             rag_chunk_size=int(os.getenv("RAG_CHUNK_SIZE", "700")),
             rag_chunk_overlap=int(os.getenv("RAG_CHUNK_OVERLAP", "100")),
             rag_rerank_enabled=_env_bool("RAG_RERANK_ENABLED", True),
+            rag_reranker=os.getenv("RAG_RERANKER", "cross-encoder").strip().lower(),
+            rag_rerank_model=os.getenv("RAG_RERANK_MODEL", "Xenova/ms-marco-MiniLM-L-6-v2"),
             rag_hybrid_enabled=_env_bool("RAG_HYBRID_ENABLED", True),
             rag_max_upload_mb=int(os.getenv("RAG_MAX_UPLOAD_MB", "20")),
             qdrant_url=os.getenv("QDRANT_URL", "http://localhost:6333"),

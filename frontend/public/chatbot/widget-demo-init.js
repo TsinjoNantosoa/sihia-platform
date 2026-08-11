@@ -1,6 +1,6 @@
 (function () {
   var p = new URLSearchParams(location.search);
-  window.__CHATBOT_CLIENT_ID__ = p.get("client_id") || "aaa";
+  window.__CHATBOT_CLIENT_ID__ = p.get("client_id") || "sihia";
   var api = p.get("api");
   if (api) window.__CHATBOT_API_BASE_URL__ = api;
   var token = p.get("token");

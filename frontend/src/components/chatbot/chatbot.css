@@ -1,5 +1,5 @@
 /* ====== RESET & BASE ====== */
-.aaa-chat-root {
+.sihia-chat-root {
   --brand-blue-left: #132251;
   --brand-blue: #0f1b42;
   font-family: "Inter", "Segoe UI", "Roboto", Arial, sans-serif;
@@ -7,52 +7,52 @@
 
 /* Important: this widget can be embedded into third-party pages.
    Keep resets scoped to the chatbot container to avoid breaking the host site. */
-.aaa-chat-root,
-.aaa-chat-root * {
+.sihia-chat-root,
+.sihia-chat-root * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 /* Bold all links inside the chat root (overrides host-page resets) */
-.aaa-chat-root a {
+.sihia-chat-root a {
   font-weight: 700 !important;
 }
 /* Force consistent rich-text styling inside rendered bot HTML even when embedded
    in a host page that ships its own anchor/strong rules (including !important). */
-#aaa-chatbot-root .message-bubble.bot a,
-#aaa-chatbot-root .message-bubble.bot a:visited,
-#aaa-chatbot-root .message-bubble.bot a[href],
-#aaa-chatbot-root .message-bubble.bot a[href]:visited,
-.aaa-chat-root .message-bubble.bot a,
-.aaa-chat-root .message-bubble.bot a:visited,
-.aaa-chat-root .message-bubble.bot a[href],
-.aaa-chat-root .message-bubble.bot a[href]:visited {
+#sihia-chatbot-root .message-bubble.bot a,
+#sihia-chatbot-root .message-bubble.bot a:visited,
+#sihia-chatbot-root .message-bubble.bot a[href],
+#sihia-chatbot-root .message-bubble.bot a[href]:visited,
+.sihia-chat-root .message-bubble.bot a,
+.sihia-chat-root .message-bubble.bot a:visited,
+.sihia-chat-root .message-bubble.bot a[href],
+.sihia-chat-root .message-bubble.bot a[href]:visited {
   color: var(--brand-blue) !important;
   font-weight: 700 !important;
   text-decoration: underline !important;
   text-underline-offset: 2px;
 }
 
-#aaa-chatbot-root .message-bubble.bot a:hover,
-.aaa-chat-root .message-bubble.bot a:hover {
+#sihia-chatbot-root .message-bubble.bot a:hover,
+.sihia-chat-root .message-bubble.bot a:hover {
   color: #132251 !important;
 }
 
-#aaa-chatbot-root .message-bubble.bot strong,
-#aaa-chatbot-root .message-bubble.bot b,
-.aaa-chat-root .message-bubble.bot strong,
-.aaa-chat-root .message-bubble.bot b {
+#sihia-chatbot-root .message-bubble.bot strong,
+#sihia-chatbot-root .message-bubble.bot b,
+.sihia-chat-root .message-bubble.bot strong,
+.sihia-chat-root .message-bubble.bot b {
   color: inherit !important;
   font-weight: 700 !important;
 }
 
-#aaa-chatbot-root .message-bubble.bot p:last-child strong,
-#aaa-chatbot-root .message-bubble.bot li strong,
-#aaa-chatbot-root .message-bubble.bot li b,
-.aaa-chat-root .message-bubble.bot p:last-child strong,
-.aaa-chat-root .message-bubble.bot li strong,
-.aaa-chat-root .message-bubble.bot li b {
+#sihia-chatbot-root .message-bubble.bot p:last-child strong,
+#sihia-chatbot-root .message-bubble.bot li strong,
+#sihia-chatbot-root .message-bubble.bot li b,
+.sihia-chat-root .message-bubble.bot p:last-child strong,
+.sihia-chat-root .message-bubble.bot li strong,
+.sihia-chat-root .message-bubble.bot li b {
   color: var(--brand-blue) !important;
 }
 /* ====== WIDGET CONTAINER ====== */
@@ -1138,7 +1138,7 @@
   transform: scale(0.95);
 }
 
-.fab-alan-ai-box {
+.fab-sihia-box {
   background: white;
   color: var(--brand-blue);
   font-style: italic;

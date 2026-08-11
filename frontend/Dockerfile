@@ -19,7 +19,7 @@ WORKDIR /app
 
 RUN npm install -g serve@14
 
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/.output/public ./dist
 
 EXPOSE 8080
 

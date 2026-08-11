@@ -112,7 +112,7 @@ Pour implémenter : valider un **pack** ou une liste de codes (`A1`, `G3`, `I1`�
 | D4 | [ ] | Disclaimer + modes (staff vs patient) | Cadre médical |
 | D5 | [ ] | Multilingue AR plus naturel (terminologie médicale) | Marché MENA |
 
-> Note : un chatbot RAG de base existe déjà (widget H4H). Les items D* sont des **extensions**.
+> Note : un chatbot RAG SIHIA existe déjà. Les items D* sont des **extensions**.
 
 ---
 

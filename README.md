@@ -1,479 +1,143 @@
-# SIH IA — Plateforme (Frontend + Backend)
+# SIHIA
 
-> Le chatbot utilise désormais une architecture RAG orientée production : ingestion sécurisée, métadonnées SQL, vecteurs Qdrant, recherche hybride BM25, reranking configurable, génération ancrée et citations structurées. Voir [docs/RAG_ARCHITECTURE.md](docs/RAG_ARCHITECTURE.md).
+SIHIA est une plateforme web de gestion hospitalière : dossiers patients, médecins, rendez-vous, file d'attente, analytique, prévisions et assistant documentaire RAG. Le dépôt contient une application React/TypeScript et une API FastAPI reliée à PostgreSQL ou SQLite, avec Qdrant pour la recherche vectorielle.
 
-**SIH IA** (Système Intelligent de Gestion Hospitalière) — SaaS B2B HealthTech.
+## Fonctionnalités
 
-Plateforme complète avec :
-- Frontend en **React + TypeScript + TanStack Start + Vite + Tailwind CSS**
-- Backend en **FastAPI + PostgreSQL/SQLite + JWT + Qdrant**
+- Authentification JWT, rotation des refresh tokens, révocation et RBAC côté API et interface.
+- Gestion des patients, historique médical, documents, médecins, disponibilités et rendez-vous avec détection de conflits.
+- Dashboard, alertes, analytique, exports et prévision de fréquentation à 7/30 jours.
+- Notifications et rappels email/SMS configurables.
+- Interface responsive, thème clair/sombre, français/anglais/arabe et RTL.
+- Assistant SIHIA avec streaming SSE, garde-fous médicaux, citations et refus lorsque les preuves manquent.
+- Base de connaissances administrable : PDF, Markdown et texte, contrôle de doublons et réindexation.
 
-## RAG — démarrage et démonstration
+## Architecture RAG
+
+```mermaid
+flowchart LR
+    A[PDF / Markdown / TXT] --> B[Validation et parsing]
+    B --> C[Découpage avec métadonnées]
+    C --> D[(PostgreSQL / SQLite)]
+    C --> E[Embeddings]
+    E --> F[(Qdrant)]
+    Q[Question + contexte conversationnel] --> G[Recherche dense + BM25]
+    D --> G
+    F --> G
+    G --> H[RRF]
+    H --> I[Cross-encoder FastEmbed]
+    I --> J[Contexte et citations]
+    J --> K[LLM avec réponse ancrée]
+    K --> L[Réponse SSE]
+```
+
+Le reranker par défaut est `Xenova/ms-marco-MiniLM-L-6-v2`, un petit cross-encoder FastEmbed exécuté sur CPU et chargé à la demande. Une indisponibilité du modèle déclenche automatiquement le reranker lexical local. La configuration `RAG_RERANK_ENABLED=false` désactive complètement cette étape ; `RAG_RERANKER=lightweight` évite le téléchargement du modèle.
+
+La conception détaillée, les flux d'échec et les règles de sécurité se trouvent dans [docs/RAG_ARCHITECTURE.md](docs/RAG_ARCHITECTURE.md).
+
+## Stack
+
+| Couche | Technologies |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, TanStack Router/Query, Tailwind CSS |
+| Backend | FastAPI, Pydantic, SQLAlchemy, Alembic |
+| Données | PostgreSQL 16 en conteneur, SQLite en développement léger |
+| RAG | Qdrant, FastEmbed, BM25, Reciprocal Rank Fusion, OpenAI |
+| Qualité | Pytest, Vitest, ESLint, Playwright, RAGAS en évaluation facultative |
+| Déploiement local | Docker Compose, serveur statique Node pour le frontend construit |
+
+## Démarrage avec Docker
+
+Prérequis : Docker Desktop et une clé OpenAI pour la génération et les embeddings par défaut.
 
 ```bash
 cp .env.example .env
-# Renseigner OPENAI_API_KEY, ou choisir EMBEDDING_PROVIDER=local
+# renseigner OPENAI_API_KEY et remplacer JWT_SECRET
 docker compose up --build
 docker compose exec backend python scripts/import_chatbot_knowledge.py
 ```
 
-Connectez-vous avec l'administrateur de démonstration, ouvrez **Base de connaissances**, ajoutez un PDF/TXT/Markdown, puis posez une question au widget. Les sources apparaissent sous la réponse. Testez aussi une question absente : l'assistant doit signaler que les preuves sont insuffisantes.
+- Application : http://localhost:8080
+- API / Swagger : http://localhost:8000/docs
+- Qdrant : http://localhost:6333/dashboard
+- pgAdmin : http://localhost:5050
 
-Endpoints administratifs (JWT et RBAC requis) : `POST/GET /api/knowledge/documents`, `GET/DELETE /api/knowledge/documents/{id}`, et `POST /api/knowledge/documents/{id}/reindex`. Le chatbot conserve `POST /query-stream` et émet un événement `sources` structuré avant les tokens.
+Comptes de démonstration : `admin@sihia.health / admin123`, `dr.benali@sihia.health / demo1234`, `manager@sihia.health / manager123`, `staff@sihia.health / staff123`. Ils sont réservés au développement.
 
-Validation et évaluation :
+## Démarrage sans Docker
+
+Prérequis : Python 3.12+, Node.js 22+ et npm 10+.
+
+```bash
+# API (PowerShell)
+cd backend
+python -m venv venv
+.\venv\Scripts\pip install -r requirements.txt
+.\venv\Scripts\alembic upgrade head
+.\venv\Scripts\uvicorn app.main:app --reload --port 8000
+
+# Interface, dans un second terminal
+cd frontend
+npm ci
+npm run dev
+```
+
+L'API utilise alors SQLite par défaut. Pour la recherche RAG complète, lancez Qdrant et configurez `QDRANT_URL`; importez ensuite le corpus avec `python scripts/import_chatbot_knowledge.py`.
+
+Les variables essentielles sont décrites dans [.env.example](.env.example) : base SQL, CORS, JWT, fournisseurs LLM/embeddings, Qdrant, taille des chunks, seuils et reranking. Aucun secret ne doit être placé dans une variable frontend `VITE_*`.
+
+## Démonstration RAG
+
+1. Connectez-vous avec le compte administrateur.
+2. Ouvrez **Base de connaissances** et importez un PDF, un fichier Markdown ou texte.
+3. Posez une question couverte par le document et vérifiez les citations sous la réponse.
+4. Posez une question absente : l'assistant doit reconnaître l'insuffisance des preuves.
+
+Les endpoints d'administration sont protégés par JWT/RBAC sous `/api/knowledge/documents`. Le chatbot utilise `/query-stream` et envoie les sources structurées avant les tokens de réponse.
+
+## Tests et évaluation
 
 ```bash
 cd backend
-alembic upgrade head
-python -m pytest tests -q
-python -m app.rag.evaluation
-# Après ingestion dans Qdrant :
-python -m app.rag.evaluation --live
+.\venv\Scripts\python -m pytest tests -q
+.\venv\Scripts\python -m app.rag.evaluation
+
 cd ../frontend
 npm test
 npm run lint
 npm run build
+npx playwright test
 ```
 
-Les variables RAG/Qdrant et fournisseurs sont documentées dans `.env.example`. Les limites actuelles sont l'absence d'OCR, de génération Ollama et de job d'ingestion asynchrone; consultez [l'architecture RAG](docs/RAG_ARCHITECTURE.md) pour les responsabilités, échecs et considérations de sécurité.
+Dernière validation locale (11 août 2026) : 118 tests backend réussis et 1 ignoré, 65 tests frontend réussis, 17 scénarios Playwright réussis, lint sans erreur et build de production réussi.
 
-## ✨ Fonctionnalités
-
-- 🔐 **Authentification JWT** avec rotation des refresh tokens et RBAC
-- 📊 **Dashboard** : KPIs temps réel, prédiction de flux 7j, alertes critiques, prochains RDV
-- 👤 **Patients** : liste paginée + filtres + recherche, détail, formulaire de création, suppression
-- 🩺 **Médecins** : annuaire avec disponibilités, planning hebdo et statistiques
-- 📅 **Rendez-vous** : vue liste + vue calendrier hebdomadaire, création avec **détection de conflits**
-- 📈 **Analytique** : revenus, admissions, satisfaction, démographie (Recharts)
-- 🧠 **Prédiction IA** : prévisions 7/30 jours avec métadonnées de modèle et recommandations
-- 🛡 **RBAC** : utilisateurs, rôles, permissions
-- ⚙️ **Paramètres** : profil, établissement, notifications, langue
-- 🌍 **i18n FR / EN / AR** avec **mode RTL** automatique pour l'arabe
-- 🌓 **Thème clair / sombre / système** (Paramètres + bouton topbar)
-- 🎨 Design system **Calm Care** (tokens oklch, shadcn UI customisé)
-- 🤖 **Chatbot médical** : widget flottant (streaming SSE, guardrails, RAG, FR/EN)
-
-> **Production :** voir le guide complet [`Document/README_PRODUCTION.md`](Document/README_PRODUCTION.md) (implémentations livrées, checklist go-live, env, sécurité).
-
-## 🚀 Démarrage
-
-Structure du repo :
-
-```text
-sihia-platform/
-  frontend/   # React + TypeScript + Vite
-  backend/    # FastAPI + JWT + AI/RAG
-  docker/     # pgAdmin, etc.
-```
-
-### Lancer front + back (recommandé)
-
-```bash
-npm install
-npm install --prefix frontend
-npm run dev:all
-```
-
-- Frontend : http://localhost:8080
-- Backend : http://127.0.0.1:8000 — Swagger : http://127.0.0.1:8000/docs
-
-### Frontend seul
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Backend seul
+Le benchmark local contient 30 questions françaises et anglaises : recherches mono/multi-source, suivis conversationnels et cas sans réponse. Pour évaluer de vraies réponses générées avec RAGAS (appels réseau facturables) :
 
 ```bash
 cd backend
-python -m venv venv
-.\venv\Scripts\pip install -r requirements.txt
-.\venv\Scripts\uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+.\venv\Scripts\pip install -r requirements-eval.txt
+.\venv\Scripts\python -m app.rag.evaluation --live --generated
+# essai limité : ajouter --limit 5
 ```
 
-Identifiants démo : `admin@sihia.health` / `admin123`, `dr.benali@sihia.health` / `demo1234`.
+Les rapports générés sont écrits dans `backend/reports/` et ne sont pas versionnés.
 
-## Etat du projet
+## Limites connues
 
-Ouvre http://localhost:8080 — tu seras redirigé vers `/login`.
+- Pas d'OCR : les PDF scannés sans couche texte ne sont pas exploitables.
+- Ingestion synchrone, adaptée à une démonstration ou un corpus modéré, pas à un traitement documentaire massif.
+- Le modèle de reranking par défaut est surtout optimisé pour l'anglais ; le fallback lexical reste disponible pour le français.
+- La génération locale par Ollama n'est pas implémentée : la génération et l'évaluation RAGAS utilisent un endpoint compatible OpenAI.
+- Les métriques RAGAS nécessitent une clé fournisseur, ont un coût et ne font volontairement pas partie des tests unitaires.
+- Les contenus médicaux doivent être validés humainement avant un usage réel ; l'assistant ne diagnostique ni ne prescrit.
 
-### Deja fait
+## Captures
 
-- Frontend React + TypeScript avec TanStack Router, TanStack Query et Vite.
-- Backend FastAPI structure en architecture propre avec couches application, domaine, infrastructure et presentation.
-- Authentification JWT avec access token et refresh token.
-- Refresh token rotation, logout courant et logout-all cote backend.
-- RBAC avec permissions par role cote backend et guards cote frontend.
-- Pages metier deja disponibles pour dashboard, patients, medecins, rendez-vous, analytics, prediction, RBAC et settings.
-- Historique medical patient branche sur API reelle.
-- Analytics avec KPIs, revenus, admissions et satisfaction.
-- Prediction IA 7 jours et 30 jours avec metadonnees modele.
-- Page 403 pour les acces interdits.
-- i18n FR / EN / AR avec gestion RTL.
-- Design system deja en place dans le front.
-- Tests backend de securite auth deja ajoutes.
-- Chatbot medical RAG (widget H4H, OpenAI streaming, guardrails, audit JSONL).
+Les captures de référence peuvent être ajoutées sous `docs/screenshots/` : dashboard desktop/mobile, base de connaissances, citations du chatbot et gestion des rendez-vous.
 
-### Encore a faire
+## Documentation
 
-- Supprimer totalement les dependances mock dans les parcours de production.
-- Renforcer encore les parcours sensibles auth/RBAC.
-- Completer l'observabilite et les traces produits (vault, ELK).
-- Deploiement cloud production.
-
-**Backlog complet (IA, UX, métier, packs Brain*) :** voir [`Document/README_FUTUR_IMPLEMENTATION.md`](Document/README_FUTUR_IMPLEMENTATION.md).
-
-## Ce qui est deja implemente
-
-### Frontend
-
-Astuce : utiliser un email contenant `admin`, `manager` ou `staff` pour changer le rôle.
-
-- Login, redirection de session et protection des routes.
-- Dashboard avec KPIs, alertes et prevision de flux.
-- Liste, creation, suppression et detail des patients.
-- Fiche patient avec historique medical.
-- Annuaire medecins et vues metier associees.
-- Rendez-vous avec creation et gestion de conflit.
-- Analytics avec graphiques et export CSV.
-- Prediction avec bascule entre horizon 7 jours et 30 jours.
-- Ecrans RBAC et settings.
-- Guards d’affichage sur certaines actions sensibles.
-
-### Backend
-
-```bash
-cd backend
-python -m venv venv.
-.\venv\Scripts\pip install -r requirements.txt
-.\venv\Scripts\uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-- Endpoint login, refresh, logout et logout-all.
-- Endpoints patients, history, doctors, appointments.
-- Endpoints analytics, alerts, rbac users et prediction.
-- Health checks simples et detailles.
-- Gestion centralisee des erreurs HTTP et validation.
-- Protection des routes metier par permissions.
-
-Backend disponible sur `http://localhost:8000`
-Swagger UI : `http://localhost:8000/docs`
-
-### Securite et RBAC
-
-## ⚙️ Configuration
-
-- Les permissions sont derivees du JWT ou du role utilisateur.
-- Les routes sensibles sont protegees par permission.
-- Le frontend redirige vers `403` en cas d’acces refuse.
-- Le backend emet des tokens de session refresh avec rotation.
-
-Copier `.env.example` en `.env` :
-
-### Donnees et comportement en local
-
-```bash
-cp .env.example .env
-```
-
-- Le front peut utiliser des mocks uniquement en mode non-prod si `VITE_USE_MOCKS=true`.
-- En fonctionnement normal, le front appelle le backend FastAPI.
-- Le backend expose des donnees de demo coherentes pour permettre une navigation complete.
-
-| Variable | Description |
-|---|---|
-| `VITE_API_URL` | URL du backend FastAPI |
-| `VITE_USE_MOCKS` | `true` pour utiliser les mocks intégrés (ignoré en prod) |
-| `VITE_CLIENT_ID` | Slug chatbot (`sihia` par défaut, non secret) |
-
-> Le chatbot utilise le **JWT de session**. Ne pas exposer `CHATBOT_API_TOKEN` via une variable `VITE_*`.
-
-## Roadmap a suivre
-
-## 📁 Architecture
-
-Cette roadmap reprend la priorite logique a partir du code existant et du gap analysis.
-
-```
-### S1 - Stabilisation prod
-1. Verrouiller le mode production pour eliminer les fallback mocks sur les parcours critiques.
-2. Normaliser les reponses d’erreur backend et les messages frontend.
-3. Renforcer l’auth avec une meilleure gestion d’expiration et de logout.
-4. Securiser totalement les ecrans et actions RBAC sensibles.
-
-### S2 - Valeur metier
-1. Completer les exports analytics en PDF et Excel.
-2. Industrialiser les vues de prediction avec plus de contexte modele.
-3. Consolider les parcours patients avec davantage de regles metier.
-4. Ajouter des indicateurs de fraicheur et de provenance des donnees.
-
-### S3 - Qualite produit
-1. Ajouter davantage de tests API et tests frontend sur les flux critiques.
-2. Introduire l’observabilite applicative exploitable par l’equipe.
-3. Ajouter des migrations versionnees si la base doit evoluer dans la duree.
-4. Renforcer la conformite et la traçabilite des actions sensibles.
-
-### V2 - Extension fonctionnelle
-1. Preparer un chatbot medical avec disclaimer et escalation vers humain.
-2. Ajouter des fonctions d’administration avancée des utilisateurs et permissions.
-3. Ajouter des rappels metier automatiques pour les rendez-vous.
-4. Etendre la partie BI et les analyses predictives.
-```
-
-## Roadmap detaillee par priorite
-
-| Priorite | Objectif | Livraison attendue |
-|---|---|---|
-| P0 | Fiabiliser l’integration backend | Aucun parcours critique en mock sur l’environnement cible |
-| P0 | Rendre RBAC effectif partout | Actions sensibles bloquees par role et permission |
-| P1 | Completer analytics | Exports PDF / Excel et donnees mieux tracees |
-| P1 | Etendre la prediction | Horizon 7j / 30j plus lisible et documente |
-| P2 | Consolider patients | Historique medical et regles metier enrichies |
-| P2 | Ameliorer observabilite | Logs, health et suivi d’erreurs exploitables |
-| P3 | Deploiement cloud | Docker compose OK ; pas encore deploy prod |
-
-## Architecture du projet
-
-```text
-src/
-├── components/
-│   ├── layout/        # Sidebar, Topbar, AppLayout
-│   ├── shared/        # KpiCard, StatusBadge, States, ConfirmDialog…
-│   └── ui/            # shadcn/ui
-│   ├── shared/        # KpiCard, StatusBadge, States, PermissionGuard, etc.
-│   └── ui/            # Composants UI de base
-├── lib/
-│   ├── api/
-│   │   ├── services.ts   # 👈 Couche API centralisée (mock → FastAPI)
-│   │   ├── mockData.ts   # Données réalistes
-│   │   └── types.ts
-│   ├── auth/store.ts     # Zustand auth (token, user, role)
-│   └── i18n/
-│       ├── dictionaries.ts # FR / EN / AR
-│       └── store.ts        # Zustand + RTL auto
-├── routes/
-│   ├── __root.tsx
-│   ├── login.tsx
-│   ├── _app.tsx           # Layout protégé (auth guard)
-│   └── _app/
-│       ├── dashboard.tsx
-│       ├── patients/[index, $patientId].tsx
-│       ├── doctors.tsx
-│       ├── appointments.tsx
-│       ├── analytics.tsx
-│       ├── prediction.tsx
-│       ├── rbac.tsx
-│       └── settings.tsx
-└── styles.css         # Design tokens Calm Care (oklch)
-│   ├── api/           # Services HTTP, types et mocks
-│   ├── auth/          # Store auth, permissions, route guards
-│   └── i18n/          # Dictionnaires et store de langue
-├── routes/            # Routes TanStack Router
-└── styles.css         # Styles globaux et design system
-
-backend/app/
-├── application/       # Cas d’usage et schemas
-├── core/              # Configuration et securite
-├── domain/            # Modeles et ports
-├── infrastructure/    # Repositories et stockage
-└── presentation/      # API HTTP et dependances
-```
-
-## 🔌 Brancher FastAPI
-
-Tous les appels passent par `src/lib/api/services.ts`.
-Pour migrer vers le vrai backend :
-
-## Lancer le projet en local
-
-```ts
-// Avant (mock)
-list: () => delay(PATIENTS),
-
-### Frontend
-// Après (FastAPI)
-list: async () => {
-	const r = await fetch(`${API_URL}/patients`, {
-		headers: { Authorization: `Bearer ${useAuth.getState().token}` },
-	});
-	if (!r.ok) throw new Error("API error");
-	return r.json();
-},
-```
-
-```bash
-npm install
-npm run dev
-```
-
-Endpoints attendus côté FastAPI :
-- `POST /auth/login`
-- `POST /auth/refresh`
-- `POST /auth/logout`
-- `POST /auth/logout-all`
-- `GET/POST/DELETE /patients`
-- `GET/POST /patients/{id}/history`
-- `GET /doctors`
-- `GET/POST /rendez-vous`
-- `GET /analytics/*`
-- `GET /ml/predict-7d`
-- `GET /ml/predict-30d`
-- `GET /health/details`
-
-Le front est disponible sur http://127.0.0.1:5173.
-
-### Backend
-
-## ✅ Travaux réalisés dans cette session
-
-### Sécurité Auth / Session
-
-- Passage à une auth JWT complète avec **access token + refresh token**
-- Endpoint `POST /api/auth/refresh` implémenté
-- **Rotation des refresh tokens** (un refresh token = usage unique)
-- Stockage des sessions refresh en base SQLite (`refresh_sessions`)
-- Révocation de session :
-	- `POST /api/auth/logout` (appareil courant)
-	- `POST /api/auth/logout-all` (tous les appareils)
-- Limite du nombre de sessions actives par utilisateur (`max_refresh_sessions_per_user`)
-- Mots de passe sécurisés en `pbkdf2_sha256` (+ migration auto des anciens mots de passe en clair)
-
-### Persistance backend
-
-- Remplacement des repositories in-memory par des repositories SQLite
-- Création auto de la base (`backend/app.db`) et des tables
-- Seed initial des utilisateurs et médecins
-- Persistance durable des patients, rendez-vous, historique médical, sessions refresh
-
-### RBAC et contrôle d'accès
-
-- Vérification de permissions backend par route (`require_permission`)
-- Protection des actions sensibles (ex: suppression patient, lecture RBAC users)
-- Guards frontend sur navigation et actions (sidebar + boutons)
-
-### Fonctionnel métier
-
-- Historique médical patient branché sur API réelle (`GET/POST /patients/{id}/history`)
-- Validation renforcée du formulaire patient
-- Prédiction IA étendue 7j/30j avec métadonnées modèle
-- Analytics avec filtre période (`3m/6m/12m`) et export CSV
-- Page 403 dédiée pour accès refusé
-
-### Observabilité et UX
-
-- `GET /health/details` backend
-- Indicateur de santé API dans la sidebar (ok/degraded/down)
-- Toasts d’erreur réseau / serveur
-- Confirmation avant "Déconnecter tous les appareils"
-
-### Tests et validation
-
-- Tests backend ajoutés dans `backend/tests/test_auth_security.py`
-- Couverture tests auth:
-	- hash + verify password
-	- rotation refresh token
-	- logout session
-	- limite sessions actives
-- Résultat actuel : **4 tests passés**
-
-## 🛣️ Étapes suivantes recommandées
-
-### Priorité P0 (production readiness)
-
-- Ajouter une **gestion de secrets par environnement** (`JWT_SECRET` via `.env`, jamais hardcodé)
-- Ajouter une **table users administrable** (CRUD users/roles côté RBAC)
-- Implémenter **rate limiting** sur login/refresh (protection brute force)
-
-### Priorité P1 (qualité et exploitation)
-
-- Ajouter migrations versionnées (**Alembic**) au lieu de création implicite
-- Ajouter suite de tests API FastAPI (patients, appointments, analytics)
-- Ajouter tests frontend (auth flow, guards RBAC)
-
-### Priorité P2 (fonctionnel métier)
-
-- Export PDF analytics
-- Edition planning médecins
-- Rappels RDV automatiques (statut + historique en UI)
-- Durcir la conformité RGPD (journal d’audit, masquage données sensibles)
-
-## 🌍 Multilingue & RTL
-
-Le store `useI18n` applique automatiquement `<html dir="rtl">` quand `locale=ar`.
-Pour ajouter des clés : `src/lib/i18n/dictionaries.ts`.
-
-Utilisation :
-
-```tsx
-const t = useT();
-<h1>{t("dash.kpi.patients")}</h1>
-```
-
-```bash
-cd backend
-python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-## 📜 Scripts
-
-Le backend est disponible sur http://127.0.0.1:8000.
-La documentation Swagger est disponible sur http://127.0.0.1:8000/docs.
-
-## Configuration
-
-| Commande | Action |
-|---|---|
-| Copier le fichier d’exemple d’environnement si necessaire. |
-
-| Variable | Role |
-|---|---|
-| `npm run dev` | Serveur de développement |
-| `npm run build` | Build de production |
-| `npm run start` | Serveur de production |
-| `VITE_API_URL` | URL du backend FastAPI |
-| `VITE_USE_MOCKS` | Active les mocks front uniquement hors production |
-
-## Comptes de demo
-
-Le backend fournit des comptes de demo selon les donnees seedees.
-
-- `dr.benali@sihia.health` / `demo1234`
-- `admin@sihia.health` / `admin123`
-
-## Endpoints principaux
-
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `POST /api/auth/logout-all`
-- `GET /api/patients`
-- `GET /api/patients/{id}`
-- `GET/POST /api/patients/{id}/history`
-- `GET /api/doctors`
-- `GET /api/appointments`
-- `GET /api/analytics/kpis`
-- `GET /api/analytics/revenue`
-- `GET /api/analytics/admissions-dept`
-- `GET /api/analytics/satisfaction`
-- `GET /api/ml/predict-7d`
-- `GET /api/ml/predict-30d`
-- `GET /api/alerts`
-- `GET /api/rbac/users`
-- `GET /health`
-- `GET /health/details`
-
-## Tests et validation
-
-Des tests backend existent deja pour les parcours de securite auth. La suite a renforcer en priorite concerne les flux patients, rendez-vous, analytics et RBAC.
-
-## Note importante
-
----
-© 2025 SIH IA — Frontend démo
-
-Le projet est deja bien avance pour une demo et un pilote limite. Pour une mise en production sereine, la priorite doit rester la stabilisation de l’auth, du RBAC et de l’integration backend, avant d’attaquer les extensions futures.
+- [Architecture RAG](docs/RAG_ARCHITECTURE.md)
+- [Guide de production](Document/README_PRODUCTION.md)
+- [Guide de déploiement](Document/README_DEPLOY.md)
+- [Documentation SIHIA](Document/README.md)

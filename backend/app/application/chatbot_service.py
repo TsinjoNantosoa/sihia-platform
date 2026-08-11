@@ -209,6 +209,35 @@ class ChatbotService:
                     if token:
                         yield token
 
+    def generate_for_evaluation(
+        self,
+        query: str,
+        *,
+        lang: str = "fr",
+        previous_question: str = "",
+    ) -> dict[str, Any]:
+        """Run the production retrieval/prompt/generation path without session side effects."""
+        if not self.settings.openai_api_key:
+            raise RuntimeError("OPENAI_API_KEY is required for generated-answer evaluation")
+        retrieval_query = f"{previous_question}\nFollow-up: {query}" if previous_question else query
+        contexts: list[str] = []
+        sources: list[dict[str, Any]] = []
+        if self.settings.rag_enabled and self.retriever:
+            results = self.retriever.retrieve(retrieval_query)
+            contexts = [item.chunk.content for item in results]
+            sources = [item.citation() for item in results]
+        context = "\n\n".join(contexts)
+        if not context:
+            context, legacy_sources = self._retrieve_context(retrieval_query, lang)
+            contexts = [context] if context else []
+            sources = [{"document_id": source.split(" ", 1)[0], "filename": source} for source in legacy_sources]
+        messages = [
+            {"role": "system", "content": self._system_prompt(lang, context)},
+            {"role": "user", "content": query},
+        ]
+        response = "".join(self._stream_openai_tokens(messages)).strip()
+        return {"response": response, "retrieved_contexts": contexts, "sources": sources}
+
     async def stream_reply(self, session_id: str, query: str, lang: str) -> AsyncIterator[str]:
         lang = (lang or "fr").lower()
         gate: GuardrailResult | None = evaluate_guardrails(query, lang)

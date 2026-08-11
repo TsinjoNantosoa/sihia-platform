@@ -1,5 +1,8 @@
 from pathlib import Path
 
+import pytest
+from fastapi import HTTPException
+
 from app.application.use_cases import AuthService, ROLE_PERMISSIONS
 from app.core.config import settings
 from app.core.security import decode_access_token, hash_password, verify_password
@@ -95,10 +98,9 @@ def test_max_refresh_sessions_limit(tmp_path: Path) -> None:
         refresh_tokens.append(refresh)
     # oldest should be pruned
     for old in refresh_tokens[:2]:
-        try:
+        with pytest.raises(HTTPException) as error:
             auth.refresh(old)
-            assert False, "Old sessions should be pruned"
-        except Exception:
-            pass
+        assert error.value.status_code == 401
     # latest should still work
-    _access, _refresh = auth.refresh(refresh_tokens[-1])
+    for recent in refresh_tokens[-3:]:
+        _access, _refresh = auth.refresh(recent)

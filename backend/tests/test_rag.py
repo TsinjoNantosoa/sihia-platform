@@ -1,10 +1,13 @@
 import pytest
+import json
+from pathlib import Path
 
 from app.rag.chunking import RecursiveChunker
 from app.rag.embeddings import EmbeddingProvider
 from app.rag.ingestion import DocumentIngestionService, DuplicateDocumentError, document_checksum, safe_filename
+from app.rag.evaluation import evaluate_retrieval, retrieval_question
 from app.rag.parsers import DocumentParseError, parse_document
-from app.rag.retrieval import HybridRetriever, LightweightReranker, build_context
+from app.rag.retrieval import CrossEncoderReranker, HybridRetriever, LightweightReranker, build_context
 from app.rag.types import KnowledgeChunk, ParsedSection, RetrievedChunk
 from app.rag.vector_repository import MemoryVectorRepository
 from fastapi.testclient import TestClient
@@ -102,6 +105,76 @@ def test_reranker_prefers_exact_query_terms():
     strong = RetrievedChunk(make_chunk("strong", "appointment appointment booking"), .5)
     ranked = LightweightReranker().rerank("appointment booking", [weak, strong])
     assert ranked[0].chunk.id == "strong"
+
+
+def test_cross_encoder_orders_candidates_and_loads_once():
+    class FakeModel:
+        def rerank(self, query, documents):
+            assert query == "appointment booking"
+            return [0.1, 2.0]
+
+    loads = []
+    reranker = CrossEncoderReranker("test-model", model_loader=lambda name: loads.append(name) or FakeModel())
+    weak = RetrievedChunk(make_chunk("weak", "hospital information"), .5)
+    strong = RetrievedChunk(make_chunk("strong", "appointment booking"), .5)
+    assert reranker.rerank("appointment booking", [weak, strong])[0].chunk.id == "strong"
+    reranker.rerank("appointment booking", [weak, strong])
+    assert loads == ["test-model"]
+
+
+def test_cross_encoder_falls_back_and_empty_results_do_not_load():
+    loads = []
+    reranker = CrossEncoderReranker(
+        "missing", model_loader=lambda name: loads.append(name) or (_ for _ in ()).throw(RuntimeError("offline"))
+    )
+    assert reranker.rerank("appointment", []) == []
+    assert loads == []
+    weak = RetrievedChunk(make_chunk("weak", "hospital information"), .5)
+    strong = RetrievedChunk(make_chunk("strong", "appointment appointment"), .5)
+    assert reranker.rerank("appointment", [weak, strong])[0].chunk.id == "strong"
+    assert loads == ["missing"]
+
+
+def test_disabled_reranking_does_not_call_reranker():
+    class FailingReranker:
+        def rerank(self, query, candidates):
+            raise AssertionError("reranker must be disabled")
+
+    chunk = make_chunk()
+    vectors = MemoryVectorRepository(); vectors.upsert([chunk], [[1, 0]])
+    retriever = HybridRetriever(
+        FakeEmbeddings(), vectors, FakeDocuments([chunk]), top_k=5, final_k=2,
+        threshold=.2, rerank_enabled=False, reranker=FailingReranker(),
+    )
+    assert retriever.retrieve("appointment")
+
+
+def test_retrieval_evaluation_handles_followups_and_no_answer():
+    seen = []
+    cases = [
+        {"id": "follow", "question": "Et demain ?", "previous_question": "Quels horaires ?", "expected_sources": ["hours"]},
+        {"id": "missing", "question": "Question absente", "expected_sources": []},
+    ]
+
+    def retrieve(query):
+        seen.append(query)
+        return [RetrievedChunk(make_chunk("hours", "Opening hours"), 1.0)] if "horaires" in query else []
+
+    report = evaluate_retrieval(cases, retrieve)
+    assert retrieval_question(cases[0]) == "Quels horaires ?\nFollow-up: Et demain ?"
+    assert report["metrics"]["hit_at_k"] == 1.0
+    assert report["metrics"]["no_answer_accuracy"] == 1.0
+    assert len(seen) == 2
+
+
+def test_evaluation_dataset_has_meaningful_coverage():
+    dataset_path = Path(__file__).resolve().parents[1] / "evaluation" / "rag_dataset.json"
+    dataset = json.loads(dataset_path.read_text(encoding="utf-8"))
+    assert 30 <= len(dataset) <= 50
+    assert {case["lang"] for case in dataset} == {"fr", "en"}
+    assert any(not case["expected_sources"] for case in dataset)
+    assert any(case.get("previous_question") for case in dataset)
+    assert any(len(case["expected_sources"]) > 1 for case in dataset)
 
 
 def _headers(email="admin@sihia.health", password="admin123"):

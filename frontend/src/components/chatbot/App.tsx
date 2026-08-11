@@ -17,7 +17,7 @@ function readRuntimeVar(key: string): string {
   return (((window as unknown as Record<string, unknown>)[key] as string) ?? "").trim();
 }
 
-/** Tenant slug: ?client_id=victrix in URL overrides .env (one build, all tenants). */
+/** The URL may override the SIHIA tenant slug for deployment configuration. */
 function resolveClientId(): string {
   if (typeof window !== "undefined") {
     const fromUrl = new URLSearchParams(window.location.search)
@@ -77,7 +77,7 @@ export default function App() {
   } as React.CSSProperties;
 
   return (
-    <div className="aaa-chat-root" style={cssVars}>
+    <div className="sihia-chat-root" style={cssVars}>
       <ChatWidget
         apiBaseUrl={apiBaseUrl}
         clientId={clientId}

@@ -1,38 +1,8 @@
-/**
- * Branding fallbacks aligned with PostgreSQL tenant_ui_config (used until /ui-config returns).
- * DB remains source of truth; these values avoid showing ALAN.AI on victrix/h4h when API is slow.
- */
-export const BOT_NAME_BY_CLIENT: Record<string, string> = {
-  sihia: "SIH IA Assistant",
-  aaa: "ALAN.AI",
-  victrix: "Victrix Assistant",
-  h4h: "H4H Assistant",
-};
-
-export const PRIMARY_COLOR_BY_CLIENT: Record<string, string> = {
-  sihia: "#0d6e6e",
-  aaa: "#132251",
-  victrix: "#143a56",
-  h4h: "#E87722",
-};
-
-/** Paths served by the API StaticFiles mount (`/static/logos/...`). */
+/** SIHIA branding used until the API configuration is available. */
+export const BOT_NAME_BY_CLIENT: Record<string, string> = { sihia: "SIH IA Assistant" };
+export const PRIMARY_COLOR_BY_CLIENT: Record<string, string> = { sihia: "#0d6e6e" };
 export const LOGO_STATIC_PATH_BY_CLIENT: Record<string, string> = {
   sihia: "/static/logos/sihia-bot.svg",
-  aaa: "/static/logos/aaa-logo-official.webp",
-  victrix: "/static/logos/victrix-square.webp",
-  h4h: "/static/logos/h4h-logo.svg",
-};
-
-/**
- * Absolute Cloudinary URLs — mirror of db/03-seed_tenant_ui_config.sql.
- * Used as hard fallback when /ui-config is unreachable (502/404/timeout).
- * These are public CDN URLs that never depend on the API host.
- */
-export const LOGO_CLOUDINARY_BY_CLIENT: Record<string, string> = {
-  aaa: "https://res.cloudinary.com/dyboocrfp/image/upload/v1/aaa-logo-official_sglghz",
-  victrix: "https://res.cloudinary.com/dyboocrfp/image/upload/v1/victrix-square_zs7xi2",
-  h4h: "https://res.cloudinary.com/dyboocrfp/image/upload/v1/h4h-logo_h6lti5",
 };
 
 function readRuntimeVar(key: string): string {
@@ -43,13 +13,10 @@ function readRuntimeVar(key: string): string {
 export function resolveApiBaseUrl(): string {
   const runtime = readRuntimeVar("__CHATBOT_API_BASE_URL__");
   if (runtime) return runtime.replace(/\/$/, "");
-  const fromSihia = import.meta.env.VITE_API_URL?.trim();
-  if (fromSihia) return fromSihia.replace(/\/$/, "");
-  const fromEnv = import.meta.env.VITE_API_BASE_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
-  if (import.meta.env.DEV) return "http://127.0.0.1:8001";
-  // Prod sans VITE_API_URL : même origine (reverse-proxy) plutôt qu’un host tiers.
-  return "";
+  const configured =
+    import.meta.env.VITE_API_URL?.trim() || import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configured) return configured.replace(/\/$/, "");
+  return import.meta.env.DEV ? "http://127.0.0.1:8001" : "";
 }
 
 export function resolveLogoUrl(
@@ -64,10 +31,8 @@ export function resolveLogoUrl(
     if (fromApi.startsWith("/")) return `${api}${fromApi}`;
     return `${api}/static/logos/${fromApi}`;
   }
-  const slug = normalizeClientSlug(clientId);
-  const cloudinary = LOGO_CLOUDINARY_BY_CLIENT[slug];
-  if (cloudinary) return cloudinary;
-  const path = LOGO_STATIC_PATH_BY_CLIENT[slug] || LOGO_STATIC_PATH_BY_CLIENT.sihia;
+  const path =
+    LOGO_STATIC_PATH_BY_CLIENT[normalizeClientSlug(clientId)] || LOGO_STATIC_PATH_BY_CLIENT.sihia;
   return `${api}${path}`;
 }
 
@@ -78,17 +43,15 @@ export function normalizeClientSlug(slug?: string): string {
 export function resolveBotName(clientId?: string, themeBotName?: string): string {
   const fromTheme = (themeBotName || "").trim();
   if (fromTheme) return fromTheme;
-  const slug = normalizeClientSlug(clientId);
-  return BOT_NAME_BY_CLIENT[slug] || "Assistant";
+  return BOT_NAME_BY_CLIENT[normalizeClientSlug(clientId)] || BOT_NAME_BY_CLIENT.sihia;
 }
 
 export function resolvePrimaryColor(clientId?: string, themeColor?: string): string {
   const fromTheme = (themeColor || "").trim();
   if (fromTheme) return fromTheme;
-  return PRIMARY_COLOR_BY_CLIENT[normalizeClientSlug(clientId)] || "#0d6e6e";
+  return PRIMARY_COLOR_BY_CLIENT[normalizeClientSlug(clientId)] || PRIMARY_COLOR_BY_CLIENT.sihia;
 }
 
-/** Lit le JWT de session SIH IA (zustand persist) — jamais un secret build-time. */
 export function resolveSessionAccessToken(): string {
   if (typeof window === "undefined") return "";
   try {
@@ -101,15 +64,9 @@ export function resolveSessionAccessToken(): string {
   }
 }
 
-/**
- * Token d’auth chatbot côté client.
- * Priorité : JWT session → injection runtime serveur (`__CHATBOT_API_TOKEN__`).
- * Ne jamais utiliser `VITE_*` pour un secret (exposé dans le bundle).
- */
+/** Resolve a session JWT or a server-injected runtime token; never a build-time secret. */
 export function resolveApiToken(): string {
-  const session = resolveSessionAccessToken();
-  if (session) return session;
-  return readRuntimeVar("__CHATBOT_API_TOKEN__");
+  return resolveSessionAccessToken() || readRuntimeVar("__CHATBOT_API_TOKEN__");
 }
 
 export function chatbotAuthHeaders(
@@ -117,14 +74,8 @@ export function chatbotAuthHeaders(
   tenantId: string,
   apiToken?: string,
 ): Record<string, string> {
-  const headers: Record<string, string> = {
-    "X-Client-ID": clientId,
-    "X-Tenant-ID": tenantId,
-  };
+  const headers: Record<string, string> = { "X-Client-ID": clientId, "X-Tenant-ID": tenantId };
   const token = (apiToken || resolveApiToken()).trim();
-  if (token) {
-    // Un seul schéma Bearer : JWT session ou token serveur injecté runtime.
-    headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }

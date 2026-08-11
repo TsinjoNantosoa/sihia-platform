@@ -1,27 +1,14 @@
-# Chatbot medical (phase post-MVP)
+# Assistant documentaire RAG SIHIA
 
-## Positionnement
-Assistant d information et d orientation. Jamais de diagnostic critique.
+L'assistant fournit des informations et une orientation à partir du corpus validé. Il ne pose pas de diagnostic et ne prescrit pas. Les urgences et demandes médicales dangereuses sont interceptées avant la génération.
 
-## Scope V1 chatbot
-- FAQ medicale generale
-- Orientation service
-- Rappels simples
-- Escalade urgence immediate
+Le flux implémenté comprend :
 
-## Architecture proposee
-- LLM open source
-- RAG sur base de connaissance validee
-- Guardrails pour filtrage demandes dangereuses
+- ingestion PDF, Markdown et texte avec validation, empreinte SHA-256 et métadonnées ;
+- stockage des chunks en SQL et des embeddings dans Qdrant ;
+- récupération hybride dense/BM25, fusion RRF et reranking cross-encoder avec fallback lexical ;
+- prompt limité aux preuves récupérées, réponse SSE et citations structurées ;
+- audit sans contenu conversationnel brut et contrôle d'accès JWT/RBAC ;
+- benchmark de récupération local et évaluation RAGAS facultative des réponses générées.
 
-## Garde-fous obligatoires
-- Disclaimer visible a chaque session
-- Blocage demandes hors perimetre
-- Redirection urgences
-- Audit log conversation
-
-## Definition of done chatbot
-- Taux reponses hors perimetre controle
-- Escalade urgence testee
-- Corpus source traceable
-- Validation medicale humaine des contenus
+La description de référence, les variables et les modes de défaillance sont maintenus dans [`docs/RAG_ARCHITECTURE.md`](../docs/RAG_ARCHITECTURE.md). Les commandes d'installation, de démonstration et d'évaluation sont dans le [`README.md`](../README.md) racine.

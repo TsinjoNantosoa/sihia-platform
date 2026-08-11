@@ -1,9 +1,8 @@
 import React from "react";
-import logoWebp from "../assets/OIP.webp";
 import type { ClientTheme } from "../types/client";
 import { resolveBotName, resolveLogoUrl } from "../lib/tenantBranding";
 
-const defaultLogo = logoWebp;
+const defaultLogo = resolveLogoUrl("sihia");
 
 type Props = {
   open: boolean;

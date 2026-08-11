@@ -1,4 +1,6 @@
 import json
+import threading
+import time
 from typing import Any
 
 from app.domain.models import Appointment, AppointmentStatus, Doctor, MedicalVisit, Patient, User
@@ -391,12 +393,24 @@ class SQLiteAppointmentRepository:
         return Appointment(**updated) if updated else None
 
 
+_refresh_created_lock = threading.Lock()
+_last_refresh_created_ns = 0
+
+
+def _next_refresh_created_ns() -> int:
+    """Return a process-local, strictly increasing session creation timestamp."""
+    global _last_refresh_created_ns
+    with _refresh_created_lock:
+        _last_refresh_created_ns = max(time.time_ns(), _last_refresh_created_ns + 1)
+        return _last_refresh_created_ns
+
+
 class SQLiteRefreshSessionRepository:
     def create(self, session_id: str, user_id: str, expires_at_ts: int) -> None:
         conn = connect()
         conn.execute(
-            "INSERT OR REPLACE INTO refresh_sessions (session_id,user_id,expires_at_ts,revoked) VALUES (?,?,?,0)",
-            (session_id, user_id, expires_at_ts),
+            "INSERT OR REPLACE INTO refresh_sessions (session_id,user_id,expires_at_ts,created_at_ns,revoked) VALUES (?,?,?,?,0)",
+            (session_id, user_id, expires_at_ts, _next_refresh_created_ns()),
         )
         conn.commit()
         conn.close()
@@ -429,7 +443,7 @@ class SQLiteRefreshSessionRepository:
             SELECT session_id
             FROM refresh_sessions
             WHERE user_id=? AND revoked=0 AND expires_at_ts>?
-            ORDER BY expires_at_ts DESC
+            ORDER BY created_at_ns DESC, session_id DESC
             """,
             (user_id, now_ts),
         ).fetchall()

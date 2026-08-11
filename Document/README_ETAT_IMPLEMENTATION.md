@@ -75,7 +75,7 @@ Ce document est la **checklist vivante** du projet. Cocher `[x]` uniquement lors
 - [x] Guards routes (`requireRoutePermission`)
 - [x] Paramètres — **pipeline admin UI** (`PipelineAdminPanel`, statut DAGs, lancer runs)
 - [x] Paramètres — **statut canaux rappels** + lien MailHog
-- [x] **Chatbot médical** — widget flottant H4H (`SihiaChatbot`, streaming SSE, FR/EN, guardrails)
+- [x] **Chatbot médical** — widget flottant SIHIA (`SihiaChatbot`, streaming SSE, FR/EN, guardrails)
 - [x] UX 401/403 centralisée (`httpErrors.ts` : toast i18n, redirection, exports blob)
 
 ### 1.3 Qualité front
@@ -271,7 +271,7 @@ npm run migrate:pg
 - [x] Docker Compose (`docker-compose.yml` + Dockerfiles)
 - [x] CI/CD GitHub Actions (`.github/workflows/ci.yml`)
 - [x] Airflow (DAGs import / refresh / ML features + CLI `pipeline:run`)
-- [x] Chatbot RAG + guardrails (widget H4H, OpenAI streaming, escalade urgence 15/112)
+- [x] Chatbot RAG + guardrails (widget SIHIA, OpenAI streaming, escalade urgence 15/112)
 - [x] Rappels RDV (email / SMS — log, **SMTP** via MailHog/prod, **Twilio** optionnel)
 - [ ] HL7 FHIR, mobile, marketplace (hors MVP)
 
@@ -290,7 +290,7 @@ npm run migrate:pg
 | Prédiction IA | ✅ | Prévisions 7j/30j depuis RDV réels ; Prophet optionnel ; métadonnées exposées API + UI |
 | RBAC | ✅ | Guards + CRUD admin utilisateurs |
 | i18n + a11y | ✅ | |
-| Chatbot | ✅ | Widget H4H intégré, RAG JSON, guardrails, audit, 8 tests |
+| Chatbot | ✅ | Widget SIHIA intégré, RAG, guardrails et audit |
 | Data pipeline | ✅ | DAGs Airflow + API + **UI admin Paramètres** |
 | DevOps | 🟡 | Docker + CI ; pas encore déploiement cloud |
 
@@ -350,7 +350,7 @@ npm run migrate:pg
 | 2026-06-16 | API `GET /api/ml/metrics` (MAE/MAPE holdout 7j) + `MlMetricsPanel` page prédiction | `test_ml_metrics.py`, `test_ml_engine.py` |
 | 2026-06-16 | SMTP rappels RDV (`notification_channels`, MailHog Docker, `/admin/reminders/status`, bannière UI) | `test_notification_channels.py`, `test_health_details.py` |
 | 2026-06-16 | MailHog activé (`backend/.env` SMTP) + UI pipeline admin (`PipelineAdminPanel` dans Paramètres) | manuel + `test_pipeline.py` |
-| 2026-07-02 | Chatbot RAG complet (`chatbot_service`, widget H4H dans `AppLayout`, `/ui-config`, `/query-stream`) | `test_chatbot.py` (8), 68/68 pytest |
+| 2026-07-02 | Chatbot RAG complet (`chatbot_service`, widget SIHIA dans `AppLayout`, `/ui-config`, `/query-stream`) | `test_chatbot.py` |
 | 2026-05-26 | Conflit RDV par chevauchement de durée | `test_appointment_overlap.py` |
 | 2026-05-26 | RBAC users depuis DB ; CORS + JWT env ; Correlation-ID | pytest 15/15 |
 | 2026-05-26 | `httpx` ajouté à `requirements.txt` pour TestClient | — |

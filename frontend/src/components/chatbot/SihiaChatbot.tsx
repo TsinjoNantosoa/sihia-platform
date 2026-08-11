@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import App from "./App";
 import "./chatbot.css";
 
-/** Widget chatbot H4H intégré dans SIH IA (client_id=sihia par défaut). */
+/** Widget de l'assistant médical SIHIA. */
 export function SihiaChatbot() {
   useEffect(() => {
     if (typeof window === "undefined") return;

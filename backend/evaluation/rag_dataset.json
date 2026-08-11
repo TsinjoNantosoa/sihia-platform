@@ -1,27 +1,32 @@
 [
-  {
-    "question": "Comment prendre un rendez-vous ?",
-    "expected_answer": "Ouvrir le menu Rendez-vous puis Nouveau RDV.",
-    "expected_sources": ["appointments"]
-  },
-  {
-    "question": "Quels sont les horaires des urgences ?",
-    "expected_answer": "Les urgences sont ouvertes 24 heures sur 24.",
-    "expected_sources": ["hours"]
-  },
-  {
-    "question": "Quel est le parcours d'une consultation externe ?",
-    "expected_answer": "Accueil, salle d'attente, consultation puis sortie ou prochain rendez-vous.",
-    "expected_sources": ["pathway-consultation"]
-  },
-  {
-    "question": "How are appointment reminders sent?",
-    "expected_answer": "Email or SMS reminders are sent around 24 hours before the appointment.",
-    "expected_sources": ["reminders"]
-  },
-  {
-    "question": "Comment les dossiers patients sont-ils protégés ?",
-    "expected_answer": "Les accès sont contrôlés par RBAC et audités.",
-    "expected_sources": ["faq-gdpr", "patients"]
-  }
+  {"id":"appointments-fr-1","category":"appointments","lang":"fr","question":"Comment prendre un rendez-vous ?","expected_answer":"Se connecter, ouvrir le menu Rendez-vous, choisir Nouveau RDV et vérifier les conflits de créneaux.","expected_sources":["appointments"]},
+  {"id":"appointments-fr-2","category":"appointments","lang":"fr","question":"Où puis-je créer un nouveau RDV ?","expected_answer":"Depuis le menu Rendez-vous avec le bouton Nouveau rendez-vous.","expected_sources":["appointments"]},
+  {"id":"appointments-en-1","category":"appointments","lang":"en","question":"How do I book an appointment?","expected_answer":"Sign in, open Appointments, choose New appointment and check for slot conflicts.","expected_sources":["appointments"]},
+  {"id":"hours-fr-1","category":"hours","lang":"fr","question":"Quels sont les horaires de l'accueil ?","expected_answer":"L'accueil est ouvert du lundi au vendredi de 8 h à 18 h et le samedi de 8 h à 12 h.","expected_sources":["hours"]},
+  {"id":"hours-fr-2","category":"hours","lang":"fr","question":"Les urgences sont-elles ouvertes la nuit ?","expected_answer":"Oui, les urgences fonctionnent 24 heures sur 24 et 7 jours sur 7.","expected_sources":["hours"]},
+  {"id":"hours-en-1","category":"hours","lang":"en","question":"When is reception open?","expected_answer":"Reception is open Monday to Friday from 8 am to 6 pm and Saturday from 8 am to noon.","expected_sources":["hours"]},
+  {"id":"departments-fr-1","category":"departments","lang":"fr","question":"Quels services et spécialités sont disponibles ?","expected_answer":"Les services répertoriés sont la cardiologie, la pédiatrie, la médecine générale et l'imagerie.","expected_sources":["departments"]},
+  {"id":"departments-fr-2","category":"departments","lang":"fr","question":"Avez-vous un service de cardiologie ?","expected_answer":"Oui, la cardiologie fait partie des spécialités proposées.","expected_sources":["departments"]},
+  {"id":"departments-en-1","category":"departments","lang":"en","question":"Is pediatrics available?","expected_answer":"Yes, pediatrics is listed among the available specialties.","expected_sources":["departments"]},
+  {"id":"patients-fr-1","category":"patient-records","lang":"fr","question":"Comment consulter l'historique médical d'un patient ?","expected_answer":"Les professionnels autorisés ouvrent Patients, le détail du patient, puis Historique médical.","expected_sources":["patients"]},
+  {"id":"patients-en-1","category":"patient-records","lang":"en","question":"Where can staff view a patient's medical history?","expected_answer":"Authorized staff can use the patient record and medical history area.","expected_sources":["patients"]},
+  {"id":"privacy-fr-1","category":"privacy","lang":"fr","question":"Comment les données médicales sont-elles protégées ?","expected_answer":"Les accès aux dossiers sont contrôlés par RBAC et audités ; les données patients sont confidentielles.","expected_sources":["faq-gdpr","patients"]},
+  {"id":"privacy-en-1","category":"privacy","lang":"en","question":"How is patient privacy protected?","expected_answer":"Record access is RBAC-controlled and audited, and patient data is confidential.","expected_sources":["faq-gdpr","patients"]},
+  {"id":"reminders-fr-1","category":"reminders","lang":"fr","question":"Comment sont envoyés les rappels de rendez-vous ?","expected_answer":"Les rappels peuvent être envoyés par email ou SMS environ 24 heures avant le rendez-vous.","expected_sources":["reminders"]},
+  {"id":"reminders-en-1","category":"reminders","lang":"en","question":"When are appointment reminders sent?","expected_answer":"Email or SMS reminders are sent around 24 hours before the appointment.","expected_sources":["reminders"]},
+  {"id":"pathway-fr-1","category":"care-pathway","lang":"fr","question":"Quel est le parcours d'une consultation externe ?","expected_answer":"Le patient passe par l'accueil, la salle d'attente, la consultation, puis la sortie ou la planification d'un prochain rendez-vous.","expected_sources":["pathway-consultation"]},
+  {"id":"pathway-en-1","category":"care-pathway","lang":"en","question":"What happens after check-in for an outpatient visit?","expected_answer":"The patient waits, attends the consultation, then leaves or schedules follow-up.","expected_sources":["pathway-consultation"]},
+  {"id":"fever-fr-1","category":"orientation","lang":"fr","question":"Quelle est la procédure d'orientation en cas de fièvre ?","expected_answer":"L'orientation dépend des signes de gravité et doit suivre le protocole de triage, sans diagnostic par le chatbot.","expected_sources":["protocol-fever"]},
+  {"id":"fever-en-1","category":"orientation","lang":"en","question":"What is the fever triage protocol?","expected_answer":"Use the triage protocol and assess warning signs; the assistant does not diagnose.","expected_sources":["protocol-fever"]},
+  {"id":"noshow-fr-1","category":"operations","lang":"fr","question":"Comment réduire le risque d'absence aux rendez-vous ?","expected_answer":"Utiliser les rappels, confirmer les rendez-vous et suivre les indicateurs de risque de no-show.","expected_sources":["protocol-noshow","reminders"]},
+  {"id":"insurance-fr-1","category":"insurance","lang":"fr","question":"Comment vérifier la prise en charge par ma mutuelle ?","expected_answer":"Contacter l'accueil ou la mutuelle avec les informations de couverture avant la consultation.","expected_sources":["faq-insurance"]},
+  {"id":"insurance-en-1","category":"insurance","lang":"en","question":"How can I check insurance coverage?","expected_answer":"Confirm coverage with reception or the insurer before the visit.","expected_sources":["faq-insurance"]},
+  {"id":"prediction-fr-1","category":"analytics","lang":"fr","question":"À quoi servent les prévisions d'affluence ?","expected_answer":"Elles aident à anticiper l'occupation et les périodes de surcharge pour organiser les ressources.","expected_sources":["prediction"]},
+  {"id":"contact-fr-1","category":"contact","lang":"fr","question":"Comment contacter l'établissement ?","expected_answer":"Utiliser les coordonnées de téléphone, email ou adresse indiquées par SIHIA.","expected_sources":["contact"]},
+  {"id":"followup-hours","category":"follow-up","lang":"fr","previous_question":"Quels sont les horaires de l'accueil ?","question":"Et le samedi ?","expected_answer":"Le samedi, l'accueil est ouvert de 8 h à 12 h.","expected_sources":["hours"]},
+  {"id":"followup-appointments","category":"follow-up","lang":"fr","previous_question":"Comment créer un rendez-vous ?","question":"Que faut-il vérifier ensuite ?","expected_answer":"Il faut vérifier les conflits de créneaux.","expected_sources":["appointments"]},
+  {"id":"multi-appointment-reminder","category":"multi-source","lang":"fr","question":"Comment créer un rendez-vous et prévenir le patient avant sa venue ?","expected_answer":"Créer le rendez-vous depuis le menu dédié puis activer un rappel email ou SMS environ 24 heures avant.","expected_sources":["appointments","reminders"]},
+  {"id":"no-answer-parking","category":"no-answer","lang":"fr","question":"Le stationnement est-il payant et quel en est le prix ?","expected_answer":"La base SIHIA ne contient pas d'information fiable sur le prix du stationnement.","expected_sources":[]},
+  {"id":"no-answer-cafeteria","category":"no-answer","lang":"fr","question":"Quels plats sont servis à la cafétéria ce midi ?","expected_answer":"La base SIHIA ne contient pas le menu actuel de la cafétéria.","expected_sources":[]},
+  {"id":"no-answer-wifi","category":"no-answer","lang":"en","question":"Which secret code joins the visitor wireless network?","expected_answer":"The SIHIA knowledge base does not contain the visitor wireless network code.","expected_sources":[]}
 ]

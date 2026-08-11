@@ -8,8 +8,8 @@ const mountNode =
   existingRoot ??
   (() => {
     const el = document.createElement("div");
-    el.id = "aaa-chatbot-root";
-    el.setAttribute("data-aaa-chatbot", "true");
+    el.id = "sihia-chatbot-root";
+    el.setAttribute("data-sihia-chatbot", "true");
     document.body.appendChild(el);
     return el;
   })();

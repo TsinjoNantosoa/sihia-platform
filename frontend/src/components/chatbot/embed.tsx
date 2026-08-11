@@ -3,14 +3,14 @@ import { createRoot, type Root } from "react-dom/client";
 import App from "./App";
 import "./chatbot.css";
 
-const ROOT_ID = "aaa-chatbot-root";
+const ROOT_ID = "sihia-chatbot-root";
 
 function ensureMountNode(): HTMLElement {
   const existing = document.getElementById(ROOT_ID);
   if (existing) return existing;
   const el = document.createElement("div");
   el.id = ROOT_ID;
-  el.setAttribute("data-aaa-chatbot", "true");
+  el.setAttribute("data-sihia-chatbot", "true");
   document.body.appendChild(el);
   return el;
 }
@@ -28,7 +28,7 @@ export function mountChatbot(): void {
 }
 
 if (typeof window !== "undefined") {
-  (window as unknown as { H4HChatbot?: { mountChatbot: typeof mountChatbot } }).H4HChatbot = {
+  (window as unknown as { SIHIAChatbot?: { mountChatbot: typeof mountChatbot } }).SIHIAChatbot = {
     mountChatbot,
   };
 }

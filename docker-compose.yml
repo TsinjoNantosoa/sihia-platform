@@ -60,6 +60,9 @@ services:
       QDRANT_URL: http://qdrant:6333
       QDRANT_API_KEY: ${QDRANT_API_KEY:-}
       QDRANT_COLLECTION: ${QDRANT_COLLECTION:-sihia_medical_knowledge}
+      RAG_RERANK_ENABLED: ${RAG_RERANK_ENABLED:-true}
+      RAG_RERANKER: ${RAG_RERANKER:-cross-encoder}
+      RAG_RERANK_MODEL: ${RAG_RERANK_MODEL:-Xenova/ms-marco-MiniLM-L-6-v2}
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
       LOCAL_EMBEDDING_MODEL: ${LOCAL_EMBEDDING_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}

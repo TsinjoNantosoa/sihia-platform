@@ -3,8 +3,9 @@ from __future__ import annotations
 import math
 import re
 import unicodedata
+import logging
 from collections import Counter
-from typing import Any
+from typing import Any, Callable, Protocol
 
 from app.rag.document_repository import KnowledgeDocumentRepository
 from app.rag.embeddings import EmbeddingProvider
@@ -12,10 +13,12 @@ from app.rag.types import KnowledgeChunk, RetrievedChunk
 from app.rag.vector_repository import VectorRepository, VectorStoreError
 
 _STOP_WORDS = {
-    "and", "are", "for", "how", "the", "this", "what", "with", "your",
-    "aux", "avec", "ces", "comment", "dans", "des", "est", "les", "quel", "quelle",
-    "sont", "sur", "une", "vos",
+    "and", "are", "can", "does", "for", "how", "into", "the", "this", "what", "when", "where", "which", "with", "your",
+    "au", "aux", "avec", "ce", "ces", "comment", "dans", "de", "des", "du", "elle", "en", "est", "et", "il", "la", "le", "les",
+    "ou", "par", "pas", "pour", "que", "quel", "quelle", "quelles", "quels", "qui", "sont", "sur", "une", "vos",
 }
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_query(text: str) -> str:
@@ -58,8 +61,12 @@ class LexicalRetriever:
         return sorted(scored, key=lambda row: row.score, reverse=True)[:limit]
 
 
+class Reranker(Protocol):
+    def rerank(self, query: str, candidates: list[RetrievedChunk]) -> list[RetrievedChunk]: ...
+
+
 class LightweightReranker:
-    """Deterministic reranker; replaceable with a cross-encoder without retrieval changes."""
+    """Fast deterministic fallback based on lexical overlap."""
     def rerank(self, query: str, candidates: list[RetrievedChunk]) -> list[RetrievedChunk]:
         query_terms = set(_terms(query))
         for item in candidates:
@@ -68,6 +75,67 @@ class LightweightReranker:
             phrase = 1.0 if normalize_query(query) in normalize_query(item.chunk.content) else 0.0
             item.score = 0.75 * item.score + 0.2 * overlap + 0.05 * phrase
         return sorted(candidates, key=lambda row: row.score, reverse=True)
+
+
+class CrossEncoderReranker:
+    """Lazy CPU cross-encoder reranker with a deterministic local fallback."""
+
+    def __init__(
+        self,
+        model_name: str,
+        *,
+        fallback: Reranker | None = None,
+        model_loader: Callable[[str], Any] | None = None,
+    ) -> None:
+        self.model_name = model_name
+        self.fallback = fallback or LightweightReranker()
+        self._model_loader = model_loader or self._load_fastembed_model
+        self._model: Any | None = None
+        self._unavailable = False
+
+    @staticmethod
+    def _load_fastembed_model(model_name: str) -> Any:
+        from fastembed.rerank.cross_encoder import TextCrossEncoder
+
+        return TextCrossEncoder(model_name=model_name)
+
+    def _get_model(self) -> Any | None:
+        if self._unavailable:
+            return None
+        if self._model is None:
+            try:
+                self._model = self._model_loader(self.model_name)
+            except Exception as exc:  # model download/runtime failures must not break retrieval
+                self._unavailable = True
+                logger.warning("Cross-encoder unavailable; using lexical reranker: %s", type(exc).__name__)
+        return self._model
+
+    def rerank(self, query: str, candidates: list[RetrievedChunk]) -> list[RetrievedChunk]:
+        if not candidates:
+            return []
+        model = self._get_model()
+        if model is None:
+            return self.fallback.rerank(query, candidates)
+        try:
+            scores = [float(score) for score in model.rerank(query, [row.chunk.content for row in candidates])]
+            if len(scores) != len(candidates):
+                raise ValueError("Unexpected cross-encoder result count")
+        except Exception as exc:
+            logger.warning("Cross-encoder inference failed; using lexical reranker: %s", type(exc).__name__)
+            return self.fallback.rerank(query, candidates)
+
+        ranked = list(enumerate(zip(candidates, scores)))
+        minimum, maximum = min(scores), max(scores)
+        for _index, (candidate, score) in ranked:
+            candidate.score = 1.0 if len(scores) == 1 else (score - minimum) / max(maximum - minimum, 1e-12)
+        ranked.sort(key=lambda row: (-row[1][1], row[0]))
+        return [candidate for _index, (candidate, _score) in ranked]
+
+
+def build_reranker(kind: str, model_name: str) -> Reranker:
+    if kind.strip().lower() in {"cross-encoder", "cross_encoder", "semantic"}:
+        return CrossEncoderReranker(model_name)
+    return LightweightReranker()
 
 
 class HybridRetriever:
@@ -82,12 +150,13 @@ class HybridRetriever:
         threshold: float,
         hybrid_enabled: bool = True,
         rerank_enabled: bool = True,
+        reranker: Reranker | None = None,
     ) -> None:
         self.embeddings, self.vectors, self.documents = embeddings, vectors, documents
         self.top_k, self.final_k, self.threshold = top_k, final_k, threshold
         self.hybrid_enabled, self.rerank_enabled = hybrid_enabled, rerank_enabled
         self.lexical = LexicalRetriever(documents)
-        self.reranker = LightweightReranker()
+        self.reranker = reranker or LightweightReranker()
 
     @staticmethod
     def _rrf(dense: list[RetrievedChunk], lexical: list[RetrievedChunk]) -> list[RetrievedChunk]:
