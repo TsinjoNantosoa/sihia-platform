@@ -198,12 +198,28 @@ class VoiceTools:
             return tool_err(NO_AVAILABLE_SLOTS, "No available slots in the selected period", retryable=True)
         return tool_ok({"slots": slots})
 
+    def _bound_patient_id(self, arguments: dict[str, Any], ctx: dict[str, Any]) -> str | dict[str, Any]:
+        """La source de vérité est VoiceExecutionContext.patient_id, jamais le LLM."""
+        patient_id = ctx.get("patient_id")
+        if not patient_id:
+            return tool_err(PATIENT_NOT_FOUND, "No verified patient is bound to this call")
+        external = arguments.get("patientId")
+        if external is None:
+            external = arguments.get("patient_id")
+        if external is not None and str(external).strip() and str(external) != str(patient_id):
+            return tool_err(
+                OWNERSHIP_MISMATCH,
+                "External patientId does not match the verified call patient",
+            )
+        return str(patient_id)
+
     def get_patient_appointments(self, arguments: dict[str, Any], ctx: dict[str, Any]) -> dict[str, Any]:
         if not ctx.get("patient_verified"):
             return tool_err(PATIENT_NOT_VERIFIED, "Patient must be verified first")
-        patient_id = arguments.get("patientId") or arguments.get("patient_id")
-        if not patient_id:
-            return tool_err(PATIENT_NOT_FOUND, "patientId is required")
+        bound = self._bound_patient_id(arguments, ctx)
+        if isinstance(bound, dict):
+            return bound
+        patient_id = bound
         items = [
             {
                 "id": a.id,
@@ -229,12 +245,15 @@ class VoiceTools:
             code = PATIENT_NOT_VERIFIED if guard.reason == "patient_not_verified" else CONFIRMATION_REQUIRED
             return tool_err(code, guard.spoken_en)
 
+        bound = self._bound_patient_id(arguments, ctx)
+        if isinstance(bound, dict):
+            return bound
+        patient_id = bound
         doctor_id = arguments.get("doctorId") or arguments.get("doctor_id")
         date = arguments.get("date") or arguments.get("start")
-        patient_id = arguments.get("patientId") or arguments.get("patient_id")
         duration = int(arguments.get("durationMin") or arguments.get("duration_min") or 30)
-        if not doctor_id or not date or not patient_id:
-            return tool_err("VALIDATION_ERROR", "doctorId, patientId and date are required")
+        if not doctor_id or not date:
+            return tool_err("VALIDATION_ERROR", "doctorId and date are required")
 
         doctor = self.doctors.get(doctor_id)
         patient = self.patients.get(patient_id)
@@ -282,16 +301,19 @@ class VoiceTools:
             code = PATIENT_NOT_VERIFIED if guard.reason == "patient_not_verified" else CONFIRMATION_REQUIRED
             return tool_err(code, guard.spoken_en)
 
+        bound = self._bound_patient_id(arguments, ctx)
+        if isinstance(bound, dict):
+            return bound
+        patient_id = bound
         appointment_id = arguments.get("appointmentId") or arguments.get("appointment_id")
         date = arguments.get("date") or arguments.get("start")
-        patient_id = arguments.get("patientId") or arguments.get("patient_id")
         if not appointment_id or not date:
             return tool_err("VALIDATION_ERROR", "appointmentId and date are required")
 
         appointment = self.appointments.appointments.get(appointment_id)
         if appointment is None:
             return tool_err(APPOINTMENT_NOT_FOUND, "Appointment not found")
-        if patient_id and appointment.patient_id != patient_id:
+        if appointment.patient_id != patient_id:
             return tool_err(OWNERSHIP_MISMATCH, "Appointment does not belong to this patient")
         if appointment.status not in _ACTIVE_APPT:
             return tool_err(APPOINTMENT_NOT_RESCHEDULABLE, "This appointment can no longer be moved")
@@ -331,25 +353,34 @@ class VoiceTools:
             code = PATIENT_NOT_VERIFIED if guard.reason == "patient_not_verified" else CONFIRMATION_REQUIRED
             return tool_err(code, guard.spoken_en)
 
+        bound = self._bound_patient_id(arguments, ctx)
+        if isinstance(bound, dict):
+            return bound
+        patient_id = bound
         appointment_id = arguments.get("appointmentId") or arguments.get("appointment_id")
-        patient_id = arguments.get("patientId") or arguments.get("patient_id")
         if not appointment_id:
             return tool_err("VALIDATION_ERROR", "appointmentId is required")
         appointment = self.appointments.appointments.get(appointment_id)
         if appointment is None:
             return tool_err(APPOINTMENT_NOT_FOUND, "Appointment not found")
-        if patient_id and appointment.patient_id != patient_id:
+        if appointment.patient_id != patient_id:
             return tool_err(OWNERSHIP_MISMATCH, "Appointment does not belong to this patient")
         cancelled = self.appointments.cancel(appointment_id)
         return tool_ok({"appointmentId": cancelled.id, "status": cancelled.status})
 
-    def send_confirmation(self, arguments: dict[str, Any], _ctx: dict[str, Any]) -> dict[str, Any]:
+    def send_confirmation(self, arguments: dict[str, Any], ctx: dict[str, Any]) -> dict[str, Any]:
+        bound = self._bound_patient_id(arguments, ctx)
+        if isinstance(bound, dict):
+            return bound
+        patient_id = bound
         appointment_id = arguments.get("appointmentId") or arguments.get("appointment_id")
         if not appointment_id:
             return tool_err("VALIDATION_ERROR", "appointmentId is required")
         appointment = self.appointments.appointments.get(appointment_id)
         if appointment is None:
             return tool_err(APPOINTMENT_NOT_FOUND, "Appointment not found")
+        if appointment.patient_id != patient_id:
+            return tool_err(OWNERSHIP_MISMATCH, "Appointment does not belong to this patient")
         patient = self.patients.get(appointment.patient_id)
         phone = normalize_phone(patient.phone if patient else None)
         if not phone:

@@ -25,6 +25,7 @@ from app.voice.state import transition
 
 class _OutboundProvider(Protocol):
     def is_configured(self) -> bool: ...
+    def is_outbound_configured(self) -> bool: ...
     def start_outbound_call(
         self,
         *,
@@ -119,7 +120,7 @@ class CallService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={"code": VOICE_OUTBOUND_DISABLED, "message": "Outbound calls are disabled", "retryable": False},
             )
-        if not provider.is_configured():
+        if not provider.is_outbound_configured():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail={

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import hmac
-import time
 from typing import Any
 
 from fastapi import HTTPException, Request, status
@@ -14,8 +12,6 @@ from app.presentation.chatbot_rate_limit import ChatbotRateLimiter
 
 voice_webhook_limiter = ChatbotRateLimiter(max_per_minute=120)
 voice_tool_gateway_limiter = ChatbotRateLimiter(max_per_minute=60)
-
-ELEVENLABS_SIGNATURE_TOLERANCE_S = 30 * 60
 
 
 def enforce_rate_limit(key: str, limiter: ChatbotRateLimiter = voice_webhook_limiter) -> None:
@@ -53,40 +49,45 @@ def twilio_validation_url(request: Request) -> str:
 
 
 def verify_elevenlabs_signature(raw_body: bytes, signature_header: str | None, secret: str) -> None:
-    """Schéma officiel ElevenLabs (t=,v0=) + timestamp — corps brut, pas de re-sérialisation JSON."""
+    """Vérification officielle ElevenLabs SDK — raw body exact, pas de re-sérialisation JSON."""
     if not signature_header:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing ElevenLabs signature")
     try:
-        from elevenlabs.webhooks import construct_event  # type: ignore[import-not-found]
-    except ImportError:
-        construct_event = None
-    if construct_event is not None:
-        try:
-            construct_event(payload=raw_body.decode("utf-8"), sig_header=signature_header, secret=secret)
-            return
-        except Exception as exc:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid ElevenLabs signature") from exc
+        from elevenlabs.client import ElevenLabs
+        from elevenlabs.errors import BadRequestError
+    except ImportError as exc:
+        raise HTTPException(status_code=500, detail="elevenlabs package missing") from exc
 
-    parts: dict[str, str] = {}
-    for item in signature_header.split(","):
-        if "=" not in item:
-            continue
-        key, value = item.strip().split("=", 1)
-        parts[key.strip()] = value.strip()
-    timestamp = parts.get("t")
-    provided = parts.get("v0") or parts.get("v1")
-    if not timestamp or not provided:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid ElevenLabs signature")
+    raw_text = raw_body.decode("utf-8")
+    client = ElevenLabs(api_key=settings.elevenlabs_api_key or "unused")
     try:
-        ts_int = int(timestamp)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid ElevenLabs signature") from exc
-    if abs(time.time() - ts_int) > ELEVENLABS_SIGNATURE_TOLERANCE_S:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Expired ElevenLabs signature")
-    signed = f"{timestamp}.".encode("utf-8") + raw_body
-    expected = hmac.new(secret.encode("utf-8"), signed, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(expected, provided):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid ElevenLabs signature")
+        client.webhooks.construct_event(
+            rawBody=raw_text,
+            sig_header=signature_header,
+            secret=secret,
+        )
+    except TypeError:
+        try:
+            client.webhooks.construct_event(
+                payload=raw_text,
+                sig_header=signature_header,
+                secret=secret,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid ElevenLabs signature",
+            ) from exc
+    except BadRequestError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid ElevenLabs signature",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid ElevenLabs signature",
+        ) from exc
 
 
 def validate_twilio_signature(form: dict[str, Any], request: Request) -> None:
@@ -105,15 +106,13 @@ def validate_twilio_signature(form: dict[str, Any], request: Request) -> None:
 
 
 def require_tool_gateway_secret(request: Request) -> None:
+    """Secret service-to-service uniquement — jamais un JWT administrateur SIHIA."""
     secret = (settings.elevenlabs_tool_secret or "").strip()
     if not secret:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "VOICE_PROVIDER_NOT_CONFIGURED", "message": "Voice tool gateway is not configured"},
         )
-    provided = request.headers.get("X-SIHIA-Tool-Secret") or request.headers.get("X-ElevenLabs-Tool-Secret") or ""
-    auth = request.headers.get("Authorization", "")
-    if auth.lower().startswith("bearer "):
-        provided = provided or auth[7:].strip()
+    provided = (request.headers.get("X-SIHIA-Tool-Secret") or "").strip()
     if not provided or not hmac.compare_digest(provided, secret):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid tool gateway secret")

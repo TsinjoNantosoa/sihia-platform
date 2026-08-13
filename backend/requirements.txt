@@ -16,3 +16,4 @@ pg8000>=1.31
 PyMuPDF>=1.24
 fastembed>=0.3
 twilio>=9.0
+elevenlabs>=1.50

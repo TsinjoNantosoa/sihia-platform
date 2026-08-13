@@ -103,6 +103,9 @@ class VoiceSettingsOut(BaseModel):
     provider: str | None = None
     mode: str | None = None
     configured: bool | None = None
+    agentConfigured: bool | None = None
+    inboundConfigured: bool | None = None
+    outboundConfigured: bool | None = None
 
 
 class VoiceSettingsUpdate(BaseModel):

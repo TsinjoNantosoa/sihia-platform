@@ -49,7 +49,7 @@ Tous les endpoints metier (hors login) exigent un `Authorization: Bearer <token>
 
 `VOICE_PROVIDER_MODE=mock` (défaut) : simulateur dashboard, aucun appel téléphonique réel.
 
-`VOICE_PROVIDER_MODE=live` : intégration ElevenLabs/Twilio. Les secrets restent dans l'ENV (`ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `TWILIO_AUTH_TOKEN`, …). Sans credentials, l'API retourne `VOICE_PROVIDER_NOT_CONFIGURED` et ne simule pas un succès.
+`VOICE_PROVIDER_MODE=live` : intégration ElevenLabs/Twilio. Les secrets restent dans l'ENV (`ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `ELEVENLABS_PHONE_NUMBER_ID`, `TWILIO_AUTH_TOKEN`, …). Sans credentials, l'API retourne `VOICE_PROVIDER_NOT_CONFIGURED` et ne simule pas un succès. L'outbound ElevenLabs n'est considéré configuré que si clé + agent + phone number id sont présents. Aucun appel PSTN n'est encore lancé.
 
 Le comportement runtime (`agent_enabled`, inbound/outbound, confirmation, transcripts) se configure via `PATCH /api/voice/settings` (table `voice_settings`), pas via les secrets ENV.
 

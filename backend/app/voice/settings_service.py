@@ -79,6 +79,9 @@ class VoiceSettingsService:
             "provider": status["provider"],
             "mode": status["mode"],
             "configured": status["configured"],
+            "agentConfigured": status.get("agentConfigured"),
+            "inboundConfigured": status.get("inboundConfigured"),
+            "outboundConfigured": status.get("outboundConfigured"),
             "timezone": effective.timezone,
         }
 

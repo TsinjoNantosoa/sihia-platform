@@ -88,6 +88,7 @@ class Settings(BaseModel):
     voice_ai_enabled: bool = True
     elevenlabs_api_key: str = ""
     elevenlabs_agent_id: str = ""
+    elevenlabs_phone_number_id: str = ""
     elevenlabs_webhook_secret: str = ""
     voice_default_language: str = "en"
     voice_max_retries: int = 2
@@ -186,6 +187,7 @@ class Settings(BaseModel):
             voice_ai_enabled=_env_bool("VOICE_AI_ENABLED", True),
             elevenlabs_api_key=os.getenv("ELEVENLABS_API_KEY", ""),
             elevenlabs_agent_id=os.getenv("ELEVENLABS_AGENT_ID", ""),
+            elevenlabs_phone_number_id=os.getenv("ELEVENLABS_PHONE_NUMBER_ID", "").strip(),
             elevenlabs_webhook_secret=os.getenv("ELEVENLABS_WEBHOOK_SECRET", ""),
             voice_default_language=os.getenv("VOICE_DEFAULT_LANGUAGE", "en").strip().lower() or "en",
             voice_max_retries=int(os.getenv("VOICE_MAX_RETRIES", "2")),

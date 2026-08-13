@@ -38,18 +38,42 @@ class CallStarter(Protocol):
     ) -> VoiceCall: ...
 
 
+def _elevenlabs_agent_configured() -> bool:
+    return bool(settings.elevenlabs_api_key.strip() and settings.elevenlabs_agent_id.strip())
+
+
+def _elevenlabs_outbound_configured() -> bool:
+    return _elevenlabs_agent_configured() and bool(settings.elevenlabs_phone_number_id.strip())
+
+
 def voice_provider_status() -> dict[str, bool | str]:
     mode = (settings.voice_provider_mode or "mock").strip().lower()
     if mode == "live":
-        configured = bool(settings.elevenlabs_api_key.strip() and settings.elevenlabs_agent_id.strip())
-        return {"provider": "elevenlabs", "mode": "live", "configured": configured}
-    return {"provider": "mock", "mode": "mock", "configured": True}
+        agent_configured = _elevenlabs_agent_configured()
+        outbound_configured = _elevenlabs_outbound_configured()
+        return {
+            "provider": "elevenlabs",
+            "mode": "live",
+            "configured": agent_configured,
+            "agentConfigured": agent_configured,
+            "inboundConfigured": agent_configured,
+            "outboundConfigured": outbound_configured,
+        }
+    return {
+        "provider": "mock",
+        "mode": "mock",
+        "configured": True,
+        "agentConfigured": True,
+        "inboundConfigured": True,
+        "outboundConfigured": True,
+    }
 
 
 class VoiceProvider(Protocol):
     name: str
 
     def is_configured(self) -> bool: ...
+    def is_outbound_configured(self) -> bool: ...
     def handle_inbound(self, *, from_number: str, to_number: str, call_sid: str) -> InboundResult: ...
     def start_outbound_call(
         self,
@@ -78,6 +102,9 @@ class MockVoiceProvider:
         self.calls = calls
 
     def is_configured(self) -> bool:
+        return True
+
+    def is_outbound_configured(self) -> bool:
         return True
 
     def handle_inbound(self, *, from_number: str, to_number: str, call_sid: str) -> InboundResult:
@@ -116,7 +143,10 @@ class ElevenLabsVoiceProvider:
         self.calls = calls
 
     def is_configured(self) -> bool:
-        return bool(settings.elevenlabs_api_key.strip() and settings.elevenlabs_agent_id.strip())
+        return _elevenlabs_agent_configured()
+
+    def is_outbound_configured(self) -> bool:
+        return _elevenlabs_outbound_configured()
 
     def handle_inbound(self, *, from_number: str, to_number: str, call_sid: str) -> InboundResult:
         call = self.calls.start_call(
@@ -139,12 +169,12 @@ class ElevenLabsVoiceProvider:
         to_number: str,
         language: str | None,
     ) -> OutboundProviderResult:
-        if not self.is_configured():
+        if not self.is_outbound_configured():
             return OutboundProviderResult(
                 ok=False,
                 status="failed",
                 error="VOICE_PROVIDER_NOT_CONFIGURED",
-                message="ElevenLabs credentials are missing.",
+                message="ElevenLabs outbound is not configured (API key, agent id, phone number id).",
             )
         return OutboundProviderResult(
             ok=False,

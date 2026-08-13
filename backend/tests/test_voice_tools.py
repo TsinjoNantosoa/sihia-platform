@@ -3,14 +3,14 @@ from datetime import datetime, timedelta, timezone
 from app.application.schemas import AppointmentCreate, PatientCreate
 from app.presentation.deps import appointments_service, call_service, patients_service, voice_availability, voice_tools
 from app.voice.availability_service import WEEKDAY_FR
-from app.voice.errors import APPOINTMENT_CONFLICT, CONFIRMATION_REQUIRED, PATIENT_NOT_VERIFIED
+from app.voice.errors import APPOINTMENT_CONFLICT, CONFIRMATION_REQUIRED, OWNERSHIP_MISMATCH, PATIENT_NOT_VERIFIED
 from app.voice.execution_context import VoiceExecutionContext
 
 
-def _ctx(call, *, verified: bool = False, confirmed: bool = False) -> VoiceExecutionContext:
+def _ctx(call, *, verified: bool = False, confirmed: bool = False, patient_id: str | None = None) -> VoiceExecutionContext:
     return VoiceExecutionContext(
         call_id=call.id,
-        patient_id=call.patient_id,
+        patient_id=patient_id if patient_id is not None else call.patient_id,
         patient_verified=verified,
         confirmation_received=confirmed,
         current_state="COMMIT" if confirmed else call.state,
@@ -83,7 +83,7 @@ def test_create_reschedule_cancel_happy_path() -> None:
             "actionId": "a1",
         },
         call_id=call.id,
-        context=_ctx(call, verified=True, confirmed=True),
+        context=_ctx(call, verified=True, confirmed=True, patient_id=patient.id),
     )
     assert created["success"] is True
     appt_id = created["data"]["appointmentId"]
@@ -98,7 +98,7 @@ def test_create_reschedule_cancel_happy_path() -> None:
         "reschedule_appointment",
         {"appointmentId": appt_id, "patientId": patient.id, "doctorId": "d-1", "date": alt, "actionId": "r1"},
         call_id=call.id,
-        context=_ctx(call, verified=True, confirmed=True),
+        context=_ctx(call, verified=True, confirmed=True, patient_id=patient.id),
     )
     assert moved["success"] is True
 
@@ -106,7 +106,7 @@ def test_create_reschedule_cancel_happy_path() -> None:
         "cancel_appointment",
         {"appointmentId": appt_id, "patientId": patient.id, "actionId": "c1"},
         call_id=call.id,
-        context=_ctx(call, verified=True, confirmed=True),
+        context=_ctx(call, verified=True, confirmed=True, patient_id=patient.id),
     )
     assert cancelled["success"] is True
     assert cancelled["data"]["status"] == "cancelled"
@@ -144,8 +144,56 @@ def test_conflict_when_slot_taken_between_propose_and_commit() -> None:
         "create_appointment",
         {"doctorId": "d-1", "patientId": patient.id, "date": slot, "actionId": "conflict-1"},
         call_id=call.id,
-        context=_ctx(call, verified=True, confirmed=True),
+        context=_ctx(call, verified=True, confirmed=True, patient_id=patient.id),
     )
     assert result["success"] is False
     assert result["code"] == APPOINTMENT_CONFLICT
     appointments_service.cancel(other.id)
+
+
+def test_verified_patient_rejects_external_patient_id() -> None:
+    call = _headers_call()
+    patient_a = patients_service.create(
+        PatientCreate(
+            firstName="Patient",
+            lastName="Alpha",
+            dob="1988-04-04",
+            gender="F",
+            phone="+212600222010",
+            email="patient.alpha@demo.sihia",
+            address="10 Demo",
+            bloodType="A+",
+            allergies=[],
+        )
+    )
+    patient_b = patients_service.create(
+        PatientCreate(
+            firstName="Patient",
+            lastName="Bravo",
+            dob="1987-05-05",
+            gender="M",
+            phone="+212600222011",
+            email="patient.bravo@demo.sihia",
+            address="11 Demo",
+            bloodType="O+",
+            allergies=[],
+        )
+    )
+    ctx = _ctx(call, verified=True, confirmed=True, patient_id=patient_a.id)
+    created = voice_tools.invoke(
+        "create_appointment",
+        {"doctorId": "d-1", "patientId": patient_b.id, "date": _next_slot(), "actionId": "mismatch-1"},
+        call_id=call.id,
+        context=ctx,
+    )
+    assert created["success"] is False
+    assert created["code"] == OWNERSHIP_MISMATCH
+
+    listed = voice_tools.invoke(
+        "get_patient_appointments",
+        {"patientId": patient_b.id},
+        call_id=call.id,
+        context=ctx,
+    )
+    assert listed["success"] is False
+    assert listed["code"] == OWNERSHIP_MISMATCH

@@ -78,6 +78,9 @@ def test_voice_settings_runtime_override(monkeypatch) -> None:
     assert payload["configured"] is True
     assert payload["provider"] in {"mock", "elevenlabs"}
     assert payload["mode"] in {"mock", "live"}
+    assert payload["agentConfigured"] is True
+    assert payload["inboundConfigured"] is True
+    assert payload["outboundConfigured"] is True
 
 
 def test_voice_agent_disabled_blocks_mock_turn() -> None:

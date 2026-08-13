@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import time
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -382,3 +383,51 @@ def test_tool_gateway_ignores_forged_flags(monkeypatch) -> None:
         json={"callId": call.id, "arguments": {}},
     )
     assert unauth.status_code == 401
+
+
+def test_tool_gateway_rejects_admin_jwt(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "elevenlabs_tool_secret", "gateway-secret")
+    call = call_service.start_call(direction="inbound", phone_from="+212600777023", phone_to="+212600000000")
+    res = client.post(
+        "/webhooks/elevenlabs/tools/create_appointment",
+        headers=_admin_headers(),
+        json={"callId": call.id, "arguments": {}},
+    )
+    assert res.status_code == 401
+
+
+def test_tool_gateway_requires_secret_in_live_mode(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "voice_provider_mode", "live")
+    monkeypatch.setattr(settings, "elevenlabs_tool_secret", "gateway-secret")
+    monkeypatch.setattr(settings, "elevenlabs_webhook_secret", "whsec")
+    call = call_service.start_call(direction="inbound", phone_from="+212600777024", phone_to="+212600000000")
+    raw = json.dumps({"callId": call.id, "arguments": {}}).encode("utf-8")
+    denied = client.post(
+        "/webhooks/elevenlabs/tools/create_appointment",
+        content=raw,
+        headers={"Content-Type": "application/json", "ElevenLabs-Signature": _el_sig(raw, "whsec")},
+    )
+    assert denied.status_code == 401
+    accepted = client.post(
+        "/webhooks/elevenlabs/tools/create_appointment",
+        content=raw,
+        headers={"Content-Type": "application/json", "X-SIHIA-Tool-Secret": "gateway-secret"},
+    )
+    assert accepted.status_code == 200
+    assert accepted.json()["success"] is False
+
+
+def test_live_provider_status_requires_phone_number_id(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "voice_provider_mode", "live")
+    monkeypatch.setattr(settings, "elevenlabs_api_key", "sk-test")
+    monkeypatch.setattr(settings, "elevenlabs_agent_id", "agent-1")
+    monkeypatch.setattr(settings, "elevenlabs_phone_number_id", "")
+    from app.voice.providers import voice_provider_status
+
+    status = voice_provider_status()
+    assert status["agentConfigured"] is True
+    assert status["inboundConfigured"] is True
+    assert status["outboundConfigured"] is False
+    monkeypatch.setattr(settings, "elevenlabs_phone_number_id", "phnum-1")
+    complete = voice_provider_status()
+    assert complete["outboundConfigured"] is True

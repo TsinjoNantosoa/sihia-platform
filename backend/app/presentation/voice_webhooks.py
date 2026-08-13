@@ -175,18 +175,11 @@ async def elevenlabs_barge_in(
 
 
 @router.post("/elevenlabs/tools/{tool_name}")
-async def elevenlabs_tool_gateway(
-    tool_name: str,
-    request: Request,
-    elevenlabs_signature: str | None = Header(default=None, alias="ElevenLabs-Signature"),
-):
-    """Gateway tools ElevenLabs — auth provider, contexte serveur uniquement."""
+async def elevenlabs_tool_gateway(tool_name: str, request: Request):
+    """Gateway tools ElevenLabs — ELEVENLABS_TOOL_SECRET obligatoire, jamais JWT."""
     enforce_rate_limit(client_key(request, "el-tools"), voice_tool_gateway_limiter)
+    require_tool_gateway_secret(request)
     raw = await request.body()
-    if _elevenlabs_signature_required():
-        _validate_elevenlabs(raw, elevenlabs_signature)
-    else:
-        require_tool_gateway_secret(request)
     payload = _parse_json(raw)
     call_id = str(payload.get("callId") or payload.get("call_id") or "")
     if not call_id:
