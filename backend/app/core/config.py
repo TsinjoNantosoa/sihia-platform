@@ -85,6 +85,19 @@ class Settings(BaseModel):
     embedding_dimensions: int = 1536
     local_embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     llm_provider: str = "openai"
+    voice_ai_enabled: bool = True
+    elevenlabs_api_key: str = ""
+    elevenlabs_agent_id: str = ""
+    elevenlabs_webhook_secret: str = ""
+    voice_default_language: str = "en"
+    voice_max_retries: int = 2
+    voice_silence_timeout_seconds: int = 8
+    voice_confirm_mutations: bool = True
+    voice_store_transcripts: bool = True
+    voice_store_audio: bool = False
+    voice_human_transfer_number: str = ""
+    voice_provider_mode: str = "mock"
+    voice_supported_languages: str = "en,fr"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5174",
@@ -166,6 +179,19 @@ class Settings(BaseModel):
             embedding_dimensions=int(os.getenv("EMBEDDING_DIMENSIONS", "1536")),
             local_embedding_model=os.getenv("LOCAL_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"),
             llm_provider=os.getenv("LLM_PROVIDER", "openai").strip().lower(),
+            voice_ai_enabled=_env_bool("VOICE_AI_ENABLED", True),
+            elevenlabs_api_key=os.getenv("ELEVENLABS_API_KEY", ""),
+            elevenlabs_agent_id=os.getenv("ELEVENLABS_AGENT_ID", ""),
+            elevenlabs_webhook_secret=os.getenv("ELEVENLABS_WEBHOOK_SECRET", ""),
+            voice_default_language=os.getenv("VOICE_DEFAULT_LANGUAGE", "en").strip().lower() or "en",
+            voice_max_retries=int(os.getenv("VOICE_MAX_RETRIES", "2")),
+            voice_silence_timeout_seconds=int(os.getenv("VOICE_SILENCE_TIMEOUT_SECONDS", "8")),
+            voice_confirm_mutations=_env_bool("VOICE_CONFIRM_MUTATIONS", True),
+            voice_store_transcripts=_env_bool("VOICE_STORE_TRANSCRIPTS", True),
+            voice_store_audio=_env_bool("VOICE_STORE_AUDIO", False),
+            voice_human_transfer_number=os.getenv("VOICE_HUMAN_TRANSFER_NUMBER", ""),
+            voice_provider_mode=os.getenv("VOICE_PROVIDER_MODE", "mock").strip().lower() or "mock",
+            voice_supported_languages=os.getenv("VOICE_SUPPORTED_LANGUAGES", "en,fr"),
             cors_origins=origins or ["http://localhost:5174"],
             environment=os.getenv("ENVIRONMENT", "development"),
         )

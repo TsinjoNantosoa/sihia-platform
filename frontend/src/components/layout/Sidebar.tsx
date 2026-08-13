@@ -13,6 +13,7 @@ import {
   Bell,
   Armchair,
   BookOpenText,
+  PhoneCall,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT, useI18n } from "@/lib/i18n/store";
@@ -68,6 +69,12 @@ const groups = [
         icon: Brain,
         beta: true,
         permission: "ml:read",
+      },
+      {
+        to: "/voice-ai",
+        labelKey: "nav.voiceAi",
+        icon: PhoneCall,
+        permission: "voice:read",
       },
     ],
   },

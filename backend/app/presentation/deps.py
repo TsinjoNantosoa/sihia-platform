@@ -33,6 +33,14 @@ from app.infrastructure.sqlite_repositories import (
     SQLiteRefreshSessionRepository,
     SQLiteUserRepository,
 )
+from app.infrastructure.voice_repository import VoiceRepository
+from app.voice.agent_service import AgentService
+from app.voice.availability_service import AvailabilityService
+from app.voice.call_service import CallService
+from app.voice.identity_service import IdentityService
+from app.voice.providers import get_voice_provider
+from app.voice.settings_service import VoiceSettingsService
+from app.voice.tools import VoiceTools
 
 bootstrap_database()
 
@@ -69,6 +77,22 @@ chatbot_sessions = ChatbotSessionStore()
 rag_services = RAGServices(settings)
 chatbot_service = ChatbotService(settings, chatbot_sessions, rag_services.retriever)
 chatbot_rate_limiter = ChatbotRateLimiter(max_per_minute=settings.chatbot_query_rate_limit)
+
+voice_repo = VoiceRepository()
+voice_identity = IdentityService(patients_repo)
+voice_availability = AvailabilityService(doctors_repo, appointments_repo)
+voice_tools = VoiceTools(
+    identity=voice_identity,
+    availability=voice_availability,
+    appointments=appointments_service,
+    doctors=doctors_service,
+    patients=patients_repo,
+    repo=voice_repo,
+)
+call_service = CallService(voice_repo)
+agent_service = AgentService(call_service, voice_tools, voice_repo)
+voice_provider = get_voice_provider(call_service)
+voice_settings_service = VoiceSettingsService(voice_repo)
 
 bearer_scheme = HTTPBearer(auto_error=True)
 

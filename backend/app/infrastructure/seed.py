@@ -86,3 +86,115 @@ def seed_demo_data() -> None:
     from app.infrastructure.doctor_sync import sync_all_doctor_users
 
     sync_all_doctor_users()
+    _seed_voice_demo()
+
+
+def _seed_voice_demo() -> None:
+    """Appels Voice synthétiques pour la console portfolio (aucune donnée réelle)."""
+    from datetime import datetime, timezone
+    from app.infrastructure.database import connect as db_connect
+
+    conn = db_connect()
+    try:
+        tables = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='voice_calls'"
+        ).fetchall()
+    except Exception:
+        tables = [{"name": "voice_calls"}]
+    # PostgreSQL n'a pas sqlite_master — on tente le COUNT.
+    try:
+        count_row = conn.execute("SELECT COUNT(*) AS c FROM voice_calls").fetchone()
+    except Exception:
+        conn.close()
+        return
+    if count_row and int(count_row["c"]) > 0:
+        conn.close()
+        return
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        """
+        INSERT INTO voice_calls (
+            id, provider_call_id, conversation_id, direction, phone_from, phone_to,
+            patient_id, started_at, answered_at, ended_at, duration_seconds, status,
+            intent, outcome, language, escalated, escalation_reason, appointment_id,
+            state, identity_status, context_json, created_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """,
+        (
+            "vc-demo-001",
+            "CA-demo-001",
+            "conv-demo-001",
+            "inbound",
+            "+212600111222",
+            "+212600000000",
+            None,
+            now,
+            now,
+            now,
+            95,
+            "completed",
+            "book",
+            "booked",
+            "en",
+            0,
+            None,
+            None,
+            "CALL_ENDED",
+            "verified",
+            "{}",
+            now,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO voice_events (id, call_id, event_type, timestamp, payload_json) VALUES (?,?,?,?,?)",
+        ("ve-demo-1", "vc-demo-001", "call.started", now, "{}"),
+    )
+    conn.execute(
+        "INSERT INTO voice_events (id, call_id, event_type, timestamp, payload_json) VALUES (?,?,?,?,?)",
+        ("ve-demo-2", "vc-demo-001", "patient.verified", now, '{"patientName":"Jean Martin"}'),
+    )
+    conn.execute(
+        "INSERT INTO voice_events (id, call_id, event_type, timestamp, payload_json) VALUES (?,?,?,?,?)",
+        ("ve-demo-3", "vc-demo-001", "appointment.confirmed", now, "{}"),
+    )
+    conn.execute(
+        "INSERT INTO voice_events (id, call_id, event_type, timestamp, payload_json) VALUES (?,?,?,?,?)",
+        ("ve-demo-4", "vc-demo-001", "call.ended", now, '{"outcome":"booked"}'),
+    )
+    conn.execute(
+        """
+        INSERT INTO voice_transcript_segments
+            (id, call_id, speaker, content, started_at, ended_at, sequence_number)
+        VALUES (?,?,?,?,?,?,?)
+        """,
+        ("vt-demo-1", "vc-demo-001", "agent", "Hello, I am the SIHIA automated voice assistant.", now, now, 1),
+    )
+    conn.execute(
+        """
+        INSERT INTO voice_transcript_segments
+            (id, call_id, speaker, content, started_at, ended_at, sequence_number)
+        VALUES (?,?,?,?,?,?,?)
+        """,
+        ("vt-demo-2", "vc-demo-001", "patient", "I need a cardiology appointment.", now, now, 2),
+    )
+    conn.execute(
+        """
+        INSERT INTO voice_tool_calls (
+            id, call_id, tool_name, arguments_json, result_json, success, error_code, duration_ms, created_at
+        ) VALUES (?,?,?,?,?,?,?,?,?)
+        """,
+        (
+            "vtc-demo-1",
+            "vc-demo-001",
+            "get_available_slots",
+            '{"specialty":"cardiology"}',
+            '{"success":true,"data":{"slots":[]}}',
+            1,
+            None,
+            120,
+            now,
+        ),
+    )
+    conn.commit()
+    conn.close()

@@ -334,3 +334,103 @@ export interface RbacUser {
   status: "active" | "suspended";
   lastLogin: string | null;
 }
+
+export type VoiceDirection = "inbound" | "outbound";
+export type VoiceCallStatus =
+  | "initiated"
+  | "ringing"
+  | "active"
+  | "completed"
+  | "failed"
+  | "no_answer"
+  | "busy"
+  | "cancelled";
+export type VoiceSpeaker = "agent" | "patient" | "system";
+
+export interface VoiceCall {
+  id: string;
+  providerCallId?: string | null;
+  conversationId?: string | null;
+  direction: VoiceDirection | string;
+  phoneFrom: string;
+  phoneTo: string;
+  patientId?: string | null;
+  patientName?: string | null;
+  startedAt: string;
+  endedAt?: string | null;
+  durationSeconds?: number | null;
+  status: VoiceCallStatus | string;
+  intent?: string | null;
+  outcome?: string | null;
+  language: string;
+  escalated: boolean;
+  appointmentId?: string | null;
+}
+
+export interface VoiceEvent {
+  id: string;
+  eventType: string;
+  timestamp: string;
+  payload: Record<string, unknown>;
+}
+
+export interface VoiceToolCall {
+  id: string;
+  toolName: string;
+  arguments: Record<string, unknown>;
+  result: Record<string, unknown>;
+  success: boolean;
+  errorCode?: string | null;
+  durationMs: number;
+  createdAt: string;
+}
+
+export interface VoiceTranscriptSegment {
+  id: string;
+  speaker: VoiceSpeaker | string;
+  content: string;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  sequenceNumber: number;
+}
+
+export interface VoiceCallDetail extends VoiceCall {
+  answeredAt?: string | null;
+  escalationReason?: string | null;
+  state: string;
+  identityStatus: string;
+  events: VoiceEvent[];
+  toolCalls: VoiceToolCall[];
+  transcript: VoiceTranscriptSegment[];
+}
+
+export interface VoiceStats {
+  callsToday: number;
+  completedCalls: number;
+  appointmentsBooked: number;
+  appointmentsRescheduled: number;
+  appointmentsCancelled: number;
+  humanEscalations: number;
+  failedCalls: number;
+  averageCallDuration: number;
+  averageToolLatency: number;
+  demoNotice: string;
+}
+
+export interface VoiceSettings {
+  agentEnabled: boolean;
+  inboundCallsEnabled: boolean;
+  outboundCallsEnabled: boolean;
+  defaultLanguage: string;
+  supportedLanguages: string[];
+  humanTransferNumberConfigured: boolean;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+  maxRetries: number;
+  silenceTimeoutSeconds: number;
+  requireConfirmation: boolean;
+  storeTranscripts: boolean;
+  storeAudio: boolean;
+  providerMode: string;
+  openaiModel: string;
+}

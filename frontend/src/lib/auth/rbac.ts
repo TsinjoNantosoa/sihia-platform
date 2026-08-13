@@ -22,7 +22,9 @@ export type Permission =
   | "users:create"
   | "users:update"
   | "users:delete"
-  | "settings:read";
+  | "settings:read"
+  | "voice:read"
+  | "voice:update";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   admin: [
@@ -43,6 +45,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "users:update",
     "users:delete",
     "settings:read",
+    "voice:read",
+    "voice:update",
   ],
   manager: [
     "dashboard:read",
@@ -53,6 +57,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "analytics:read",
     "ml:read",
     "settings:read",
+    "voice:read",
+    "voice:update",
   ],
   doctor: [
     "dashboard:read",
@@ -65,6 +71,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "analytics:read",
     "ml:read",
     "settings:read",
+    "voice:read",
   ],
   staff: [
     "dashboard:read",
@@ -74,6 +81,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "appointments:read",
     "appointments:create",
     "settings:read",
+    "voice:read",
+    "voice:update",
   ],
 };
 

@@ -11,7 +11,8 @@ type RouteAccessKey =
   | "view_analytics"
   | "view_prediction"
   | "view_settings"
-  | "manage_roles";
+  | "manage_roles"
+  | "view_voice";
 
 const ROUTE_PERMISSION_MAP: Record<RouteAccessKey, Permission> = {
   view_dashboard: "dashboard:read",
@@ -22,6 +23,7 @@ const ROUTE_PERMISSION_MAP: Record<RouteAccessKey, Permission> = {
   view_prediction: "ml:read",
   view_settings: "settings:read",
   manage_roles: "users:read",
+  view_voice: "voice:read",
 };
 
 function waitForAuthHydration(timeoutMs = 5000): Promise<void> {

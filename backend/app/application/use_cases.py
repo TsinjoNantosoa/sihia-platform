@@ -45,6 +45,8 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "users:update",
         "users:delete",
         "settings:read",
+        "voice:read",
+        "voice:update",
     ],
     "manager": [
         "dashboard:read",
@@ -55,6 +57,8 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "analytics:read",
         "ml:read",
         "settings:read",
+        "voice:read",
+        "voice:update",
     ],
     "doctor": [
         "dashboard:read",
@@ -67,6 +71,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "analytics:read",
         "ml:read",
         "settings:read",
+        "voice:read",
     ],
     "staff": [
         "dashboard:read",
@@ -76,6 +81,8 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "appointments:read",
         "appointments:create",
         "settings:read",
+        "voice:read",
+        "voice:update",
     ],
 }
 

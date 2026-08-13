@@ -14,6 +14,10 @@ import type {
   NotificationPrefs,
   NotificationsInboxResponse,
   SearchResponse,
+  VoiceCall,
+  VoiceCallDetail,
+  VoiceSettings,
+  VoiceStats,
   WaitingRoomSnapshot,
   RbacUser,
   Doctor,
@@ -289,8 +293,115 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
   }
   if (endpoint.includes("/api/alerts")) return ALERTS;
   if (endpoint.includes("/api/rbac/users")) return RBAC_USERS;
+  if (endpoint.includes("/api/voice/stats")) return MOCK_VOICE_STATS;
+  if (endpoint.includes("/api/voice/settings")) return MOCK_VOICE_SETTINGS;
+  if (endpoint.includes("/api/voice/calls/") && !endpoint.endsWith("/escalate")) {
+    return MOCK_VOICE_CALL_DETAIL;
+  }
+  if (endpoint.includes("/api/voice/calls")) {
+    return { items: MOCK_VOICE_CALLS, count: MOCK_VOICE_CALLS.length, demoNotice: MOCK_VOICE_STATS.demoNotice };
+  }
 
   return [];
+};
+
+const MOCK_VOICE_STATS: VoiceStats = {
+  callsToday: 12,
+  completedCalls: 9,
+  appointmentsBooked: 5,
+  appointmentsRescheduled: 2,
+  appointmentsCancelled: 1,
+  humanEscalations: 1,
+  failedCalls: 1,
+  averageCallDuration: 98,
+  averageToolLatency: 140,
+  demoNotice: "Demo environment — synthetic patient data only.",
+};
+
+const MOCK_VOICE_CALLS: VoiceCall[] = [
+  {
+    id: "vc-demo-001",
+    direction: "inbound",
+    phoneFrom: "+212600111222",
+    phoneTo: "+212600000000",
+    patientName: "Jean Martin",
+    startedAt: new Date().toISOString(),
+    durationSeconds: 95,
+    status: "completed",
+    intent: "book",
+    outcome: "booked",
+    language: "en",
+    escalated: false,
+    appointmentId: "a-demo-voice",
+  },
+  {
+    id: "vc-demo-002",
+    direction: "inbound",
+    phoneFrom: "+212600111333",
+    phoneTo: "+212600000000",
+    patientName: "Maria Garcia",
+    startedAt: new Date().toISOString(),
+    durationSeconds: 70,
+    status: "completed",
+    intent: "reschedule",
+    outcome: "escalated",
+    language: "fr",
+    escalated: true,
+  },
+];
+
+const MOCK_VOICE_SETTINGS: VoiceSettings = {
+  agentEnabled: true,
+  inboundCallsEnabled: true,
+  outboundCallsEnabled: false,
+  defaultLanguage: "en",
+  supportedLanguages: ["en", "fr"],
+  humanTransferNumberConfigured: false,
+  maxRetries: 2,
+  silenceTimeoutSeconds: 8,
+  requireConfirmation: true,
+  storeTranscripts: true,
+  storeAudio: false,
+  providerMode: "mock",
+  openaiModel: "gpt-4o-mini",
+};
+
+const MOCK_VOICE_CALL_DETAIL: VoiceCallDetail = {
+  ...MOCK_VOICE_CALLS[0],
+  answeredAt: MOCK_VOICE_CALLS[0].startedAt,
+  state: "CALL_ENDED",
+  identityStatus: "verified",
+  events: [
+    { id: "e1", eventType: "call.started", timestamp: MOCK_VOICE_CALLS[0].startedAt, payload: {} },
+    { id: "e2", eventType: "patient.verified", timestamp: MOCK_VOICE_CALLS[0].startedAt, payload: {} },
+    { id: "e3", eventType: "appointment.confirmed", timestamp: MOCK_VOICE_CALLS[0].startedAt, payload: {} },
+    { id: "e4", eventType: "call.ended", timestamp: MOCK_VOICE_CALLS[0].startedAt, payload: {} },
+  ],
+  toolCalls: [
+    {
+      id: "t1",
+      toolName: "get_available_slots",
+      arguments: { specialty: "cardiology" },
+      result: { success: true },
+      success: true,
+      durationMs: 120,
+      createdAt: MOCK_VOICE_CALLS[0].startedAt,
+    },
+  ],
+  transcript: [
+    {
+      id: "tr1",
+      speaker: "agent",
+      content: "Hello, I am the SIHIA automated voice assistant.",
+      sequenceNumber: 1,
+    },
+    {
+      id: "tr2",
+      speaker: "patient",
+      content: "I need a cardiology appointment.",
+      sequenceNumber: 2,
+    },
+  ],
 };
 
 const buildAuthHeaders = (options: RequestInit) => {
@@ -819,4 +930,29 @@ export const authService = {
     }).catch(() => null);
   },
   logoutAll: () => fetchWithAuth("/api/auth/logout-all", { method: "POST" }),
+};
+
+export const voiceApi = {
+  getVoiceStats: () => fetchWithAuth<VoiceStats>("/api/voice/stats"),
+  getVoiceCalls: (limit = 50) =>
+    fetchWithAuth<{ items: VoiceCall[]; count: number; demoNotice?: string }>(
+      `/api/voice/calls?limit=${limit}`,
+    ),
+  getVoiceCall: (id: string) => fetchWithAuth<VoiceCallDetail>(`/api/voice/calls/${id}`),
+  startOutboundCall: (phoneTo: string, language?: string) =>
+    fetchWithAuth<VoiceCall>("/api/voice/calls/outbound", {
+      method: "POST",
+      body: JSON.stringify({ phoneTo, language }),
+    }),
+  escalateCall: (id: string, reason = "operator_request") =>
+    fetchWithAuth(`/api/voice/calls/${id}/escalate`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+  getVoiceSettings: () => fetchWithAuth<VoiceSettings>("/api/voice/settings"),
+  updateVoiceSettings: (payload: Partial<VoiceSettings>) =>
+    fetchWithAuth<VoiceSettings>("/api/voice/settings", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
 };

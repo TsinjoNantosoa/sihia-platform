@@ -56,5 +56,6 @@ describe("RBAC permission helpers", () => {
     expect(getPermissionsForRole("manager")).not.toContain("users:delete");
     expect(getPermissionsForRole("doctor")).toContain("patients:update");
     expect(getPermissionsForRole("staff")).not.toContain("patients:update");
+    expect(getPermissionsForRole("admin")).toContain("voice:read");
   });
 });

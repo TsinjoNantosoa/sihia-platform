@@ -19,6 +19,8 @@ from app.presentation.chatbot_routes import build_chatbot_router
 from app.presentation.deps import chatbot_service, chatbot_rate_limiter
 from app.presentation.routes import api_router
 from app.presentation.knowledge_routes import router as knowledge_router
+from app.presentation.voice_routes import router as voice_router
+from app.presentation.voice_webhooks import router as voice_webhooks_router
 
 configure_logging()
 logger = logging.getLogger("sihia")
@@ -83,6 +85,8 @@ async def request_context_middleware(request: Request, call_next):
 
 app.include_router(api_router)
 app.include_router(knowledge_router)
+app.include_router(voice_router)
+app.include_router(voice_webhooks_router)
 
 
 @app.exception_handler(HTTPException)
