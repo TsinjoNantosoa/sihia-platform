@@ -2,16 +2,25 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
+logger = logging.getLogger("sihia.voice")
+
+from fastapi import HTTPException, status
+
 from app.core.config import settings
+from app.core.logging_config import log_event
 from app.infrastructure.voice_repository import VoiceRepository
 from app.voice.call_service import CallService
+from app.voice.errors import VOICE_DISABLED
+from app.voice.llm_service import VoiceLLMService, VoiceUnderstanding
 from app.voice.metrics import voice_metrics
 from app.voice.models import VoiceCall
 from app.voice.prompts import system_prompt
 from app.voice.safety import evaluate_voice_safety
+from app.voice.settings_service import VoiceSettingsService
 from app.voice.tools import VoiceTools
 
 
@@ -23,10 +32,19 @@ _NO = re.compile(r"\b(no|non|stop)\b", re.I)
 
 
 class AgentService:
-    def __init__(self, calls: CallService, tools: VoiceTools, repo: VoiceRepository) -> None:
+    def __init__(
+        self,
+        calls: CallService,
+        tools: VoiceTools,
+        repo: VoiceRepository,
+        llm: VoiceLLMService | None = None,
+        settings_svc: VoiceSettingsService | None = None,
+    ) -> None:
         self.calls = calls
         self.tools = tools
         self.repo = repo
+        self.llm = llm or VoiceLLMService()
+        self.settings_svc = settings_svc or VoiceSettingsService(repo)
 
     def handle_turn(
         self,
@@ -37,7 +55,13 @@ class AgentService:
         language: str | None = None,
         barge_in: bool = False,
     ) -> dict[str, Any]:
-        lang = (language or (call.language if call else None) or settings.voice_default_language).lower()
+        effective = self.settings_svc.get_effective_settings()
+        if not effective.agent_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={"code": VOICE_DISABLED, "message": "Voice AI is disabled"},
+            )
+        lang = (language or (call.language if call else None) or effective.default_language).lower()
         if call is None:
             call = self.calls.start_call(
                 direction="inbound",
@@ -73,18 +97,32 @@ class AgentService:
             call = self.calls.set_state(call, "IDENTIFY_INTENT")
 
         tool_results: list[dict[str, Any]] = []
-        intent = self._intent(text, call)
+        understanding = self.llm.understand(text, lang)
+        if understanding.fallback_used:
+            log_event(logger, logging.INFO, "voice.llm.fallback", fallback_used=True, call_id=call.id)
+        call.context_json["fallbackUsed"] = understanding.fallback_used
+        if understanding.specialty:
+            call.context_json["specialty"] = understanding.specialty
+        intent = understanding.intent or self._intent(text, call)
         if intent:
             call.intent = intent
             self.repo.update_call(call)
 
-        reply = self._advance(call, text, lang, tool_results)
+        reply = self._advance(call, text, lang, tool_results, understanding)
         ended = call.state in {"END", "CALL_ENDED", "HUMAN_ESCALATION", "EMERGENCY_EXIT"}
-        return self._turn(call, reply, tool_results, ended)
+        body = self._turn(call, reply, tool_results, ended)
+        body["fallbackUsed"] = understanding.fallback_used
+        return body
 
-    def _advance(self, call: VoiceCall, text: str, lang: str, tool_results: list[dict[str, Any]]) -> str:
+    def _advance(
+        self,
+        call: VoiceCall,
+        text: str,
+        lang: str,
+        tool_results: list[dict[str, Any]],
+        understanding: VoiceUnderstanding | None = None,
+    ) -> str:
         ctx = call.context_json
-        verified = call.identity_status == "verified"
 
         if call.state == "IDENTIFY_INTENT":
             if call.intent == "cancel":
@@ -94,13 +132,13 @@ class AgentService:
             else:
                 call.intent = call.intent or "book"
                 call = self.calls.set_state(call, "IDENTIFY_PATIENT")
-            return self._identify_patient(call, text, lang, tool_results)
+            return self._identify_patient(call, text, lang, tool_results, understanding)
 
         if call.state == "IDENTIFY_PATIENT":
-            return self._identify_patient(call, text, lang, tool_results)
+            return self._identify_patient(call, text, lang, tool_results, understanding)
 
         if call.state == "VERIFY_PATIENT":
-            return self._verify(call, text, lang, tool_results)
+            return self._verify(call, text, lang, tool_results, understanding)
 
         if call.state == "SELECT_WORKFLOW":
             workflow = {"book": "BOOK", "reschedule": "RESCHEDULE", "cancel": "CANCEL"}.get(call.intent or "book", "BOOK")
@@ -131,10 +169,10 @@ class AgentService:
             return self._search_slots(call, text, lang, tool_results)
 
         if call.state == "CONFIRM":
-            if _YES.search(text):
+            if self._is_yes(text, understanding):
                 call = self.calls.set_state(call, "COMMIT")
                 return self._commit(call, lang, tool_results)
-            if _NO.search(text):
+            if self._is_no(text, understanding):
                 call = self.calls.set_state(call, "SEARCH")
                 return self._search_slots(call, text, lang, tool_results)
             return self._speak(call, lang, "Please say yes to confirm, or no to choose another slot.", "Dites oui pour confirmer, ou non pour un autre créneau.")
@@ -147,9 +185,16 @@ class AgentService:
 
         return self._speak(call, lang, "How can I help with an appointment?", "Comment puis-je aider pour un rendez-vous ?")
 
-    def _identify_patient(self, call: VoiceCall, text: str, lang: str, tool_results: list[dict[str, Any]]) -> str:
+    def _identify_patient(
+        self,
+        call: VoiceCall,
+        text: str,
+        lang: str,
+        tool_results: list[dict[str, Any]],
+        understanding: VoiceUnderstanding | None = None,
+    ) -> str:
         args: dict[str, Any] = {"phone": call.phone_from}
-        last = self._extract_last_name(text)
+        last = (understanding.last_name if understanding else None) or self._extract_last_name(text)
         if last:
             args["lastName"] = last
         result = self.tools.invoke("search_patient", args, call_id=call.id)
@@ -176,8 +221,15 @@ class AgentService:
             f"J'ai trouvé un dossier pour {patient['firstName']}. Confirmez votre nom et date de naissance.",
         )
 
-    def _verify(self, call: VoiceCall, text: str, lang: str, tool_results: list[dict[str, Any]]) -> str:
-        last = self._extract_last_name(text) or call.context_json.get("verifyLastName")
+    def _verify(
+        self,
+        call: VoiceCall,
+        text: str,
+        lang: str,
+        tool_results: list[dict[str, Any]],
+        understanding: VoiceUnderstanding | None = None,
+    ) -> str:
+        last = (understanding.last_name if understanding else None) or self._extract_last_name(text) or call.context_json.get("verifyLastName")
         dob = self._extract_dob(text)
         ok, _patient = self.tools.identity.verify(
             call.patient_id or "",
@@ -191,7 +243,7 @@ class AgentService:
             retries = int(call.context_json.get("verifyRetries") or 0) + 1
             call.context_json["verifyRetries"] = retries
             self.repo.update_call(call)
-            if retries >= settings.voice_max_retries:
+            if retries >= self.settings_svc.get_effective_settings().max_retries:
                 call.identity_status = "failed"
                 return self._escalate(call, text, lang, None)["reply"]
             return self._speak(
@@ -205,7 +257,7 @@ class AgentService:
         self.repo.update_call(call)
         call = self.calls.set_state(call, "SELECT_WORKFLOW")
         tool_results.append({"success": True, "data": {"verified": True, "patientId": call.patient_id}})
-        return self._advance(call, text, lang, tool_results)
+        return self._advance(call, text, lang, tool_results, understanding)
 
     def _search_slots(self, call: VoiceCall, text: str, lang: str, tool_results: list[dict[str, Any]]) -> str:
         specialty = call.context_json.get("specialty") or self._specialty(text) or "cardiolog"
@@ -343,12 +395,22 @@ class AgentService:
         call = self.calls.set_state(call, "HUMAN_ESCALATION")
         call = self.calls.end_call(call, outcome="escalated")
         reply = spoken or (
-            "I am transferring you to a staff member."
+            "I have requested a staff member. A live phone transfer is not available yet."
             if not lang.startswith("fr")
-            else "Je vous transfère vers un conseiller."
+            else "J'ai demandé un conseiller. Le transfert téléphonique n'est pas encore disponible."
         )
         self._say(call, reply, lang)
         return self._turn(call, reply, [result], True)
+
+    def _is_yes(self, text: str, understanding: VoiceUnderstanding | None) -> bool:
+        if understanding and understanding.confirmation == "yes":
+            return True
+        return bool(_YES.search(text))
+
+    def _is_no(self, text: str, understanding: VoiceUnderstanding | None) -> bool:
+        if understanding and understanding.confirmation == "no":
+            return True
+        return bool(_NO.search(text))
 
     def _intent(self, text: str, call: VoiceCall) -> str | None:
         if _CANCEL.search(text):
@@ -420,7 +482,7 @@ class AgentService:
         return reply
 
     def _say(self, call: VoiceCall, text: str, lang: str, speaker: str = "agent") -> None:
-        if not settings.voice_store_transcripts:
+        if not self.settings_svc.get_effective_settings().store_transcripts:
             return
         self.repo.add_transcript(call.id, speaker, text)
 

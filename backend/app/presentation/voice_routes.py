@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.config import settings
 from app.presentation.deps import agent_service, call_service, require_permission, voice_settings_service, voice_tools
+from app.voice.errors import VOICE_DISABLED
+from app.voice.providers import get_voice_provider
 from app.voice.schemas import (
     EscalateRequest,
     MockTurnRequest,
@@ -15,6 +17,14 @@ from app.voice.schemas import (
 )
 
 router = APIRouter(prefix="/api/voice", tags=["voice"])
+
+
+def _require_agent_enabled() -> None:
+    if not voice_settings_service.get_effective_settings().agent_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": VOICE_DISABLED, "message": "Voice AI is disabled"},
+        )
 
 
 @router.get("/stats")
@@ -45,12 +55,13 @@ def get_call(call_id: str, _claims: dict = Depends(require_permission("voice:rea
 
 @router.post("/calls/outbound")
 def start_outbound(payload: OutboundCallRequest, _claims: dict = Depends(require_permission("voice:update"))):
-    from app.presentation.deps import voice_provider
-
-    if not settings.voice_ai_enabled:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Voice AI disabled")
-    result = voice_provider.handle_outbound(to_number=payload.phoneTo, language=payload.language)
-    return call_service.serialize(result.call)
+    provider = get_voice_provider(call_service)
+    return call_service.create_outbound_call(
+        phone_to=payload.phoneTo,
+        language=payload.language,
+        provider=provider,
+        patient_id=payload.patientId,
+    )
 
 
 @router.post("/calls/{call_id}/escalate")
@@ -91,8 +102,7 @@ def update_settings(
 @router.post("/tools/invoke")
 def invoke_tool(payload: ToolInvokeRequest, _claims: dict = Depends(require_permission("voice:update"))):
     """Exécution contrôlée d'un tool (ElevenLabs / simulateur)."""
-    if not settings.voice_ai_enabled:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Voice AI disabled")
+    _require_agent_enabled()
     return voice_tools.invoke(
         payload.toolName,
         payload.arguments,
@@ -108,8 +118,7 @@ def invoke_tool(payload: ToolInvokeRequest, _claims: dict = Depends(require_perm
 def mock_turn(payload: MockTurnRequest, _claims: dict = Depends(require_permission("voice:update"))):
     if settings.environment.lower() == "production" and settings.voice_provider_mode != "mock":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    if not settings.voice_ai_enabled:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Voice AI disabled")
+    _require_agent_enabled()
     call = call_service.repo.get_call(payload.callId) if payload.callId else None
     return agent_service.handle_turn(
         text=payload.text,

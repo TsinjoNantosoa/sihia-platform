@@ -1,15 +1,31 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Protocol
 from uuid import uuid4
 
+from fastapi import HTTPException, status
+
 from app.core.config import settings
+from app.infrastructure.notification_channels import normalize_phone
 from app.infrastructure.sqlite_repositories import SQLitePatientRepository
 from app.infrastructure.voice_repository import VoiceRepository
+from app.voice.errors import VOICE_DISABLED, VOICE_PROVIDER_NOT_CONFIGURED
 from app.voice.metrics import voice_metrics
 from app.voice.models import VoiceCall
+from app.voice.settings_service import VoiceSettingsService
 from app.voice.state import transition
+
+
+class _OutboundProvider(Protocol):
+    def is_configured(self) -> bool: ...
+    def start_outbound_call(
+        self,
+        *,
+        call: VoiceCall,
+        to_number: str,
+        language: str | None,
+    ) -> Any: ...
 
 
 def _now() -> str:
@@ -17,9 +33,14 @@ def _now() -> str:
 
 
 class CallService:
-    def __init__(self, repo: VoiceRepository | None = None) -> None:
+    def __init__(
+        self,
+        repo: VoiceRepository | None = None,
+        settings_svc: VoiceSettingsService | None = None,
+    ) -> None:
         self.repo = repo or VoiceRepository()
         self.patients = SQLitePatientRepository()
+        self.settings_svc = settings_svc or VoiceSettingsService(self.repo)
 
     def start_call(
         self,
@@ -30,6 +51,7 @@ class CallService:
         provider_call_id: str | None = None,
         language: str | None = None,
         patient_id: str | None = None,
+        status: str = "active",
     ) -> VoiceCall:
         if provider_call_id:
             existing = self.repo.get_by_provider_id(provider_call_id)
@@ -48,10 +70,10 @@ class CallService:
             answered_at=now,
             ended_at=None,
             duration_seconds=None,
-            status="active",
+            status=status,  # type: ignore[arg-type]
             intent=None,
             outcome="in_progress",
-            language=language or settings.voice_default_language,
+            language=language or self.settings_svc.get_effective_settings().default_language,
             escalated=False,
             escalation_reason=None,
             appointment_id=None,
@@ -64,6 +86,64 @@ class CallService:
         self.repo.add_event(call.id, "call.started", {"direction": direction})
         voice_metrics.inc("voice_calls_total")
         return call
+
+    def create_outbound_call(
+        self,
+        *,
+        phone_to: str,
+        language: str | None,
+        provider: _OutboundProvider,
+        patient_id: str | None = None,
+    ) -> dict[str, Any]:
+        effective = self.settings_svc.get_effective_settings()
+        if not effective.agent_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={"code": VOICE_DISABLED, "message": "Voice AI is disabled"},
+            )
+        if not effective.outbound_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "OUTBOUND_DISABLED", "message": "Outbound calls are disabled"},
+            )
+        if not provider.is_configured():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={"code": VOICE_PROVIDER_NOT_CONFIGURED, "message": "Voice provider is not configured"},
+            )
+        phone = normalize_phone(phone_to) or (phone_to.strip() if phone_to.startswith("+") else "")
+        if not phone or len(phone) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"code": "INVALID_PHONE", "message": "Invalid destination phone number"},
+            )
+
+        call = self.start_call(
+            direction="outbound",
+            phone_from=settings.twilio_from_number or "mock",
+            phone_to=phone,
+            language=language or effective.default_language,
+            patient_id=patient_id,
+            status="initiated",
+        )
+        result = provider.start_outbound_call(call=call, to_number=phone, language=language)
+        if getattr(result, "provider_call_id", None):
+            call.provider_call_id = result.provider_call_id
+        allowed = {"queued", "initiated", "failed"}
+        call.status = result.status if result.status in allowed else ("initiated" if result.ok else "failed")  # type: ignore[assignment]
+        if not result.ok:
+            call.outcome = "failed"
+        self.repo.update_call(call)
+        self.repo.add_event(
+            call.id,
+            "outbound.provider",
+            {"ok": bool(result.ok), "status": result.status, "error": getattr(result, "error", None)},
+        )
+        body = self.serialize(call)
+        body["status"] = call.status
+        body["providerError"] = getattr(result, "error", None)
+        body["message"] = getattr(result, "message", None)
+        return body
 
     def set_state(self, call: VoiceCall, target: str, **payload: Any) -> VoiceCall:
         call.state = transition(call.state, target)

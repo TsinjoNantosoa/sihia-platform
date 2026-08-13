@@ -100,6 +100,9 @@ class VoiceSettingsOut(BaseModel):
     storeAudio: bool
     providerMode: str
     openaiModel: str
+    provider: str | None = None
+    mode: str | None = None
+    configured: bool | None = None
 
 
 class VoiceSettingsUpdate(BaseModel):

@@ -12,38 +12,48 @@ from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 
 from app.core.config import settings
 from app.core.logging_config import log_event
-from app.presentation.deps import call_service, voice_provider
+from app.presentation.deps import call_service
 from app.voice.metrics import voice_metrics
+from app.voice.providers import get_voice_provider
+from app.voice.settings_service import VoiceSettingsService
 
 logger = logging.getLogger("sihia.voice")
 router = APIRouter(prefix="/webhooks", tags=["voice-webhooks"])
 
 
-def _twilio_enabled() -> bool:
-    return bool(settings.twilio_auth_token.strip()) and settings.voice_provider_mode == "live"
+def _twilio_signature_required() -> bool:
+    return bool(settings.twilio_auth_token.strip()) and (
+        settings.voice_provider_mode == "live" or settings.environment.lower() == "production"
+    )
 
 
-async def _validate_twilio(request: Request) -> None:
-    if not _twilio_enabled():
+def _elevenlabs_signature_required() -> bool:
+    return settings.voice_provider_mode == "live" or settings.environment.lower() == "production"
+
+
+def _validate_twilio(form: dict[str, Any], request: Request) -> None:
+    if not _twilio_signature_required():
         return
     signature = request.headers.get("X-Twilio-Signature", "")
     if not signature:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing Twilio signature")
     try:
-        from twilio.request_validator import RequestValidator  # type: ignore[import-untyped]
+        from twilio.request_validator import RequestValidator
     except ImportError as exc:
         raise HTTPException(status_code=500, detail="twilio package missing") from exc
     validator = RequestValidator(settings.twilio_auth_token)
-    form = dict(await request.form())
+    params = {str(key): str(value) for key, value in form.items()}
     url = str(request.url)
-    if not validator.validate(url, form, signature):
+    if not validator.validate(url, params, signature):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Twilio signature")
 
 
 def _validate_elevenlabs(raw: bytes, signature: str | None) -> None:
-    secret = settings.elevenlabs_webhook_secret.strip()
-    if settings.voice_provider_mode != "live" or not secret:
+    if not _elevenlabs_signature_required():
         return
+    secret = settings.elevenlabs_webhook_secret.strip()
+    if not secret:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="ElevenLabs webhook is not configured")
     if not signature:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing ElevenLabs signature")
     expected = hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
@@ -52,22 +62,30 @@ def _validate_elevenlabs(raw: bytes, signature: str | None) -> None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid ElevenLabs signature")
 
 
+async def _twilio_form(request: Request) -> dict[str, Any]:
+    form = dict(await request.form())
+    _validate_twilio(form, request)
+    return form
+
+
 @router.post("/twilio/voice")
 async def twilio_voice(request: Request):
-    await _validate_twilio(request)
-    form = dict(await request.form())
+    form = await _twilio_form(request)
     from_number = str(form.get("From") or "unknown")
     to_number = str(form.get("To") or settings.twilio_from_number or "unknown")
     call_sid = str(form.get("CallSid") or "")
-    result = voice_provider.handle_inbound(from_number=from_number, to_number=to_number, call_sid=call_sid)
+    result = get_voice_provider(call_service).handle_inbound(
+        from_number=from_number,
+        to_number=to_number,
+        call_sid=call_sid,
+    )
     log_event(logger, logging.INFO, "voice.webhook.twilio.inbound", call_id=result.call.id)
     return Response(content=result.twiml, media_type="application/xml")
 
 
 @router.post("/twilio/status")
 async def twilio_status(request: Request):
-    await _validate_twilio(request)
-    form = dict(await request.form())
+    form = await _twilio_form(request)
     call_sid = str(form.get("CallSid") or "")
     twilio_status = str(form.get("CallStatus") or "")
     call = call_service.repo.get_by_provider_id(call_sid) if call_sid else None
@@ -92,24 +110,38 @@ async def twilio_status(request: Request):
 
 
 @router.post("/elevenlabs/init")
-async def elevenlabs_init(payload: dict[str, Any] | None = None):
-    """Point d'entrée conversation ElevenLabs (enregistrement d'appel)."""
-    data = payload or {}
+async def elevenlabs_init(
+    request: Request,
+    elevenlabs_signature: str | None = Header(default=None, alias="ElevenLabs-Signature"),
+):
+    raw = await request.body()
+    _validate_elevenlabs(raw, elevenlabs_signature)
+    payload: dict[str, Any] = {}
+    if raw:
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict):
+                payload = parsed
+        except json.JSONDecodeError:
+            payload = {}
     call = call_service.start_call(
         direction="inbound",
-        phone_from=str(data.get("caller_id") or data.get("from") or "unknown"),
-        phone_to=str(data.get("called_number") or data.get("to") or settings.twilio_from_number or "unknown"),
-        provider_call_id=str(data.get("call_sid") or data.get("conversation_id") or ""),
-        language=data.get("language"),
+        phone_from=str(payload.get("caller_id") or payload.get("from") or "unknown"),
+        phone_to=str(payload.get("called_number") or payload.get("to") or settings.twilio_from_number or "unknown"),
+        provider_call_id=str(payload.get("call_sid") or payload.get("conversation_id") or "") or None,
+        language=payload.get("language"),
     )
-    if data.get("conversation_id"):
-        call.conversation_id = str(data["conversation_id"])
+    if payload.get("conversation_id"):
+        call.conversation_id = str(payload["conversation_id"])
         call_service.repo.update_call(call)
     return {"callId": call.id, "ok": True}
 
 
 @router.post("/elevenlabs/post-call")
-async def elevenlabs_post_call(request: Request, elevenlabs_signature: str | None = Header(default=None, alias="ElevenLabs-Signature")):
+async def elevenlabs_post_call(
+    request: Request,
+    elevenlabs_signature: str | None = Header(default=None, alias="ElevenLabs-Signature"),
+):
     raw = await request.body()
     _validate_elevenlabs(raw, elevenlabs_signature)
     payload: dict[str, Any] = {}
@@ -123,14 +155,14 @@ async def elevenlabs_post_call(request: Request, elevenlabs_signature: str | Non
     conversation_id = str(payload.get("conversation_id") or payload.get("data", {}).get("conversation_id") or "")
     call = None
     if conversation_id:
-        # lookup via conversation_id stored on the call
         for item in call_service.repo.list_calls(limit=50):
             if item.conversation_id == conversation_id or item.provider_call_id == conversation_id:
                 call = item
                 break
     if call:
         transcript = payload.get("transcript") or payload.get("data", {}).get("transcript") or []
-        if isinstance(transcript, list) and settings.voice_store_transcripts:
+        store = VoiceSettingsService(call_service.repo).get_effective_settings().store_transcripts
+        if isinstance(transcript, list) and store:
             for item in transcript:
                 speaker = "agent" if str(item.get("role") or item.get("speaker") or "").lower() in {"agent", "assistant"} else "patient"
                 content = str(item.get("message") or item.get("content") or "")
@@ -142,7 +174,20 @@ async def elevenlabs_post_call(request: Request, elevenlabs_signature: str | Non
 
 
 @router.post("/elevenlabs/barge-in")
-async def elevenlabs_barge_in(payload: dict[str, Any]):
+async def elevenlabs_barge_in(
+    request: Request,
+    elevenlabs_signature: str | None = Header(default=None, alias="ElevenLabs-Signature"),
+):
+    raw = await request.body()
+    _validate_elevenlabs(raw, elevenlabs_signature)
+    payload: dict[str, Any] = {}
+    if raw:
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict):
+                payload = parsed
+        except json.JSONDecodeError:
+            payload = {}
     call_id = str(payload.get("callId") or payload.get("call_id") or "")
     if call_id:
         voice_metrics.inc("voice_barge_in_count")

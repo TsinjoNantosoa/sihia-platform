@@ -13,6 +13,8 @@ from app.application.pipeline_service import PipelineService
 from app.core.config import settings
 from app.infrastructure.database import get_engine, is_postgresql, sqlalchemy_url
 from app.infrastructure.notification_channels import reminder_channels_status
+from app.voice.providers import voice_provider_status
+from app.voice.settings_service import VoiceSettingsService
 
 
 def database_kind() -> str:
@@ -66,6 +68,19 @@ def qdrant_status() -> dict:
         return {"status": "error", "message": "vector store unavailable"}
 
 
+def _voice_ai_status() -> dict:
+    try:
+        effective = VoiceSettingsService().get_effective_settings()
+        status = voice_provider_status()
+        return {
+            "enabled": effective.agent_enabled,
+            "provider": status["provider"],
+            "configured": status["configured"],
+        }
+    except Exception:  # noqa: BLE001 — health probe
+        return {"enabled": False, "provider": "unknown", "configured": False}
+
+
 def build_health_details() -> dict:
     db = check_database()
     pipeline = pipeline_status()
@@ -85,6 +100,7 @@ def build_health_details() -> dict:
             "reminders": reminder_channels_status(),
             "auth": {"status": "ok", "algorithm": settings.jwt_algorithm},
             "qdrant": qdrant,
+            "voice_ai": _voice_ai_status(),
         },
         "config": {
             "database_url_scheme": sqlalchemy_url().split("://", 1)[0],

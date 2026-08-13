@@ -44,3 +44,13 @@ Tous les endpoints metier (hors login) exigent un `Authorization: Bearer <token>
 - Les use-cases dependent des ports `domain/ports.py`, pas des impl concretes.
 - Les repositories in-memory sont remplacables par des impl SQLAlchemy sans changer les routes.
 - Les erreurs metier sont centralisees au niveau application (`HTTPException` coherentes).
+
+## Voice AI (mock / live)
+
+`VOICE_PROVIDER_MODE=mock` (défaut) : simulateur dashboard, aucun appel téléphonique réel.
+
+`VOICE_PROVIDER_MODE=live` : intégration ElevenLabs/Twilio. Les secrets restent dans l'ENV (`ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `TWILIO_AUTH_TOKEN`, …). Sans credentials, l'API retourne `VOICE_PROVIDER_NOT_CONFIGURED` et ne simule pas un succès.
+
+Le comportement runtime (`agent_enabled`, inbound/outbound, confirmation, transcripts) se configure via `PATCH /api/voice/settings` (table `voice_settings`), pas via les secrets ENV.
+
+Les webhooks `/webhooks/twilio/*` et `/webhooks/elevenlabs/*` n'utilisent pas le JWT utilisateur : validation de signature fournisseur en mode live / production.

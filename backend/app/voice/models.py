@@ -6,6 +6,7 @@ from typing import Any, Literal
 
 VoiceDirection = Literal["inbound", "outbound"]
 VoiceCallStatus = Literal[
+    "queued",
     "initiated",
     "ringing",
     "active",

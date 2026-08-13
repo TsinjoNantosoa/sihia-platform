@@ -63,8 +63,8 @@ def evaluate_voice_safety(text: str, language: str = "en") -> VoiceSafetyResult:
             "human_request",
             blocked=False,
             escalate=True,
-            spoken_en="I can transfer you to a staff member. One moment.",
-            spoken_fr="Je vous transfère vers un conseiller. Un instant.",
+            spoken_en="I can request a staff member. A live phone transfer is not available yet.",
+            spoken_fr="Je peux demander un conseiller. Le transfert téléphonique n'est pas encore disponible.",
             reason="explicit_human_request",
         )
 

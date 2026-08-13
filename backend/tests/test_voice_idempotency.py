@@ -6,8 +6,10 @@ from app.voice.call_service import CallService
 
 
 def _slot() -> str:
-    minute = int(uuid4().hex[:4], 16) % 50
-    return f"2099-03-02T08:{minute:02d}:00+00:00"
+    stamp = uuid4().int
+    day = 1 + (stamp % 27)
+    minute = stamp % 50
+    return f"2099-04-{day:02d}T08:{minute:02d}:00+00:00"
 
 
 def test_duplicate_create_replays_same_appointment() -> None:
@@ -25,11 +27,12 @@ def test_duplicate_create_replays_same_appointment() -> None:
             allergies=[],
         )
     )
+    action_id = f"same-action-{uuid4().hex[:8]}"
     args = {
         "doctorId": "d-1",
         "patientId": patient.id,
         "date": _slot(),
-        "actionId": "same-action",
+        "actionId": action_id,
     }
     first = voice_tools.invoke(
         "create_appointment",
@@ -37,7 +40,7 @@ def test_duplicate_create_replays_same_appointment() -> None:
         call_id=call.id,
         patient_verified=True,
         confirmation_received=True,
-        action_id="same-action",
+        action_id=action_id,
     )
     second = voice_tools.invoke(
         "create_appointment",
@@ -45,7 +48,7 @@ def test_duplicate_create_replays_same_appointment() -> None:
         call_id=call.id,
         patient_verified=True,
         confirmation_received=True,
-        action_id="same-action",
+        action_id=action_id,
     )
     assert first["success"] and second["success"]
     assert first["data"]["appointmentId"] == second["data"]["appointmentId"]

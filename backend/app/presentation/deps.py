@@ -38,6 +38,7 @@ from app.voice.agent_service import AgentService
 from app.voice.availability_service import AvailabilityService
 from app.voice.call_service import CallService
 from app.voice.identity_service import IdentityService
+from app.voice.llm_service import VoiceLLMService
 from app.voice.providers import get_voice_provider
 from app.voice.settings_service import VoiceSettingsService
 from app.voice.tools import VoiceTools
@@ -81,6 +82,7 @@ chatbot_rate_limiter = ChatbotRateLimiter(max_per_minute=settings.chatbot_query_
 voice_repo = VoiceRepository()
 voice_identity = IdentityService(patients_repo)
 voice_availability = AvailabilityService(doctors_repo, appointments_repo)
+voice_settings_service = VoiceSettingsService(voice_repo)
 voice_tools = VoiceTools(
     identity=voice_identity,
     availability=voice_availability,
@@ -88,11 +90,12 @@ voice_tools = VoiceTools(
     doctors=doctors_service,
     patients=patients_repo,
     repo=voice_repo,
+    settings_svc=voice_settings_service,
 )
-call_service = CallService(voice_repo)
-agent_service = AgentService(call_service, voice_tools, voice_repo)
+call_service = CallService(voice_repo, settings_svc=voice_settings_service)
+voice_llm = VoiceLLMService()
+agent_service = AgentService(call_service, voice_tools, voice_repo, llm=voice_llm, settings_svc=voice_settings_service)
 voice_provider = get_voice_provider(call_service)
-voice_settings_service = VoiceSettingsService(voice_repo)
 
 bearer_scheme = HTTPBearer(auto_error=True)
 

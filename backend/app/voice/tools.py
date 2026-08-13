@@ -12,7 +12,6 @@ from fastapi import HTTPException
 
 from app.application.schemas import AppointmentCreate
 from app.application.use_cases import AppointmentsService, DoctorsService
-from app.core.config import settings
 from app.core.logging_config import log_event
 from app.domain.ports import PatientRepository
 from app.infrastructure.notification_channels import normalize_phone, send_sms
@@ -24,7 +23,6 @@ from app.voice.errors import (
     APPOINTMENT_NOT_RESCHEDULABLE,
     CONFIRMATION_REQUIRED,
     DOCTOR_NOT_FOUND,
-    ESCALATION_UNAVAILABLE,
     NO_AVAILABLE_SLOTS,
     OWNERSHIP_MISMATCH,
     PATIENT_NOT_FOUND,
@@ -37,7 +35,9 @@ from app.voice.errors import (
 from app.voice.identity_service import IdentityService
 from app.voice.metrics import voice_metrics
 from app.voice.models import VoiceToolCall
+from app.voice.redaction import minimize_tool_log
 from app.voice.safety import assert_mutation_allowed
+from app.voice.settings_service import VoiceSettingsService
 from app.voice.tool_registry import MUTATION_TOOLS, ToolRegistry
 
 logger = logging.getLogger("sihia.voice")
@@ -55,6 +55,7 @@ class VoiceTools:
         doctors: DoctorsService,
         patients: PatientRepository,
         repo: VoiceRepository,
+        settings_svc: VoiceSettingsService | None = None,
     ) -> None:
         self.identity = identity
         self.availability = availability
@@ -62,6 +63,7 @@ class VoiceTools:
         self.doctors = doctors
         self.patients = patients
         self.repo = repo
+        self.settings_svc = settings_svc or VoiceSettingsService(repo)
         self.registry = ToolRegistry()
         self.registry.register("search_patient", self.search_patient)
         self.registry.register("search_doctors", self.search_doctors)
@@ -207,7 +209,7 @@ class VoiceTools:
         guard = assert_mutation_allowed(
             patient_verified=bool(ctx.get("patient_verified")),
             confirmation_received=bool(ctx.get("confirmation_received")),
-            confirm_required=settings.voice_confirm_mutations,
+            confirm_required=self.settings_svc.get_effective_settings().require_confirmation,
         )
         if guard:
             code = PATIENT_NOT_VERIFIED if guard.reason == "patient_not_verified" else CONFIRMATION_REQUIRED
@@ -260,7 +262,7 @@ class VoiceTools:
         guard = assert_mutation_allowed(
             patient_verified=bool(ctx.get("patient_verified")),
             confirmation_received=bool(ctx.get("confirmation_received")),
-            confirm_required=settings.voice_confirm_mutations,
+            confirm_required=self.settings_svc.get_effective_settings().require_confirmation,
         )
         if guard:
             code = PATIENT_NOT_VERIFIED if guard.reason == "patient_not_verified" else CONFIRMATION_REQUIRED
@@ -309,7 +311,7 @@ class VoiceTools:
         guard = assert_mutation_allowed(
             patient_verified=bool(ctx.get("patient_verified")),
             confirmation_received=bool(ctx.get("confirmation_received")),
-            confirm_required=settings.voice_confirm_mutations,
+            confirm_required=self.settings_svc.get_effective_settings().require_confirmation,
         )
         if guard:
             code = PATIENT_NOT_VERIFIED if guard.reason == "patient_not_verified" else CONFIRMATION_REQUIRED
@@ -350,18 +352,20 @@ class VoiceTools:
 
     def escalate_to_human(self, arguments: dict[str, Any], _ctx: dict[str, Any]) -> dict[str, Any]:
         reason = arguments.get("reason") or "operator_request"
-        transfer = settings.voice_human_transfer_number.strip()
-        if not transfer and settings.voice_provider_mode != "mock":
-            return tool_err(ESCALATION_UNAVAILABLE, "Human transfer number is not configured")
+        effective = self.settings_svc.get_effective_settings()
         voice_metrics.inc("voice_escalations")
-        return tool_ok(
-            {
-                "escalated": True,
+        return {
+            "success": True,
+            "status": "ESCALATION_REQUESTED",
+            "transfer_available": False,
+            "data": {
+                "status": "ESCALATION_REQUESTED",
+                "transferAvailable": False,
+                "transferStatus": "ESCALATION_REQUESTED",
                 "reason": reason,
-                "transferNumberConfigured": bool(transfer),
-                "mode": settings.voice_provider_mode,
-            }
-        )
+                "humanTransferConfigured": effective.human_transfer_configured,
+            },
+        }
 
     def _from_http(self, exc: HTTPException) -> dict[str, Any]:
         detail = exc.detail
@@ -393,8 +397,8 @@ class VoiceTools:
             id=f"vtc-{uuid4().hex[:12]}",
             call_id=call_id,
             tool_name=tool_name,
-            arguments_json=self._redact(arguments),
-            result_json=self._redact(result),
+            arguments_json=minimize_tool_log(tool_name, arguments),
+            result_json=minimize_tool_log(tool_name, result),
             success=success,
             error_code=None if success else result.get("code"),
             duration_ms=duration_ms,
@@ -405,7 +409,3 @@ class VoiceTools:
         except Exception:
             pass
         voice_metrics.observe_tool_latency(duration_ms, success=success)
-
-    def _redact(self, payload: dict[str, Any]) -> dict[str, Any]:
-        blocked = {"api_key", "token", "secret", "authorization", "password"}
-        return {k: v for k, v in payload.items() if k.lower() not in blocked}
