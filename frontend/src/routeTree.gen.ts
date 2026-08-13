@@ -153,9 +153,9 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/waiting-room': typeof AppWaitingRoomRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
+  '/voice-ai/settings': typeof AppVoiceAiSettingsRoute
   '/patients/': typeof AppPatientsIndexRoute
   '/voice-ai/': typeof AppVoiceAiIndexRoute
-  '/voice-ai/settings': typeof AppVoiceAiSettingsRoute
   '/voice-ai/calls/$callId': typeof AppVoiceAiCallsCallIdRoute
 }
 export interface FileRoutesByTo {
@@ -175,9 +175,9 @@ export interface FileRoutesByTo {
   '/waiting-room': typeof AppWaitingRoomRoute
   '/': typeof AppIndexRoute
   '/patients/$patientId': typeof AppPatientsPatientIdRoute
+  '/voice-ai/settings': typeof AppVoiceAiSettingsRoute
   '/patients': typeof AppPatientsIndexRoute
   '/voice-ai': typeof AppVoiceAiIndexRoute
-  '/voice-ai/settings': typeof AppVoiceAiSettingsRoute
   '/voice-ai/calls/$callId': typeof AppVoiceAiCallsCallIdRoute
 }
 export interface FileRoutesById {
@@ -199,9 +199,9 @@ export interface FileRoutesById {
   '/_app/waiting-room': typeof AppWaitingRoomRoute
   '/_app/': typeof AppIndexRoute
   '/_app/patients/$patientId': typeof AppPatientsPatientIdRoute
+  '/_app/voice-ai/settings': typeof AppVoiceAiSettingsRoute
   '/_app/patients/': typeof AppPatientsIndexRoute
   '/_app/voice-ai/': typeof AppVoiceAiIndexRoute
-  '/_app/voice-ai/settings': typeof AppVoiceAiSettingsRoute
   '/_app/voice-ai/calls/$callId': typeof AppVoiceAiCallsCallIdRoute
 }
 export interface FileRouteTypes {
@@ -223,9 +223,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/waiting-room'
     | '/patients/$patientId'
+    | '/voice-ai/settings'
     | '/patients/'
     | '/voice-ai/'
-    | '/voice-ai/settings'
     | '/voice-ai/calls/$callId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -245,9 +245,9 @@ export interface FileRouteTypes {
     | '/waiting-room'
     | '/'
     | '/patients/$patientId'
+    | '/voice-ai/settings'
     | '/patients'
     | '/voice-ai'
-    | '/voice-ai/settings'
     | '/voice-ai/calls/$callId'
   id:
     | '__root__'
@@ -268,9 +268,9 @@ export interface FileRouteTypes {
     | '/_app/waiting-room'
     | '/_app/'
     | '/_app/patients/$patientId'
+    | '/_app/voice-ai/settings'
     | '/_app/patients/'
     | '/_app/voice-ai/'
-    | '/_app/voice-ai/settings'
     | '/_app/voice-ai/calls/$callId'
   fileRoutesById: FileRoutesById
 }
@@ -447,9 +447,9 @@ interface AppRouteChildren {
   AppWaitingRoomRoute: typeof AppWaitingRoomRoute
   AppIndexRoute: typeof AppIndexRoute
   AppPatientsPatientIdRoute: typeof AppPatientsPatientIdRoute
+  AppVoiceAiSettingsRoute: typeof AppVoiceAiSettingsRoute
   AppPatientsIndexRoute: typeof AppPatientsIndexRoute
   AppVoiceAiIndexRoute: typeof AppVoiceAiIndexRoute
-  AppVoiceAiSettingsRoute: typeof AppVoiceAiSettingsRoute
   AppVoiceAiCallsCallIdRoute: typeof AppVoiceAiCallsCallIdRoute
 }
 
@@ -466,9 +466,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppWaitingRoomRoute: AppWaitingRoomRoute,
   AppIndexRoute: AppIndexRoute,
   AppPatientsPatientIdRoute: AppPatientsPatientIdRoute,
+  AppVoiceAiSettingsRoute: AppVoiceAiSettingsRoute,
   AppPatientsIndexRoute: AppPatientsIndexRoute,
   AppVoiceAiIndexRoute: AppVoiceAiIndexRoute,
-  AppVoiceAiSettingsRoute: AppVoiceAiSettingsRoute,
   AppVoiceAiCallsCallIdRoute: AppVoiceAiCallsCallIdRoute,
 }
 
