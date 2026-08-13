@@ -54,3 +54,9 @@ Tous les endpoints metier (hors login) exigent un `Authorization: Bearer <token>
 Le comportement runtime (`agent_enabled`, inbound/outbound, confirmation, transcripts) se configure via `PATCH /api/voice/settings` (table `voice_settings`), pas via les secrets ENV.
 
 Les webhooks `/webhooks/twilio/*` et `/webhooks/elevenlabs/*` n'utilisent pas le JWT utilisateur : validation de signature fournisseur en mode live / production.
+
+`VOICE_PUBLIC_BASE_URL` (ex. `https://<service>.onrender.com`) est l'URL utilisée pour valider la signature Twilio derrière un reverse proxy. Ne pas désactiver la validation.
+
+`VOICE_TIMEZONE` (défaut `UTC`, alias `APP_TIMEZONE`) s'applique aux quiet hours outbound. `silence_timeout_seconds` est conservé pour la future config ElevenLabs ; le silence audio n'est pas géré par FastAPI.
+
+Gateway tools : `POST /webhooks/elevenlabs/tools/{tool_name}` authentifié par `ELEVENLABS_TOOL_SECRET` (pas de JWT humain). Les mutations utilisent le `VoiceExecutionContext` serveur.

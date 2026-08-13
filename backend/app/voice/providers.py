@@ -60,11 +60,15 @@ class VoiceProvider(Protocol):
     ) -> OutboundProviderResult: ...
 
 
-def _twiml_say(message: str) -> str:
+def twiml_say(message: str) -> str:
     return (
         '<?xml version="1.0" encoding="UTF-8"?>'
         f"<Response><Say voice=\"alice\">{message}</Say></Response>"
     )
+
+
+def inbound_unavailable_twiml() -> str:
+    return twiml_say("Voice AI currently unavailable.")
 
 
 class MockVoiceProvider:
@@ -85,7 +89,7 @@ class MockVoiceProvider:
         )
         return InboundResult(
             call=call,
-            twiml=_twiml_say("SIHIA Voice AI mock mode. Use the dashboard simulator. Synthetic data only."),
+            twiml=twiml_say("SIHIA Voice AI mock mode. Use the dashboard simulator. Synthetic data only."),
         )
 
     def start_outbound_call(
@@ -122,10 +126,10 @@ class ElevenLabsVoiceProvider:
             provider_call_id=call_sid or None,
         )
         if not self.is_configured():
-            return InboundResult(call=call, twiml=_twiml_say("SIHIA Voice AI is not configured."))
+            return InboundResult(call=call, twiml=twiml_say("SIHIA Voice AI is not configured."))
         return InboundResult(
             call=call,
-            twiml=_twiml_say("SIHIA live voice bridge is not enabled yet."),
+            twiml=twiml_say("SIHIA live voice bridge is not enabled yet."),
         )
 
     def start_outbound_call(

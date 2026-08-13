@@ -10,9 +10,15 @@ from app.core.config import settings
 from app.infrastructure.notification_channels import normalize_phone
 from app.infrastructure.sqlite_repositories import SQLitePatientRepository
 from app.infrastructure.voice_repository import VoiceRepository
-from app.voice.errors import VOICE_DISABLED, VOICE_PROVIDER_NOT_CONFIGURED
+from app.voice.errors import (
+    VOICE_AGENT_DISABLED,
+    VOICE_OUTBOUND_DISABLED,
+    VOICE_PROVIDER_NOT_CONFIGURED,
+    VOICE_QUIET_HOURS,
+)
 from app.voice.metrics import voice_metrics
 from app.voice.models import VoiceCall
+from app.voice.quiet_hours import is_within_quiet_hours
 from app.voice.settings_service import VoiceSettingsService
 from app.voice.state import transition
 
@@ -30,6 +36,10 @@ class _OutboundProvider(Protocol):
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+_TERMINAL_STATUS = {"completed", "failed", "busy", "no_answer", "cancelled"}
+_ANSWERED_STATUS = {"answered", "active"}
 
 
 class CallService:
@@ -52,12 +62,15 @@ class CallService:
         language: str | None = None,
         patient_id: str | None = None,
         status: str = "active",
+        answered: bool | None = None,
     ) -> VoiceCall:
         if provider_call_id:
             existing = self.repo.get_by_provider_id(provider_call_id)
             if existing:
                 return existing
         now = _now()
+        if answered is None:
+            answered = direction != "outbound"
         call = VoiceCall(
             id=f"vc-{uuid4().hex[:12]}",
             provider_call_id=provider_call_id,
@@ -67,7 +80,7 @@ class CallService:
             phone_to=phone_to,
             patient_id=patient_id,
             started_at=now,
-            answered_at=now,
+            answered_at=now if answered else None,
             ended_at=None,
             duration_seconds=None,
             status=status,  # type: ignore[arg-type]
@@ -99,23 +112,36 @@ class CallService:
         if not effective.agent_enabled:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={"code": VOICE_DISABLED, "message": "Voice AI is disabled"},
+                detail={"code": VOICE_AGENT_DISABLED, "message": "Voice AI is disabled", "retryable": False},
             )
         if not effective.outbound_enabled:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "OUTBOUND_DISABLED", "message": "Outbound calls are disabled"},
+                detail={"code": VOICE_OUTBOUND_DISABLED, "message": "Outbound calls are disabled", "retryable": False},
             )
         if not provider.is_configured():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={"code": VOICE_PROVIDER_NOT_CONFIGURED, "message": "Voice provider is not configured"},
+                detail={
+                    "code": VOICE_PROVIDER_NOT_CONFIGURED,
+                    "message": "Voice provider is not configured",
+                    "retryable": False,
+                },
+            )
+        if is_within_quiet_hours(
+            start=effective.quiet_hours_start,
+            end=effective.quiet_hours_end,
+            timezone_name=effective.timezone,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": VOICE_QUIET_HOURS, "message": "Outbound calls are not allowed during quiet hours", "retryable": False},
             )
         phone = normalize_phone(phone_to) or (phone_to.strip() if phone_to.startswith("+") else "")
         if not phone or len(phone) < 8:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail={"code": "INVALID_PHONE", "message": "Invalid destination phone number"},
+                detail={"code": "INVALID_PHONE", "message": "Invalid destination phone number", "retryable": False},
             )
 
         call = self.start_call(
@@ -125,6 +151,7 @@ class CallService:
             language=language or effective.default_language,
             patient_id=patient_id,
             status="initiated",
+            answered=False,
         )
         result = provider.start_outbound_call(call=call, to_number=phone, language=language)
         if getattr(result, "provider_call_id", None):
@@ -144,6 +171,36 @@ class CallService:
         body["providerError"] = getattr(result, "error", None)
         body["message"] = getattr(result, "message", None)
         return body
+
+    def apply_provider_status(self, call: VoiceCall, provider_status: str) -> VoiceCall:
+        mapping = {
+            "queued": "queued",
+            "initiated": "initiated",
+            "ringing": "ringing",
+            "answered": "answered",
+            "in-progress": "active",
+            "in_progress": "active",
+            "completed": "completed",
+            "busy": "busy",
+            "failed": "failed",
+            "no-answer": "no_answer",
+            "no_answer": "no_answer",
+            "canceled": "cancelled",
+            "cancelled": "cancelled",
+        }
+        status_value = mapping.get(provider_status, call.status)
+        if status_value in _ANSWERED_STATUS and not call.answered_at:
+            call.answered_at = _now()
+            call.status = status_value  # type: ignore[assignment]
+            self.repo.update_call(call)
+            self.repo.add_event(call.id, "call.answered", {"status": status_value})
+        elif status_value in _TERMINAL_STATUS:
+            self.end_call(call, status=status_value, outcome=call.outcome)
+        else:
+            call.status = status_value  # type: ignore[assignment]
+            self.repo.update_call(call)
+        self.repo.add_event(call.id, "twilio.status", {"status": provider_status})
+        return call
 
     def set_state(self, call: VoiceCall, target: str, **payload: Any) -> VoiceCall:
         call.state = transition(call.state, target)

@@ -9,6 +9,7 @@ VoiceCallStatus = Literal[
     "queued",
     "initiated",
     "ringing",
+    "answered",
     "active",
     "completed",
     "failed",

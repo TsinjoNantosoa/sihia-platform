@@ -3,6 +3,7 @@ from uuid import uuid4
 from app.application.schemas import PatientCreate
 from app.presentation.deps import patients_service, voice_tools
 from app.voice.call_service import CallService
+from app.voice.execution_context import VoiceExecutionContext
 
 
 def _slot() -> str:
@@ -34,20 +35,25 @@ def test_duplicate_create_replays_same_appointment() -> None:
         "date": _slot(),
         "actionId": action_id,
     }
+    ctx = VoiceExecutionContext(
+        call_id=call.id,
+        patient_id=patient.id,
+        patient_verified=True,
+        confirmation_received=True,
+        current_state="COMMIT",
+    )
     first = voice_tools.invoke(
         "create_appointment",
         args,
         call_id=call.id,
-        patient_verified=True,
-        confirmation_received=True,
+        context=ctx,
         action_id=action_id,
     )
     second = voice_tools.invoke(
         "create_appointment",
         args,
         call_id=call.id,
-        patient_verified=True,
-        confirmation_received=True,
+        context=ctx,
         action_id=action_id,
     )
     assert first["success"] and second["success"]

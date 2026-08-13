@@ -27,6 +27,7 @@ class EffectiveVoiceSettings:
     provider_mode: str
     openai_model: str
     human_transfer_configured: bool
+    timezone: str
 
 
 class VoiceSettingsService:
@@ -53,6 +54,7 @@ class VoiceSettingsService:
             provider_mode=settings.voice_provider_mode,
             openai_model=settings.openai_model,
             human_transfer_configured=bool(settings.voice_human_transfer_number.strip()),
+            timezone=settings.voice_timezone,
         )
 
     def get(self) -> dict[str, Any]:
@@ -77,6 +79,7 @@ class VoiceSettingsService:
             "provider": status["provider"],
             "mode": status["mode"],
             "configured": status["configured"],
+            "timezone": effective.timezone,
         }
 
     def update(self, payload: dict[str, Any]) -> dict[str, Any]:

@@ -98,6 +98,10 @@ class Settings(BaseModel):
     voice_human_transfer_number: str = ""
     voice_provider_mode: str = "mock"
     voice_supported_languages: str = "en,fr"
+    voice_timezone: str = "UTC"
+    voice_public_base_url: str = ""
+    voice_trust_proxy: bool = False
+    elevenlabs_tool_secret: str = ""
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5174",
@@ -192,6 +196,10 @@ class Settings(BaseModel):
             voice_human_transfer_number=os.getenv("VOICE_HUMAN_TRANSFER_NUMBER", ""),
             voice_provider_mode=os.getenv("VOICE_PROVIDER_MODE", "mock").strip().lower() or "mock",
             voice_supported_languages=os.getenv("VOICE_SUPPORTED_LANGUAGES", "en,fr"),
+            voice_timezone=(os.getenv("VOICE_TIMEZONE") or os.getenv("APP_TIMEZONE") or "UTC").strip() or "UTC",
+            voice_public_base_url=os.getenv("VOICE_PUBLIC_BASE_URL", "").strip(),
+            voice_trust_proxy=_env_bool("VOICE_TRUST_PROXY", False),
+            elevenlabs_tool_secret=os.getenv("ELEVENLABS_TOOL_SECRET", "").strip(),
             cors_origins=origins or ["http://localhost:5174"],
             environment=os.getenv("ENVIRONMENT", "development"),
         )

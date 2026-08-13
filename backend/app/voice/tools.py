@@ -23,6 +23,7 @@ from app.voice.errors import (
     APPOINTMENT_NOT_RESCHEDULABLE,
     CONFIRMATION_REQUIRED,
     DOCTOR_NOT_FOUND,
+    HUMAN_ESCALATION_REQUESTED,
     NO_AVAILABLE_SLOTS,
     OWNERSHIP_MISMATCH,
     PATIENT_NOT_FOUND,
@@ -32,6 +33,7 @@ from app.voice.errors import (
     tool_err,
     tool_ok,
 )
+from app.voice.execution_context import VoiceExecutionContext
 from app.voice.identity_service import IdentityService
 from app.voice.metrics import voice_metrics
 from app.voice.models import VoiceToolCall
@@ -81,11 +83,15 @@ class VoiceTools:
         arguments: dict[str, Any],
         *,
         call_id: str,
-        patient_verified: bool = False,
-        confirmation_received: bool = False,
+        context: VoiceExecutionContext | None = None,
         idempotency_key: str | None = None,
         action_id: str | None = None,
+        patient_verified: bool | None = None,
+        confirmation_received: bool | None = None,
     ) -> dict[str, Any]:
+        """Les flags patient_verified / confirmation_received réseau sont ignorés."""
+        del patient_verified, confirmation_received
+        resolved = context or self.context_for_call(call_id)
         handler = self.registry.get(tool_name)
         if handler is None:
             result = tool_err("UNKNOWN_TOOL", f"Tool inconnu: {tool_name}")
@@ -103,9 +109,11 @@ class VoiceTools:
 
         started = time.perf_counter()
         extra = {
-            "call_id": call_id,
-            "patient_verified": patient_verified,
-            "confirmation_received": confirmation_received,
+            "call_id": resolved.call_id,
+            "patient_id": resolved.patient_id,
+            "patient_verified": resolved.patient_verified,
+            "confirmation_received": resolved.confirmation_received,
+            "current_state": resolved.current_state,
         }
         try:
             result = handler(arguments, extra)
@@ -131,6 +139,12 @@ class VoiceTools:
             success=bool(result.get("success")),
         )
         return result
+
+    def context_for_call(self, call_id: str) -> VoiceExecutionContext:
+        call = self.repo.get_call(call_id)
+        if call is None:
+            return VoiceExecutionContext.anonymous(call_id)
+        return VoiceExecutionContext.from_call(call)
 
     def search_patient(self, arguments: dict[str, Any], _ctx: dict[str, Any]) -> dict[str, Any]:
         matches = self.identity.search(
@@ -356,6 +370,7 @@ class VoiceTools:
         voice_metrics.inc("voice_escalations")
         return {
             "success": True,
+            "code": HUMAN_ESCALATION_REQUESTED,
             "status": "ESCALATION_REQUESTED",
             "transfer_available": False,
             "data": {

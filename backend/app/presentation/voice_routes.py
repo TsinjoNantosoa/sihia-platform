@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.config import settings
 from app.presentation.deps import agent_service, call_service, require_permission, voice_settings_service, voice_tools
-from app.voice.errors import VOICE_DISABLED
+from app.voice.errors import VOICE_AGENT_DISABLED
 from app.voice.providers import get_voice_provider
 from app.voice.schemas import (
     EscalateRequest,
@@ -23,7 +23,7 @@ def _require_agent_enabled() -> None:
     if not voice_settings_service.get_effective_settings().agent_enabled:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": VOICE_DISABLED, "message": "Voice AI is disabled"},
+            detail={"code": VOICE_AGENT_DISABLED, "message": "Voice AI is disabled", "retryable": False},
         )
 
 
@@ -103,12 +103,12 @@ def update_settings(
 def invoke_tool(payload: ToolInvokeRequest, _claims: dict = Depends(require_permission("voice:update"))):
     """Exécution contrôlée d'un tool (ElevenLabs / simulateur)."""
     _require_agent_enabled()
+    context = voice_tools.context_for_call(payload.callId)
     return voice_tools.invoke(
         payload.toolName,
         payload.arguments,
         call_id=payload.callId,
-        patient_verified=payload.patientVerified,
-        confirmation_received=payload.confirmationReceived,
+        context=context,
         idempotency_key=payload.idempotencyKey,
         action_id=payload.actionId,
     )

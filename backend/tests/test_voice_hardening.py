@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.main import app
 from app.presentation.deps import call_service, voice_tools
 from app.voice.errors import CONFIRMATION_REQUIRED, VOICE_PROVIDER_NOT_CONFIGURED
+from app.voice.execution_context import VoiceExecutionContext
 from app.voice.llm_service import VoiceLLMService
 from app.voice.redaction import minimize_tool_log, redact_mapping
 
@@ -89,7 +90,7 @@ def test_voice_agent_disabled_blocks_mock_turn() -> None:
             json={"text": "I want an appointment", "phoneFrom": "+212600888003"},
         )
         assert res.status_code == 503
-        assert res.json()["code"] == "VOICE_DISABLED"
+        assert res.json()["code"] == "VOICE_AGENT_DISABLED"
     finally:
         _patch_settings(headers, agentEnabled=True)
 
@@ -103,7 +104,7 @@ def test_outbound_disabled() -> None:
         json={"phoneTo": "+212600888004"},
     )
     assert res.status_code == 403
-    assert res.json()["code"] == "OUTBOUND_DISABLED"
+    assert res.json()["code"] == "VOICE_OUTBOUND_DISABLED"
 
 
 def test_confirmation_still_required_from_runtime_settings(monkeypatch) -> None:
@@ -115,8 +116,13 @@ def test_confirmation_still_required_from_runtime_settings(monkeypatch) -> None:
         "create_appointment",
         {"doctorId": "d-1", "patientId": "p-x", "date": "2099-06-01T09:00:00+00:00"},
         call_id=call.id,
-        patient_verified=True,
-        confirmation_received=False,
+        context=VoiceExecutionContext(
+            call_id=call.id,
+            patient_id="p-x",
+            patient_verified=True,
+            confirmation_received=False,
+            current_state="CONFIRM",
+        ),
     )
     assert denied["success"] is False
     assert denied["code"] == CONFIRMATION_REQUIRED
@@ -253,16 +259,23 @@ def test_health_details_exposes_safe_voice_status() -> None:
     assert "auth_token" not in dumped
 
 
+def _elevenlabs_signature(raw: bytes, secret: str) -> str:
+    import time
+
+    timestamp = str(int(time.time()))
+    digest = hmac.new(secret.encode("utf-8"), f"{timestamp}.".encode("utf-8") + raw, hashlib.sha256).hexdigest()
+    return f"t={timestamp},v0={digest}"
+
+
 def test_elevenlabs_init_requires_signature_in_live_mode(monkeypatch) -> None:
     monkeypatch.setattr(settings, "voice_provider_mode", "live")
     monkeypatch.setattr(settings, "elevenlabs_webhook_secret", "whsec")
     denied = client.post("/webhooks/elevenlabs/init", json={"from": "+212600000001"})
     assert denied.status_code == 401
     raw = b'{"from":"+212600000001"}'
-    signature = hmac.new(b"whsec", raw, hashlib.sha256).hexdigest()
     accepted = client.post(
         "/webhooks/elevenlabs/init",
         content=raw,
-        headers={"Content-Type": "application/json", "ElevenLabs-Signature": f"sha256={signature}"},
+        headers={"Content-Type": "application/json", "ElevenLabs-Signature": _elevenlabs_signature(raw, "whsec")},
     )
     assert accepted.status_code == 200

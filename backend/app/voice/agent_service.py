@@ -14,7 +14,8 @@ from app.core.config import settings
 from app.core.logging_config import log_event
 from app.infrastructure.voice_repository import VoiceRepository
 from app.voice.call_service import CallService
-from app.voice.errors import VOICE_DISABLED
+from app.voice.errors import VOICE_AGENT_DISABLED
+from app.voice.execution_context import VoiceExecutionContext
 from app.voice.llm_service import VoiceLLMService, VoiceUnderstanding
 from app.voice.metrics import voice_metrics
 from app.voice.models import VoiceCall
@@ -29,6 +30,16 @@ _CANCEL = re.compile(r"\b(cancel|annul)\b", re.I)
 _RESCHEDULE = re.compile(r"\b(reschedul|déplac|deplac|move|change)\b", re.I)
 _YES = re.compile(r"\b(yes|oui|confirm|ok|d'accord|daccord|sure)\b", re.I)
 _NO = re.compile(r"\b(no|non|stop)\b", re.I)
+_HUMAN_INTENT = re.compile(
+    r"\b(human|agent|personne|opérateur|operateur|someone real|talk to (a )?person|"
+    r"parler (à|a) (un )?humain|conseiller)\b",
+    re.I,
+)
+_INFO = re.compile(
+    r"\b(opening hours|horaires|how (do i|to|can i) (cancel|reschedule|book)|"
+    r"comment (annuler|déplacer|deplacer|prendre)|appointment process|processus)\b",
+    re.I,
+)
 
 
 class AgentService:
@@ -59,7 +70,7 @@ class AgentService:
         if not effective.agent_enabled:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={"code": VOICE_DISABLED, "message": "Voice AI is disabled"},
+                detail={"code": VOICE_AGENT_DISABLED, "message": "Voice AI is disabled", "retryable": False},
             )
         lang = (language or (call.language if call else None) or effective.default_language).lower()
         if call is None:
@@ -107,6 +118,8 @@ class AgentService:
         if intent:
             call.intent = intent
             self.repo.update_call(call)
+        if call.intent == "human":
+            return self._escalate(call, text, lang, None)
 
         reply = self._advance(call, text, lang, tool_results, understanding)
         ended = call.state in {"END", "CALL_ENDED", "HUMAN_ESCALATION", "EMERGENCY_EXIT"}
@@ -125,6 +138,11 @@ class AgentService:
         ctx = call.context_json
 
         if call.state == "IDENTIFY_INTENT":
+            if call.intent == "human":
+                return self._escalate(call, text, lang, None)["reply"]
+            if call.intent == "info":
+                call = self.calls.set_state(call, "INFO")
+                return self._info(call, text, lang)
             if call.intent == "cancel":
                 call = self.calls.set_state(call, "IDENTIFY_PATIENT")
             elif call.intent == "reschedule":
@@ -134,6 +152,16 @@ class AgentService:
                 call = self.calls.set_state(call, "IDENTIFY_PATIENT")
             return self._identify_patient(call, text, lang, tool_results, understanding)
 
+        if call.state == "INFO":
+            nxt = (understanding.intent if understanding else None) or self._intent(text, call)
+            if nxt == "human":
+                return self._escalate(call, text, lang, None)["reply"]
+            if nxt in {"book", "cancel", "reschedule"} and not _INFO.search(text):
+                call.intent = nxt
+                call = self.calls.set_state(call, "SELECT_WORKFLOW")
+                return self._advance(call, text, lang, tool_results, understanding)
+            return self._info(call, text, lang)
+
         if call.state == "IDENTIFY_PATIENT":
             return self._identify_patient(call, text, lang, tool_results, understanding)
 
@@ -141,8 +169,12 @@ class AgentService:
             return self._verify(call, text, lang, tool_results, understanding)
 
         if call.state == "SELECT_WORKFLOW":
-            workflow = {"book": "BOOK", "reschedule": "RESCHEDULE", "cancel": "CANCEL"}.get(call.intent or "book", "BOOK")
+            workflow = {"book": "BOOK", "reschedule": "RESCHEDULE", "cancel": "CANCEL", "info": "INFO"}.get(
+                call.intent or "book", "BOOK"
+            )
             call = self.calls.set_state(call, workflow)
+            if workflow == "INFO":
+                return self._info(call, text, lang)
             if workflow == "BOOK":
                 call = self.calls.set_state(call, "SEARCH")
                 return self._search_slots(call, text, lang, tool_results)
@@ -170,6 +202,8 @@ class AgentService:
 
         if call.state == "CONFIRM":
             if self._is_yes(text, understanding):
+                call.context_json["confirmationReceived"] = True
+                self.repo.update_call(call)
                 call = self.calls.set_state(call, "COMMIT")
                 return self._commit(call, lang, tool_results)
             if self._is_no(text, understanding):
@@ -266,7 +300,7 @@ class AgentService:
             "get_available_slots",
             {"specialty": specialty, "limit": 3},
             call_id=call.id,
-            patient_verified=call.identity_status == "verified",
+            context=VoiceExecutionContext.from_call(call),
         )
         tool_results.append(result)
         if not result.get("success"):
@@ -291,21 +325,21 @@ class AgentService:
 
     def _commit(self, call: VoiceCall, lang: str, tool_results: list[dict[str, Any]]) -> str:
         slot = call.context_json.get("selectedSlot") or {}
+        ctx = VoiceExecutionContext.from_call(call)
         if call.intent == "cancel":
             appt_id = call.context_json.get("selectedAppointmentId")
             result = self.tools.invoke(
                 "cancel_appointment",
                 {"appointmentId": appt_id, "patientId": call.patient_id, "actionId": "cancel-1"},
                 call_id=call.id,
-                patient_verified=True,
-                confirmation_received=True,
+                context=ctx,
             )
             tool_results.append(result)
             if result.get("success"):
                 call.appointment_id = appt_id
                 call.outcome = "cancelled"
                 self.repo.update_call(call)
-                sms = self.tools.invoke("send_confirmation", {"appointmentId": appt_id}, call_id=call.id)
+                sms = self.tools.invoke("send_confirmation", {"appointmentId": appt_id}, call_id=call.id, context=ctx)
                 tool_results.append(sms)
                 call = self.calls.set_state(call, "SEND_CONFIRMATION")
                 call = self.calls.end_call(call, outcome="cancelled")
@@ -323,8 +357,7 @@ class AgentService:
                 "actionId": "commit-1",
             },
             call_id=call.id,
-            patient_verified=True,
-            confirmation_received=True,
+            context=ctx,
         )
         tool_results.append(result)
         if not result.get("success"):
@@ -345,16 +378,25 @@ class AgentService:
         call.outcome = "rescheduled" if call.intent == "reschedule" else "booked"
         self.repo.add_event(call.id, "appointment.confirmed", {"appointmentId": appt_id})
         self.repo.update_call(call)
-        sms = self.tools.invoke("send_confirmation", {"appointmentId": appt_id}, call_id=call.id)
+        sms = self.tools.invoke("send_confirmation", {"appointmentId": appt_id}, call_id=call.id, context=ctx)
         tool_results.append(sms)
+        if not sms.get("success"):
+            self.repo.add_event(call.id, "sms_confirmation_failed", {"code": sms.get("code"), "appointmentId": appt_id})
         call = self.calls.set_state(call, "SEND_CONFIRMATION")
         call = self.calls.end_call(call, outcome=call.outcome)
         when = result["data"].get("date")
+        if sms.get("success"):
+            return self._speak(
+                call,
+                lang,
+                f"Your appointment is confirmed for {when}. A confirmation SMS has been sent.",
+                f"Votre rendez-vous est confirmé pour {when}. Un SMS de confirmation a été envoyé.",
+            )
         return self._speak(
             call,
             lang,
-            f"Your appointment is confirmed for {when}. A confirmation SMS will be sent.",
-            f"Votre rendez-vous est confirmé pour {when}. Un SMS de confirmation sera envoyé.",
+            f"Your appointment is confirmed for {when}, but I could not send the confirmation SMS.",
+            f"Votre rendez-vous est confirmé pour {when}, mais je n'ai pas pu envoyer le SMS de confirmation.",
         )
 
     def _list_appointments(self, call: VoiceCall, lang: str, tool_results: list[dict[str, Any]]) -> str:
@@ -362,7 +404,7 @@ class AgentService:
             "get_patient_appointments",
             {"patientId": call.patient_id},
             call_id=call.id,
-            patient_verified=True,
+            context=VoiceExecutionContext.from_call(call),
         )
         tool_results.append(result)
         items = (result.get("data") or {}).get("appointments") or []
@@ -412,7 +454,51 @@ class AgentService:
             return True
         return bool(_NO.search(text))
 
+    def _info(self, call: VoiceCall, text: str, lang: str) -> str:
+        lowered = text.lower()
+        if any(token in lowered for token in ("hour", "horaire", "open")):
+            reply = self._speak(
+                call,
+                lang,
+                "Please check the hospital information desk or the SIHIA app for opening hours. I can also help book, move, or cancel an appointment.",
+                "Consultez l'accueil de l'hôpital ou l'application SIHIA pour les horaires. Je peux aussi aider à prendre, déplacer ou annuler un rendez-vous.",
+            )
+            call.outcome = "info_only"
+            self.calls.end_call(call, outcome="info_only")
+            return reply
+        if "cancel" in lowered or "annul" in lowered:
+            return self._speak(
+                call,
+                lang,
+                "To cancel, I need to verify your identity, then confirm the appointment to cancel. Would you like me to start that?",
+                "Pour annuler, je dois vérifier votre identité, puis confirmer le rendez-vous à annuler. Voulez-vous commencer ?",
+            )
+        if "reschedul" in lowered or "déplac" in lowered or "deplac" in lowered:
+            return self._speak(
+                call,
+                lang,
+                "To reschedule, I verify your identity, list your appointments, then confirm a new slot.",
+                "Pour déplacer un rendez-vous, je vérifie votre identité, liste vos rendez-vous, puis confirme un nouveau créneau.",
+            )
+        if any(token in lowered for token in ("book", "appointment", "rendez", "process")):
+            return self._speak(
+                call,
+                lang,
+                "I can book, move, or cancel an appointment after verifying who you are. I cannot give medical advice.",
+                "Je peux prendre, déplacer ou annuler un rendez-vous après vérification. Je ne donne pas de conseil médical.",
+            )
+        return self._speak(
+            call,
+            lang,
+            "I can explain opening hours and the appointment process, or connect you to a person. I cannot answer medical questions.",
+            "Je peux indiquer le processus de rendez-vous ou vous passer un conseiller. Je ne réponds pas aux questions médicales.",
+        )
+
     def _intent(self, text: str, call: VoiceCall) -> str | None:
+        if _HUMAN_INTENT.search(text):
+            return "human"
+        if _INFO.search(text):
+            return "info"
         if _CANCEL.search(text):
             return "cancel"
         if _RESCHEDULE.search(text):
