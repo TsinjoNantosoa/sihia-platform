@@ -9,6 +9,7 @@ import { appointmentsService, mlService } from "@/lib/api/services";
 import type { NoShowRiskItem, NoShowRiskLevel } from "@/lib/api/types";
 import { useT } from "@/lib/i18n/store";
 import { formatNoshowPercent, noshowRiskBadgeClass } from "@/lib/ml/noshowFormat";
+import { DisclaimerNote } from "@/components/shared/DisclaimerNote";
 
 type FilterLevel = "all" | NoShowRiskLevel;
 
@@ -134,9 +135,9 @@ export function NoShowRiskPanel() {
         </ul>
       )}
 
-      <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
-        ⚠ {data.disclaimer || t("prediction.noshow.disclaimer")}
-      </p>
+      <DisclaimerNote className="border-t border-border px-5 py-3">
+        {data.disclaimer || t("prediction.noshow.disclaimer")}
+      </DisclaimerNote>
     </section>
   );
 }

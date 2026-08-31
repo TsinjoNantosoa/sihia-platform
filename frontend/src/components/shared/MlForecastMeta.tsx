@@ -1,4 +1,4 @@
-import { Brain, Database, Clock, History } from "lucide-react";
+import { LineChart, Database, Clock, History } from "lucide-react";
 import type { MlForecastResponse } from "@/lib/api/types";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { formatMlConfidence, formatMlModelLabel, formatMlSourceLabel } from "@/lib/ml/format";
@@ -40,7 +40,7 @@ export function MlForecastMeta({ data, compact = false }: MlForecastMetaProps) {
     return (
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-5 py-2.5 text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1">
-          <Brain className="size-3" />
+          <LineChart className="size-3" />
           <strong className="text-foreground">{formatMlModelLabel(data.model)}</strong>
           <span className="text-muted-foreground">({data.model_version})</span>
         </span>
@@ -64,7 +64,7 @@ export function MlForecastMeta({ data, compact = false }: MlForecastMetaProps) {
     <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-muted/30 px-5 py-4 text-xs text-muted-foreground sm:grid-cols-3 lg:grid-cols-6">
       <div>
         <div className="mb-1 flex items-center gap-1 uppercase tracking-wide">
-          <Brain className="size-3" />
+          <LineChart className="size-3" />
           {t("ml.meta.model")}
         </div>
         <div className="font-semibold text-foreground">{formatMlModelLabel(data.model)}</div>

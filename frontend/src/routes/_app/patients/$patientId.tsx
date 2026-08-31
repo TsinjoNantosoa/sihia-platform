@@ -13,6 +13,7 @@ import {
   Stethoscope,
   FileText,
   Pencil,
+  MessageSquare,
 } from "lucide-react";
 import type { Patient } from "@/lib/api/types";
 import { patientsService } from "@/lib/api/services";
@@ -265,8 +266,9 @@ function PatientDetailPage() {
                       </p>
                     )}
                     {v.notes && (
-                      <p className="mt-1 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
-                        💬 {v.notes}
+                      <p className="mt-1 flex items-start gap-1.5 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
+                        <MessageSquare className="mt-0.5 size-3 shrink-0" aria-hidden />
+                        <span>{v.notes}</span>
                       </p>
                     )}
                   </div>

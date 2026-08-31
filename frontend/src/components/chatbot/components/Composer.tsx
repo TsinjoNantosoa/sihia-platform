@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, KeyboardEvent } from "react";
 import { motion } from "framer-motion";
+import { Loader2, Mic, Send, Square } from "lucide-react";
 
 type Props = {
   onSend: (text: string, meta?: { fromVoice?: boolean }) => void;
@@ -231,7 +232,13 @@ export default function Composer({
               title={micLabel}
               whileTap={{ scale: 0.92 }}
             >
-              {isTranscribing ? "…" : isRecording ? "⏹" : "🎤"}
+              {isTranscribing ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : isRecording ? (
+                <Square className="size-3.5 fill-current" aria-hidden />
+              ) : (
+                <Mic className="size-4" aria-hidden />
+              )}
             </motion.button>
           </div>
         ) : null}
@@ -261,7 +268,7 @@ export default function Composer({
             whileTap={{ scale: 0.95 }}
             transition={{ duration: 0.1 }}
           >
-            ➤
+            <Send className="size-4" aria-hidden />
           </motion.button>
         </div>
       </div>
@@ -273,7 +280,7 @@ export default function Composer({
       {isRecording ? (
         <p className="composer-voice-hint" aria-live="polite">
           {language === "fr"
-            ? "Enregistrement… cliquez ⏹ pour envoyer"
+            ? "Enregistrement… cliquez sur arrêter pour envoyer"
             : "Recording… click stop to send"}
         </p>
       ) : null}

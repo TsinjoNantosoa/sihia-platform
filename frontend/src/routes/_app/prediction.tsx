@@ -13,7 +13,8 @@ import {
   ReferenceLine,
 } from "recharts";
 import { format, parseISO } from "date-fns";
-import { Brain, RefreshCw, TrendingUp, AlertCircle, Info } from "lucide-react";
+import { DisclaimerNote } from "@/components/shared/DisclaimerNote";
+import { RefreshCw, TrendingUp, AlertCircle, Info, LineChart } from "lucide-react";
 import { useT } from "@/lib/i18n/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
@@ -92,7 +93,7 @@ function PredictionPage() {
             <KpiCard
               label={t("prediction.model")}
               value={formatMlModelLabel(pred.data.model)}
-              icon={<Brain className="size-4" />}
+              icon={<LineChart className="size-4" />}
             />
             <KpiCard
               label={t("prediction.confidence")}
@@ -213,7 +214,7 @@ function PredictionPage() {
           <div className="rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/5 to-card p-5 shadow-[var(--shadow-card)]">
             <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                <Brain className="size-4" />
+                <LineChart className="size-4" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold">{t("prediction.recommendation")}</h3>
@@ -242,9 +243,7 @@ function PredictionPage() {
             </div>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground">
-            ⚠ {t("prediction.disclaimer")}
-          </p>
+          <DisclaimerNote className="justify-center">{t("prediction.disclaimer")}</DisclaimerNote>
         </>
       )}
     </div>

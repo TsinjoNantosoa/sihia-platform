@@ -1,6 +1,8 @@
 import React from "react";
+import { type SuggestionIconKey, SuggestionIcon } from "../lib/suggestionIcons";
 
-type Reply = { icon: string; label: string };
+export type Reply = { icon: SuggestionIconKey; label: string };
+
 type Props = {
   replies: Reply[];
   onSelect: (text: string) => void;
@@ -24,7 +26,9 @@ export default function QuickReplies({ replies, onSelect, layout = "grid" }: Pro
           role="button"
           tabIndex={0}
         >
-          <span className="qr-icon">{r.icon}</span>
+          <span className="qr-icon">
+            <SuggestionIcon name={r.icon} className="size-3.5" />
+          </span>
           <span className="qr-label">{r.label}</span>
         </button>
       ))}

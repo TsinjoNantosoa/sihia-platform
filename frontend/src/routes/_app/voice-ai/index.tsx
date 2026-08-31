@@ -1,6 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { PhoneCall, Settings } from "lucide-react";
+import {
+  PhoneCall,
+  Settings,
+  Phone,
+  CheckCircle2,
+  CalendarClock,
+  UserRound,
+  Timer,
+  Zap,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -58,20 +67,54 @@ function VoiceAiPage() {
       {stats.isError ? <ErrorState onRetry={() => stats.refetch()} /> : null}
       {stats.data ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <KpiCard label={t("voice.kpi.callsToday")} value={stats.data.callsToday} />
-          <KpiCard label={t("voice.kpi.completed")} value={stats.data.completedCalls} variant="success" />
-          <KpiCard label={t("voice.kpi.booked")} value={stats.data.appointmentsBooked} />
+          <KpiCard
+            label={t("voice.kpi.callsToday")}
+            value={stats.data.callsToday}
+            icon={<Phone className="size-4" />}
+          />
+          <KpiCard
+            label={t("voice.kpi.completed")}
+            value={stats.data.completedCalls}
+            variant="success"
+            icon={<CheckCircle2 className="size-4" />}
+          />
+          <KpiCard
+            label={t("voice.kpi.booked")}
+            value={stats.data.appointmentsBooked}
+            icon={<CalendarClock className="size-4" />}
+          />
           <KpiCard label={t("voice.kpi.rescheduled")} value={stats.data.appointmentsRescheduled} />
           <KpiCard label={t("voice.kpi.cancelled")} value={stats.data.appointmentsCancelled} />
-          <KpiCard label={t("voice.kpi.escalations")} value={stats.data.humanEscalations} variant="warning" />
-          <KpiCard label={t("voice.kpi.failed")} value={stats.data.failedCalls} variant="critical" />
-          <KpiCard label={t("voice.kpi.duration")} value={stats.data.averageCallDuration} unit="s" />
-          <KpiCard label={t("voice.kpi.latency")} value={stats.data.averageToolLatency} unit="ms" />
+          <KpiCard
+            label={t("voice.kpi.escalations")}
+            value={stats.data.humanEscalations}
+            variant="warning"
+            icon={<UserRound className="size-4" />}
+          />
+          <KpiCard
+            label={t("voice.kpi.failed")}
+            value={stats.data.failedCalls}
+            variant="critical"
+          />
+          <KpiCard
+            label={t("voice.kpi.duration")}
+            value={stats.data.averageCallDuration}
+            unit="s"
+            icon={<Timer className="size-4" />}
+          />
+          <KpiCard
+            label={t("voice.kpi.latency")}
+            value={stats.data.averageToolLatency}
+            unit="ms"
+            icon={<Zap className="size-4" />}
+          />
         </div>
       ) : null}
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="border-b border-border px-4 py-3 text-sm font-medium">{t("voice.recent")}</div>
+        <div className="border-b border-border px-4 py-3 text-sm font-medium">
+          {t("voice.recent")}
+        </div>
         {calls.isLoading ? <LoadingState /> : null}
         {calls.isError ? <ErrorState onRetry={() => calls.refetch()} /> : null}
         {calls.data && calls.data.items.length === 0 ? (
@@ -79,7 +122,10 @@ function VoiceAiPage() {
         ) : null}
         {calls.data && calls.data.items.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm" data-testid="voice-calls-table">
+            <table
+              className="w-full min-w-[720px] text-left text-sm"
+              data-testid="voice-calls-table"
+            >
               <thead className="bg-muted/40 text-xs text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2 font-medium">Patient</th>
@@ -96,17 +142,25 @@ function VoiceAiPage() {
                 {calls.data.items.map((call: VoiceCall) => (
                   <tr key={call.id} className="border-t border-border hover:bg-muted/30">
                     <td className="px-4 py-2">
-                      <Link to="/voice-ai/calls/$callId" params={{ callId: call.id }} className="font-medium text-primary">
+                      <Link
+                        to="/voice-ai/calls/$callId"
+                        params={{ callId: call.id }}
+                        className="font-medium text-primary"
+                      >
                         {call.patientName ?? "—"}
                       </Link>
                     </td>
                     <td className="px-4 py-2 font-mono text-xs">{call.phoneFrom}</td>
                     <td className="px-4 py-2">{call.direction}</td>
                     <td className="px-4 py-2">{call.intent ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs">{new Date(call.startedAt).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-xs">
+                      {new Date(call.startedAt).toLocaleString()}
+                    </td>
                     <td className="px-4 py-2">{formatDuration(call.durationSeconds)}</td>
                     <td className="px-4 py-2">
-                      <StatusBadge tone={outcomeTone(call.outcome)}>{call.outcome ?? "—"}</StatusBadge>
+                      <StatusBadge tone={outcomeTone(call.outcome)}>
+                        {call.outcome ?? "—"}
+                      </StatusBadge>
                     </td>
                     <td className="px-4 py-2">
                       <StatusBadge tone={call.escalated ? "warning" : "neutral"} dot>

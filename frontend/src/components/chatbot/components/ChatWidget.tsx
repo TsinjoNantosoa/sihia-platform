@@ -13,7 +13,7 @@ import MessageBubble from "./MessageBubble";
 
 import ChatHeader from "./ChatHeader";
 
-import QuickReplies from "./QuickReplies";
+import QuickReplies, { type Reply } from "./QuickReplies";
 
 import Rating from "./Rating";
 
@@ -49,8 +49,6 @@ type ChatSource = {
   score?: number;
   excerpt?: string;
 };
-
-type Reply = { icon: string; label: string };
 
 const MOBILE_BREAKPOINT_PX = 600;
 
@@ -120,23 +118,17 @@ export default function ChatWidget({
   // Dynamic quick replies based on language
 
   const quickRepliesFr: Reply[] = [
-    { icon: "💼", label: "Nos expertises" },
-
-    { icon: "🚀", label: "Offres d'emploi" },
-
-    { icon: "📈", label: "Chiffres clés" },
-
-    { icon: "🏢", label: "Nos pôles / cabinets" },
+    { icon: "briefcase", label: "Nos expertises" },
+    { icon: "rocket", label: "Offres d'emploi" },
+    { icon: "chart", label: "Chiffres clés" },
+    { icon: "building", label: "Nos pôles / cabinets" },
   ];
 
   const quickRepliesEn: Reply[] = [
-    { icon: "💼", label: "Our expertise" },
-
-    { icon: "🚀", label: "Job offers" },
-
-    { icon: "📈", label: "Key figures" },
-
-    { icon: "🏢", label: "Our poles / firms" },
+    { icon: "briefcase", label: "Our expertise" },
+    { icon: "rocket", label: "Job offers" },
+    { icon: "chart", label: "Key figures" },
+    { icon: "building", label: "Our poles / firms" },
   ];
 
   const quickReplies = language === "fr" ? quickRepliesFr : quickRepliesEn;
@@ -174,9 +166,9 @@ export default function ChatWidget({
 
     if (theme?.welcomeEn && lang === "en") return theme.welcomeEn;
 
-    if (lang === "en") return `Hello! I'm ${name}, your AI companion. 😊 How can I help you?`;
+    if (lang === "en") return `Hello! I'm ${name}, your SIHIA assistant. How can I help you?`;
 
-    return `Bonjour ! Je suis ${name}, votre compagnon IA. 😊 Comment puis-je vous aider ?`;
+    return `Bonjour ! Je suis ${name}, votre assistant SIHIA. Comment puis-je vous aider ?`;
   };
 
   function shouldShowQuickReplies(initialMessages: Message[]): boolean {
@@ -537,8 +529,8 @@ export default function ChatWidget({
 
       const errorText =
         language === "fr"
-          ? "<p>❌ Erreur serveur. Veuillez réessayer dans un instant.</p>"
-          : "<p>❌ Server error. Please try again in a moment.</p>";
+          ? "<p>Erreur serveur. Veuillez réessayer dans un instant.</p>"
+          : "<p>Server error. Please try again in a moment.</p>";
 
       setMessages((m) => [...m, { id: "e-" + Date.now(), role: "bot", html: errorText }]);
     }
@@ -610,18 +602,14 @@ export default function ChatWidget({
     if (query.includes("expertise") || response.includes("expertise")) {
       return lang === "fr"
         ? [
-            { icon: "📊", label: "Voir toutes les expertises" },
-
-            { icon: "🎯", label: "Services spécialisés" },
-
-            { icon: "👥", label: "Nos équipes" },
+            { icon: "bar-chart", label: "Voir toutes les expertises" },
+            { icon: "target", label: "Services spécialisés" },
+            { icon: "users", label: "Nos équipes" },
           ]
         : [
-            { icon: "📊", label: "View all expertise" },
-
-            { icon: "🎯", label: "Specialized services" },
-
-            { icon: "👥", label: "Our teams" },
+            { icon: "bar-chart", label: "View all expertise" },
+            { icon: "target", label: "Specialized services" },
+            { icon: "users", label: "Our teams" },
           ];
     }
 
@@ -635,18 +623,14 @@ export default function ChatWidget({
     ) {
       return lang === "fr"
         ? [
-            { icon: "💼", label: "Postes ouverts" },
-
-            { icon: "🎓", label: "Parcours de formation" },
-
-            { icon: "🏆", label: "Avantages salariés" },
+            { icon: "briefcase", label: "Postes ouverts" },
+            { icon: "graduation", label: "Parcours de formation" },
+            { icon: "trophy", label: "Avantages salariés" },
           ]
         : [
-            { icon: "💼", label: "Open positions" },
-
-            { icon: "🎓", label: "Training programs" },
-
-            { icon: "🏆", label: "Employee benefits" },
+            { icon: "briefcase", label: "Open positions" },
+            { icon: "graduation", label: "Training programs" },
+            { icon: "trophy", label: "Employee benefits" },
           ];
     }
 
@@ -660,31 +644,25 @@ export default function ChatWidget({
     ) {
       return lang === "fr"
         ? [
-            { icon: "ðŸŒ", label: "Implantations internationales" },
-
-            { icon: "📈", label: "Croissance du groupe" },
-
-            { icon: "ðŸ¤", label: "Nos partenaires" },
+            { icon: "globe", label: "Implantations internationales" },
+            { icon: "chart", label: "Croissance du groupe" },
+            { icon: "handshake", label: "Nos partenaires" },
           ]
         : [
-            { icon: "ðŸŒ", label: "International locations" },
-
-            { icon: "📈", label: "Group growth" },
-
-            { icon: "ðŸ¤", label: "Our partners" },
+            { icon: "globe", label: "International locations" },
+            { icon: "chart", label: "Group growth" },
+            { icon: "handshake", label: "Our partners" },
           ];
     }
 
     return lang === "fr"
       ? [
-          { icon: "❓", label: "En savoir plus" },
-
-          { icon: "📞", label: "Nous contacter" },
+          { icon: "help", label: "En savoir plus" },
+          { icon: "phone", label: "Nous contacter" },
         ]
       : [
-          { icon: "❓", label: "Learn more" },
-
-          { icon: "📞", label: "Contact us" },
+          { icon: "help", label: "Learn more" },
+          { icon: "phone", label: "Contact us" },
         ];
   }
 
@@ -875,14 +853,14 @@ export default function ChatWidget({
                   {language === "fr" ? (
                     <>
                       {theme?.welcomeFr ||
-                        "Bonjour 👋 Je suis l'assistant SIHIA. Comment puis-je vous orienter aujourd'hui ?"}
+                        "Bonjour, je suis l'assistant SIHIA. Comment puis-je vous orienter aujourd'hui ?"}
                       <br />
                       <strong>{theme?.botName ?? "SIH IA Assistant"} est là pour vous.</strong>
                     </>
                   ) : (
                     <>
                       {theme?.welcomeEn ||
-                        "Hello 👋 I am the SIHIA assistant. How can I help you today?"}
+                        "Hello, I am the SIHIA assistant. How can I help you today?"}
                       <br />
                       <strong>{theme?.botName ?? "SIH IA Assistant"} is here for you.</strong>
                     </>

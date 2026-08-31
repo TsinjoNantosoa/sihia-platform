@@ -7,7 +7,7 @@ import {
   AlertTriangle,
   Plus,
   ArrowUpRight,
-  Brain,
+  TrendingUp,
   Activity,
 } from "lucide-react";
 import {
@@ -87,7 +87,7 @@ function DashboardPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {getGreeting(t)}, {user?.name ?? "Dr."} 👋
+            {getGreeting(t)}, {user?.name ?? "Dr."}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("dash.summary")}</p>
         </div>
@@ -109,7 +109,7 @@ function DashboardPage() {
               to="/prediction"
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
-              <Brain className="size-4" /> {t("dash.qa.viewPrediction")}
+              <TrendingUp className="size-4" /> {t("dash.qa.viewPrediction")}
             </Link>
           ) : null}
         </div>

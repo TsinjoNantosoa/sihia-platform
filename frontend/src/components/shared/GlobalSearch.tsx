@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, Stethoscope, Users, LayoutDashboard, Brain, Bell } from "lucide-react";
+import { CalendarDays, Stethoscope, Users, LayoutDashboard, TrendingUp, Bell } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   { href: "/patients", labelKey: "nav.patients", icon: Users },
   { href: "/doctors", labelKey: "nav.doctors", icon: Stethoscope },
   { href: "/appointments", labelKey: "nav.appointments", icon: CalendarDays },
-  { href: "/prediction", labelKey: "nav.prediction", icon: Brain },
+  { href: "/prediction", labelKey: "nav.prediction", icon: TrendingUp },
   { href: "/notifications", labelKey: "nav.notifications", icon: Bell },
 ] as const;
 

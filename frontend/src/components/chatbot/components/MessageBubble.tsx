@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { ThumbsDown, ThumbsUp, Volume2 } from "lucide-react";
 import { sanitizeBot } from "../lib/sanitize";
 
 type Message = {
@@ -188,7 +189,7 @@ export default function MessageBubble({
                 title="Écouter la réponse"
                 aria-label="Écouter la réponse"
               >
-                🔊
+                <Volume2 className="size-3.5" aria-hidden />
               </button>
             )}
             {feedback !== "dislike" && (
@@ -199,7 +200,7 @@ export default function MessageBubble({
                 aria-pressed={feedback === "like"}
                 title="Réponse utile"
               >
-                👍
+                <ThumbsUp className="size-3.5" aria-hidden />
               </button>
             )}
             {feedback !== "like" && (
@@ -210,7 +211,7 @@ export default function MessageBubble({
                 aria-pressed={feedback === "dislike"}
                 title="Réponse non utile"
               >
-                👎
+                <ThumbsDown className="size-3.5" aria-hidden />
               </button>
             )}
 

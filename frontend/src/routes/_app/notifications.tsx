@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Filter } from "lucide-react";
+import { Check, Filter } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState, LoadingState } from "@/components/shared/States";
 import { notificationsService } from "@/lib/api/services";
@@ -79,7 +79,7 @@ function NotificationsPage() {
               disabled={markAll.isPending || !items.length}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
             >
-              <span aria-hidden>✓</span>
+              <Check className="size-3.5" aria-hidden />
               {t("notif.markAllRead")}
             </button>
           </div>

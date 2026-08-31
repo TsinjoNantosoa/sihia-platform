@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KpiCardProps {
@@ -24,6 +25,13 @@ const variantText = {
   critical: "text-destructive",
   warning: "text-warning",
   success: "text-success",
+};
+
+const variantIconBg = {
+  default: "bg-primary-soft text-primary",
+  critical: "bg-destructive/10 text-destructive",
+  warning: "bg-warning/10 text-warning",
+  success: "bg-success/10 text-success",
 };
 
 export function KpiCard({
@@ -55,10 +63,8 @@ export function KpiCard({
         {icon ? (
           <div
             className={cn(
-              "flex size-8 items-center justify-center rounded-lg",
-              variant === "default"
-                ? "bg-primary-soft text-primary"
-                : `bg-${variant}-soft ${variantText[variant]}`,
+              "flex size-8 items-center justify-center rounded-lg [&_svg]:size-4",
+              variantIconBg[variant],
             )}
           >
             {icon}
@@ -75,8 +81,18 @@ export function KpiCard({
       </div>
       {trend ? (
         <div className="mt-1 flex items-center gap-2 text-xs">
-          <span className={cn("font-medium", trend.positive ? "text-success" : "text-destructive")}>
-            {trend.positive ? "↑" : "↓"} {Math.abs(trend.value)}%
+          <span
+            className={cn(
+              "inline-flex items-center gap-0.5 font-medium",
+              trend.positive ? "text-success" : "text-destructive",
+            )}
+          >
+            {trend.positive ? (
+              <TrendingUp className="size-3" aria-hidden />
+            ) : (
+              <TrendingDown className="size-3" aria-hidden />
+            )}
+            {Math.abs(trend.value)}%
           </span>
           {hint ? <span className="text-muted-foreground">{hint}</span> : null}
         </div>

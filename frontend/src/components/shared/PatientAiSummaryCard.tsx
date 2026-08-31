@@ -1,10 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
-import { Brain, RefreshCw } from "lucide-react";
+import { ClipboardList, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { patientsService } from "@/lib/api/services";
 import type { PatientAiSummaryResponse } from "@/lib/api/types";
 import { useI18n, useT } from "@/lib/i18n/store";
 import { useState } from "react";
+import { DisclaimerNote } from "@/components/shared/DisclaimerNote";
 
 export function PatientAiSummaryCard({ patientId }: { patientId: string }) {
   const t = useT();
@@ -29,7 +30,7 @@ export function PatientAiSummaryCard({ patientId }: { patientId: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-            <Brain className="size-4" aria-hidden />
+            <ClipboardList className="size-4" aria-hidden />
           </div>
           <div>
             <h2 id="ai-summary-heading" className="text-sm font-semibold">
@@ -58,9 +59,9 @@ export function PatientAiSummaryCard({ patientId }: { patientId: string }) {
               <li key={line}>{line}</li>
             ))}
           </ol>
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            ⚠ {summary.disclaimer} · {summary.engine} · {summary.model}
-          </p>
+          <DisclaimerNote className="mt-3">
+            {summary.disclaimer} · {summary.engine} · {summary.model}
+          </DisclaimerNote>
         </div>
       ) : (
         <p className="mt-3 text-xs text-muted-foreground">{t("patients.aiSummary.hint")}</p>

@@ -5,10 +5,9 @@ import {
   Stethoscope,
   CalendarDays,
   BarChart3,
-  Brain,
+  TrendingUp,
   ShieldCheck,
   Settings,
-  HeartPulse,
   WifiOff,
   Bell,
   Armchair,
@@ -16,6 +15,7 @@ import {
   PhoneCall,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { SihiaLogo } from "@/components/brand/SihiaLogo";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { usePermissions } from "@/lib/auth/usePermission";
 import { API_URL } from "@/lib/api/services";
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 const groups = [
   {
-    labelKey: "nav.section.main",
+    labelKey: "nav.section.overview",
     items: [
       {
         to: "/",
@@ -38,6 +38,17 @@ const groups = [
         icon: Bell,
         permission: "dashboard:read",
       },
+      {
+        to: "/analytics",
+        labelKey: "nav.analytics",
+        icon: BarChart3,
+        permission: "analytics:read",
+      },
+    ],
+  },
+  {
+    labelKey: "nav.section.hospital",
+    items: [
       { to: "/patients", labelKey: "nav.patients", icon: Users, permission: "patients:read" },
       { to: "/doctors", labelKey: "nav.doctors", icon: Stethoscope, permission: "doctors:read" },
       {
@@ -55,18 +66,12 @@ const groups = [
     ],
   },
   {
-    labelKey: "nav.section.intelligence",
+    labelKey: "nav.section.ai",
     items: [
-      {
-        to: "/analytics",
-        labelKey: "nav.analytics",
-        icon: BarChart3,
-        permission: "analytics:read",
-      },
       {
         to: "/prediction",
         labelKey: "nav.prediction",
-        icon: Brain,
+        icon: TrendingUp,
         beta: true,
         permission: "ml:read",
       },
@@ -76,12 +81,17 @@ const groups = [
         icon: PhoneCall,
         permission: "voice:read",
       },
+      {
+        to: "/knowledge",
+        labelKey: "nav.knowledge",
+        icon: BookOpenText,
+        permission: "users:read",
+      },
     ],
   },
   {
-    labelKey: "nav.section.system",
+    labelKey: "nav.section.admin",
     items: [
-      { to: "/knowledge", labelKey: "nav.knowledge", icon: BookOpenText, permission: "users:read" },
       { to: "/rbac", labelKey: "nav.rbac", icon: ShieldCheck, permission: "users:read" },
       { to: "/settings", labelKey: "nav.settings", icon: Settings, permission: "settings:read" },
     ],
@@ -109,28 +119,24 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         isRtl ? "border-l" : "border-r",
       )}
     >
-      <div className="flex h-16 items-center gap-2.5 border-b border-border px-5">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-[var(--shadow-card)]">
-          <HeartPulse className="size-5" aria-hidden />
-        </div>
-        <div className="leading-tight">
-          <div className="text-sm font-semibold tracking-tight">{t("app.name")}</div>
-          <div className="text-[10px] text-muted-foreground">Hôpital Central</div>
-        </div>
+      <div className="flex h-16 items-center border-b border-border px-4">
+        <SihiaLogo />
       </div>
 
       <nav
         aria-label={t("a11y.primaryNavigation")}
         className="flex flex-1 flex-col gap-5 overflow-y-auto p-3"
       >
-        {groups.map((g) => (
-          <div key={g.labelKey} className="flex flex-col gap-1">
-            <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {t(g.labelKey)}
-            </div>
-            {g.items
-              .filter((item) => permissions.includes(item.permission))
-              .map((item) => {
+        {groups.map((g) => {
+          const visibleItems = g.items.filter((item) => permissions.includes(item.permission));
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={g.labelKey} className="flex flex-col gap-0.5">
+              <div className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {t(g.labelKey)}
+              </div>
+              {visibleItems.map((item) => {
                 const active = isActive(item.to, "exact" in item ? item.exact : false);
                 const Icon = item.icon;
                 return (
@@ -149,7 +155,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     <Icon
                       aria-hidden
                       className={cn(
-                        "size-4 shrink-0",
+                        "size-[18px] shrink-0",
                         active
                           ? "text-primary"
                           : "text-muted-foreground group-hover:text-foreground",
@@ -164,8 +170,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                   </Link>
                 );
               })}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="border-t border-border p-4">

@@ -1,13 +1,11 @@
 import React from "react";
 import { motion } from "framer-motion";
-
-type Suggestion = {
-  icon: string;
-  label: string;
-};
+import { Lightbulb } from "lucide-react";
+import { type Reply } from "./QuickReplies";
+import { SuggestionIcon } from "../lib/suggestionIcons";
 
 type Props = {
-  suggestions: Suggestion[];
+  suggestions: Reply[];
   onSelect: (label: string) => void;
 };
 
@@ -22,7 +20,10 @@ export default function DynamicSuggestions({ suggestions, onSelect }: Props) {
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="suggestion-header">💡 Vous pourriez aussi aimer :</div>
+      <div className="suggestion-header">
+        <Lightbulb className="size-3.5" aria-hidden />
+        Vous pourriez aussi aimer :
+      </div>
       <div className="suggestion-list">
         {suggestions.map((s, i) => (
           <motion.button
@@ -35,7 +36,9 @@ export default function DynamicSuggestions({ suggestions, onSelect }: Props) {
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
           >
-            <span className="chip-icon">{s.icon}</span>
+            <span className="chip-icon">
+              <SuggestionIcon name={s.icon} className="size-3.5" />
+            </span>
             <span className="chip-label">{s.label}</span>
           </motion.button>
         ))}

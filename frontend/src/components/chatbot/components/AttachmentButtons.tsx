@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { Bot, Paperclip, Smile } from "lucide-react";
 
 type Props = {
   onAttach: (file: File) => void;
@@ -9,20 +10,19 @@ export default function AttachmentButtons({ onAttach }: Props) {
 
   return (
     <div className="attachment-buttons">
-      {/* Bot trigger */}
-      <button className="attach-btn" title="Bots" aria-label="Bots" tabIndex={0}>
-        🤖
+      <button className="attach-btn" title="Bots" aria-label="Bots" tabIndex={0} type="button">
+        <Bot className="size-4" aria-hidden />
       </button>
 
-      {/* File attachment */}
       <button
         className="attach-btn"
         title="Fichier"
         aria-label="Fichier"
         onClick={() => fileRef.current?.click()}
         tabIndex={0}
+        type="button"
       >
-        📎
+        <Paperclip className="size-4" aria-hidden />
       </button>
       <input
         ref={fileRef}
@@ -33,9 +33,8 @@ export default function AttachmentButtons({ onAttach }: Props) {
         }}
       />
 
-      {/* Emoji */}
-      <button className="attach-btn" title="Emoji" aria-label="Emoji" tabIndex={0}>
-        😊
+      <button className="attach-btn" title="Emoji" aria-label="Emoji" tabIndex={0} type="button">
+        <Smile className="size-4" aria-hidden />
       </button>
     </div>
   );
