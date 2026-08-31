@@ -44,7 +44,8 @@ export function normalizeClientSlug(slug?: string): string {
 
 export function resolveBotName(clientId?: string, themeBotName?: string): string {
   const fromTheme = (themeBotName || "").trim();
-  if (fromTheme) return fromTheme;
+  const legacy = new Set(["SIH IA Assistant", "SIHIA Assistant"]);
+  if (fromTheme && !legacy.has(fromTheme)) return fromTheme;
   return BOT_NAME_BY_CLIENT[normalizeClientSlug(clientId)] || BOT_NAME_BY_CLIENT.sihia;
 }
 

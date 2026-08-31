@@ -3,27 +3,42 @@
     "id": "welcome",
     "title": "Accueil assistant",
     "topics": ["bonjour", "hello", "salut", "aide", "help"],
-    "fr": "<p>Bienvenue sur <strong>SIH IA — Hôpital Central</strong>. Je peux vous orienter vers les services, les rendez-vous, les parcours de soins et les informations pratiques. <em>Je ne pose pas de diagnostic médical.</em></p>",
-    "en": "<p>Welcome to <strong>SIH IA — Central Hospital</strong>. I can help with services, appointments, care pathways and practical information. <em>I do not provide medical diagnosis.</em></p>"
+    "fr": "<p>Bienvenue sur <strong>SIHIA — Hôpital Central</strong>. Je peux vous orienter vers les services, les rendez-vous, les parcours de soins et les informations pratiques. <em>Je ne pose pas de diagnostic médical.</em></p>",
+    "en": "<p>Welcome to <strong>SIHIA — Central Hospital</strong>. I can help with services, appointments, care pathways and practical information. <em>I do not provide medical diagnosis.</em></p>"
   },
   {
     "id": "appointments",
     "title": "Prise de rendez-vous",
-    "topics": ["rendez-vous", "rdv", "appointment", "consultation", "prendre rendez-vous"],
+    "topics": ["rendez-vous", "rdv", "appointment", "consultation", "prendre rendez-vous", "book"],
     "fr": "<p>Pour un rendez-vous : connectez-vous à l'application, menu <strong>Rendez-vous</strong>, puis <strong>Nouveau RDV</strong>. Vérifiez les conflits de créneaux. En urgence vitale, appelez le <strong>15</strong> ou le <strong>112</strong>.</p>",
     "en": "<p>For an appointment: sign in, open <strong>Appointments</strong>, then <strong>New appointment</strong>. Slot conflicts are checked automatically. For life-threatening emergencies call <strong>15</strong> or <strong>112</strong>.</p>"
   },
   {
     "id": "hours",
     "title": "Horaires",
-    "topics": ["horaires", "ouvert", "hours", "accueil", "urgences"],
+    "topics": ["horaires", "ouvert", "hours", "accueil", "urgences", "opening"],
     "fr": "<p><strong>Accueil</strong> : lun–ven 8h–18h, sam 8h–12h. <strong>Urgences</strong> : 24h/24. Consultez le tableau de bord pour les prochains créneaux disponibles.</p>",
     "en": "<p><strong>Reception</strong>: Mon–Fri 8am–6pm, Sat 8am–12pm. <strong>Emergency</strong>: 24/7. Check the dashboard for upcoming slots.</p>"
   },
   {
     "id": "departments",
     "title": "Services et spécialités",
-    "topics": ["service", "spécialité", "cardiologie", "pédiatrie", "department", "specialty"],
+    "topics": [
+      "service",
+      "services",
+      "spécialité",
+      "spécialités",
+      "specialty",
+      "specialties",
+      "department",
+      "departments",
+      "expertise",
+      "expertises",
+      "pôle",
+      "pôles",
+      "cardiologie",
+      "pédiatrie"
+    ],
     "fr": "<p>Services disponibles : cardiologie, pédiatrie, médecine générale, imagerie. Utilisez le menu <strong>Médecins</strong> pour voir les spécialités et disponibilités.</p>",
     "en": "<p>Available departments: cardiology, pediatrics, general medicine, imaging. Use <strong>Doctors</strong> to browse specialties and availability.</p>"
   },
@@ -45,8 +60,8 @@
     "id": "pathway-consultation",
     "title": "Parcours consultation externe",
     "topics": ["parcours", "pathway", "consultation", "arrivée", "accueil patient", "check-in"],
-    "fr": "<p><strong>Parcours type</strong> : 1) Accueil / confirmation RDV → 2) Salle d'attente → 3) Consultation → 4) Prescription éventuelle → 5) Sortie / prochain RDV. Statuts SIH IA : planifié → confirmé → arrivé → terminé.</p>",
-    "en": "<p><strong>Typical pathway</strong>: 1) Check-in / confirm appointment → 2) Waiting area → 3) Consultation → 4) Possible prescription → 5) Discharge / follow-up. SIH IA statuses: scheduled → confirmed → arrived → completed.</p>"
+    "fr": "<p><strong>Parcours type</strong> : 1) Accueil / confirmation RDV → 2) Salle d'attente → 3) Consultation → 4) Prescription éventuelle → 5) Sortie / prochain RDV. Statuts SIHIA : planifié → confirmé → arrivé → terminé.</p>",
+    "en": "<p><strong>Typical pathway</strong>: 1) Check-in / confirm appointment → 2) Waiting area → 3) Consultation → 4) Possible prescription → 5) Discharge / follow-up. SIHIA statuses: scheduled → confirmed → arrived → completed.</p>"
   },
   {
     "id": "protocol-fever",
@@ -86,8 +101,8 @@
   {
     "id": "contact",
     "title": "Contact",
-    "topics": ["contact", "téléphone", "phone", "adresse", "address"],
-    "fr": "<p><strong>Hôpital Central SIH IA</strong> — Tél. accueil : +212 5 22 00 00 00. Email : contact@sihia.health</p>",
-    "en": "<p><strong>SIH IA Central Hospital</strong> — Reception: +212 5 22 00 00 00. Email: contact@sihia.health</p>"
+    "topics": ["contact", "téléphone", "phone", "adresse", "address", "contacter", "coordonnées"],
+    "fr": "<p><strong>Hôpital Central SIHIA</strong> — Tél. accueil : +212 5 22 00 00 00. Email : contact@sihia.health</p>",
+    "en": "<p><strong>SIHIA Central Hospital</strong> — Reception: +212 5 22 00 00 00. Email: contact@sihia.health</p>"
   }
 ]

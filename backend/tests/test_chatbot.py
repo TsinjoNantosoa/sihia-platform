@@ -37,7 +37,7 @@ def test_ui_config(client):
     r = client.get("/ui-config?client_id=sihia", headers=auth_headers())
     assert r.status_code == 200
     data = r.json()
-    assert data["bot_name"] == "SIH IA Assistant"
+    assert data["bot_name"] == "Assistant SIHIA"
     assert "welcome_fr" in data
 
 
@@ -63,7 +63,7 @@ def test_ui_config_accepts_user_jwt(client, monkeypatch):
         },
     )
     assert r.status_code == 200
-    assert r.json()["bot_name"] == "SIH IA Assistant"
+    assert r.json()["bot_name"] == "Assistant SIHIA"
 
 
 def test_history_empty(client):
@@ -88,6 +88,22 @@ def test_query_stream_guardrail_emergency(client):
     assert "[DONE]" in body
     history = client.get("/history?session_id=session-emergency", headers=auth_headers()).json()
     assert len(history["messages"]) == 2
+
+
+def test_query_stream_departments_synonym(client):
+    r = client.post(
+        "/query-stream",
+        headers=auth_headers(),
+        json={
+            "query": "Nos expertises",
+            "lang": "fr",
+            "session_id": "session-expertises",
+        },
+    )
+    assert r.status_code == 200
+    body = r.text.lower()
+    assert "cardiologie" in body or "services" in body or "médecins" in body
+    assert "je n'ai pas trouvé" not in body
 
 
 def test_query_stream_kb_fallback(client):

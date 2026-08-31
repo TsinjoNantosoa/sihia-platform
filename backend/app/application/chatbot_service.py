@@ -18,26 +18,26 @@ from app.infrastructure.chatbot_session_store import ChatbotSessionStore
 from app.rag.retrieval import HybridRetriever, build_context
 
 _DISCLAIMER_FR = (
-    "<p><em>Assistant d'information SIH IA — ne remplace pas un avis médical. "
+    "<p><em>Assistant d'information SIHIA — ne remplace pas un avis médical. "
     "En urgence : 15 / 112.</em></p>"
 )
 _DISCLAIMER_EN = (
-    "<p><em>SIH IA information assistant — not a substitute for medical advice. "
+    "<p><em>SIHIA information assistant — not a substitute for medical advice. "
     "Emergency: 15 / 112.</em></p>"
 )
 
 _UI_CONFIG: dict[str, dict[str, str]] = {
     "sihia": {
-        "bot_name": "SIH IA Assistant",
+        "bot_name": "Assistant SIHIA",
         "logo_url": "/static/logos/sihia-bot.svg",
         "primary_color": "#0d6e6e",
         "welcome_fr": (
-            "Bonjour ! Je suis l'assistant SIH IA. "
+            "Bonjour ! Je suis l'Assistant SIHIA. "
             "Je peux vous orienter (rendez-vous, services, horaires). "
             "Je ne pose pas de diagnostic."
         ),
         "welcome_en": (
-            "Hello! I'm the SIH IA assistant. "
+            "Hello! I'm the SIHIA Assistant. "
             "I can guide you (appointments, services, hours). "
             "I do not provide diagnosis."
         ),
@@ -96,7 +96,7 @@ class ChatbotService:
     def _system_prompt(self, lang: str, context: str) -> str:
         if lang.startswith("en"):
             return (
-                "You are SIH IA hospital information assistant. "
+                "You are the SIHIA hospital information assistant. "
                 "Answer in English using HTML (<p>, <strong>, <ul><li>). "
                 "Never diagnose or prescribe. For emergencies direct to 15/112. "
                 "The retrieved passages below are the only factual evidence you may use. "
@@ -106,7 +106,7 @@ class ChatbotService:
                 f"Retrieved evidence:\n{context or '[NO RELIABLE EVIDENCE]'}"
             )
         return (
-            "Tu es l'assistant d'information de l'hôpital SIH IA. "
+            "Tu es l'assistant d'information de l'hôpital SIHIA. "
             "Réponds en français en HTML (<p>, <strong>, <ul><li>). "
             "Ne pose jamais de diagnostic ni ne prescris. Urgence : 15/112. "
             "Les passages récupérés ci-dessous sont les seules preuves factuelles autorisées. "

@@ -13,7 +13,8 @@ import MessageBubble from "./MessageBubble";
 
 import ChatHeader from "./ChatHeader";
 
-import QuickReplies, { type Reply } from "./QuickReplies";
+import { quickRepliesForLang } from "../lib/quickReplies";
+import QuickReplies from "./QuickReplies";
 
 import Rating from "./Rating";
 
@@ -103,21 +104,7 @@ export default function ChatWidget({
 
   // Dynamic quick replies based on language
 
-  const quickRepliesFr: Reply[] = [
-    { icon: "briefcase", label: "Nos expertises" },
-    { icon: "rocket", label: "Offres d'emploi" },
-    { icon: "chart", label: "Chiffres clés" },
-    { icon: "building", label: "Nos pôles / cabinets" },
-  ];
-
-  const quickRepliesEn: Reply[] = [
-    { icon: "briefcase", label: "Our expertise" },
-    { icon: "rocket", label: "Job offers" },
-    { icon: "chart", label: "Key figures" },
-    { icon: "building", label: "Our poles / firms" },
-  ];
-
-  const quickReplies = language === "fr" ? quickRepliesFr : quickRepliesEn;
+  const quickReplies = quickRepliesForLang(language);
 
   const [quickRepliesVisible, setQuickRepliesVisible] = useState(true);
 
@@ -712,7 +699,9 @@ export default function ChatWidget({
                   if (i === insertAfter && quickRepliesVisible) {
                     nodes.push(
                       <div key="quick-choice" className="quick-choice">
-                        <div className="quick-choice-title">Faites votre choix :</div>
+                        <div className="quick-choice-title">
+                          {language === "fr" ? "Questions fréquentes :" : "Common questions:"}
+                        </div>
 
                         <QuickReplies
                           replies={quickReplies}

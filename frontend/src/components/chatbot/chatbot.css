@@ -310,6 +310,7 @@
 }
 .message-row.bot {
   justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .bot-avatar-mini {
@@ -892,20 +893,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px 16px 16px;
+  padding: 8px 16px 12px;
   background: #fff;
-  font-size: 13px;
+  font-size: 12px;
   color: #64748b;
   border-top: 1px solid #f1f5f9;
 }
 .rating::before {
-  content: "";
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid currentColor;
-  border-radius: 3px;
-  opacity: 0.5;
+  display: none;
 }
 
 /* responsive: mobile full-width bottom */
@@ -1608,6 +1603,15 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
+.dark .chat-body {
+  background: hsl(222 47% 11%);
+}
+
+.dark .message-list {
+  background: hsl(222 47% 11%);
+  scrollbar-color: hsl(217 33% 25%) transparent;
+}
+
 .dark .chat-fab {
   background: hsl(222 47% 11%);
   border-color: hsl(217 33% 17%);
@@ -1620,9 +1624,16 @@
   color: #e2e8f0;
 }
 
+.dark .bot-avatar-mini {
+  background: hsl(217 33% 17%);
+  border-color: hsl(217 33% 22%);
+}
+
 .dark .message-bubble.bot {
   background: hsl(217 33% 17%);
+  border-color: hsl(217 33% 22%);
   color: #e2e8f0;
+  box-shadow: none;
 }
 
 .dark .message-bubble.user {
@@ -1630,13 +1641,60 @@
   color: #f8fafc;
 }
 
+.dark .composer-row {
+  background: hsl(222 47% 11%);
+  border-top-color: hsl(217 33% 17%);
+}
+
 .dark .composer-input-wrap {
-  background: hsl(217 33% 17%);
-  border-color: hsl(217 33% 22%);
+  background: transparent;
 }
 
 .dark .composer-input {
+  background: hsl(217 33% 15%);
+  border-color: hsl(217 33% 22%);
   color: #e2e8f0;
+}
+
+.dark .composer-input::placeholder {
+  color: #94a3b8;
+}
+
+.dark .char-count {
+  color: #64748b;
+}
+
+.dark .suggestions-section {
+  background: hsl(222 47% 11%);
+  border-color: hsl(217 33% 17%);
+}
+
+.dark .suggestions-toggle {
+  color: hsl(187 55% 45%);
+}
+
+.dark .rating {
+  background: hsl(222 47% 11%);
+  border-top-color: hsl(217 33% 17%);
+  color: #94a3b8;
+}
+
+.dark .rating::before {
+  opacity: 0.35;
+}
+
+.dark .quick-choice-title {
+  color: #94a3b8;
+}
+
+.dark .quick-reply-btn.pill {
+  background: hsl(217 33% 17%);
+  border-color: hsl(217 33% 22%);
+  color: #e2e8f0;
+}
+
+.dark .quick-reply-btn.pill:hover {
+  background: hsl(217 33% 20%);
 }
 
 @media (min-width: 1280px) {
