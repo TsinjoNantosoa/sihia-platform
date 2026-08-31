@@ -36,7 +36,7 @@ export const Route = createFileRoute("/_app/patients/")({
   beforeLoad: requireRoutePermission("view_patients"),
   head: () => ({
     meta: [
-      { title: "Patients — SIH IA" },
+      { title: "Patients — SIHIA" },
       { name: "description", content: "Liste et gestion des dossiers patients." },
     ],
   }),

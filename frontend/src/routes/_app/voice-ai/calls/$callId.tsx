@@ -9,7 +9,7 @@ import { useT } from "@/lib/i18n/store";
 
 export const Route = createFileRoute("/_app/voice-ai/calls/$callId")({
   beforeLoad: requireRoutePermission("view_voice"),
-  head: () => ({ meta: [{ title: "Voice call — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Voice call — SIHIA" }] }),
   component: VoiceCallDetailPage,
 });
 

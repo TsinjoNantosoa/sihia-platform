@@ -126,22 +126,22 @@
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: transparent;
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
   border: none;
-  padding: 0;
+  padding: 4px;
   flex-shrink: 0;
   overflow: hidden;
 }
 .chat-avatar-img {
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: 8px;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
 }
 .chat-header-info {
   display: flex;
@@ -316,15 +316,19 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue));
+  background: #fff;
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
   flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(26, 115, 232, 0.15);
+  overflow: hidden;
+  padding: 4px;
+}
+.bot-avatar-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .message-bubble {
@@ -1113,13 +1117,13 @@
 
 /* The round toggle button */
 .chat-fab {
-  width: 70px; /* Un peu plus grand d'après la capture */
-  height: 70px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: var(--brand-blue);
+  background: #fff;
   color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(15, 82, 186, 0.4);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 14px rgba(15, 27, 66, 0.16);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1127,15 +1131,13 @@
   pointer-events: auto;
   position: relative;
   transition:
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.3s;
-  /* Apply float animation mostly when idle */
-  animation: float 6s ease-in-out infinite;
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .chat-fab:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(15, 82, 186, 0.5);
+  transform: scale(1.04);
+  box-shadow: 0 6px 18px rgba(15, 27, 66, 0.2);
 }
 
 .chat-fab:active {

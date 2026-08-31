@@ -11,7 +11,7 @@ import type { VoiceSettings } from "@/lib/api/types";
 
 export const Route = createFileRoute("/_app/voice-ai/settings")({
   beforeLoad: requireRoutePermission("view_voice"),
-  head: () => ({ meta: [{ title: "Voice AI settings — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Voice AI settings — SIHIA" }] }),
   component: VoiceSettingsPage,
 });
 

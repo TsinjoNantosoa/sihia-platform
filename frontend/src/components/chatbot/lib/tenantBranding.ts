@@ -1,9 +1,10 @@
 /** SIHIA branding used until the API configuration is available. */
-export const BOT_NAME_BY_CLIENT: Record<string, string> = { sihia: "SIH IA Assistant" };
+export const BOT_NAME_BY_CLIENT: Record<string, string> = { sihia: "SIHIA Assistant" };
 export const PRIMARY_COLOR_BY_CLIENT: Record<string, string> = { sihia: "#0d6e6e" };
 export const LOGO_STATIC_PATH_BY_CLIENT: Record<string, string> = {
-  sihia: "/static/logos/sihia-bot.svg",
+  sihia: "/brand/sihia-icon.png",
 };
+const LEGACY_BOT_LOGOS = new Set(["/static/logos/sihia-bot.svg", "sihia-bot.svg"]);
 
 function readRuntimeVar(key: string): string {
   if (typeof window === "undefined") return "";
@@ -26,14 +27,15 @@ export function resolveLogoUrl(
 ): string {
   const api = (apiBaseUrl || resolveApiBaseUrl()).replace(/\/$/, "");
   const fromApi = (logoFromApi || "").trim();
-  if (fromApi) {
+  if (fromApi && !LEGACY_BOT_LOGOS.has(fromApi)) {
     if (/^https?:\/\//i.test(fromApi)) return fromApi;
+    if (fromApi.startsWith("/brand/")) return fromApi;
     if (fromApi.startsWith("/")) return `${api}${fromApi}`;
     return `${api}/static/logos/${fromApi}`;
   }
   const path =
     LOGO_STATIC_PATH_BY_CLIENT[normalizeClientSlug(clientId)] || LOGO_STATIC_PATH_BY_CLIENT.sihia;
-  return `${api}${path}`;
+  return path;
 }
 
 export function normalizeClientSlug(slug?: string): string {

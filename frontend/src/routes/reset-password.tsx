@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { AlertCircle, CheckCircle2, HeartPulse, KeyRound, Loader2, Lock, Mail } from "lucide-react";
+import { AlertCircle, CheckCircle2, KeyRound, Loader2, Lock, Mail } from "lucide-react";
+import { SihiaLogo } from "@/components/brand/SihiaLogo";
 import { authService } from "@/lib/api/services";
 import { useT } from "@/lib/i18n/store";
 import { z } from "zod";
@@ -12,7 +13,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/reset-password")({
   validateSearch: searchSchema,
   head: () => ({
-    meta: [{ title: "Réinitialiser le mot de passe — SIH IA" }],
+    meta: [{ title: "Réinitialiser le mot de passe — SIHIA" }],
   }),
   component: ResetPasswordPage,
 });
@@ -70,14 +71,8 @@ function ResetPasswordPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
-            <HeartPulse className="size-5" />
-          </div>
-          <div>
-            <div className="text-base font-semibold">{t("app.name")}</div>
-            <div className="text-xs text-muted-foreground">{t("app.tagline")}</div>
-          </div>
+        <div className="mb-8">
+          <SihiaLogo variant="compact" />
         </div>
 
         <h1 className="text-2xl font-semibold tracking-tight">{t("auth.resetTitle")}</h1>

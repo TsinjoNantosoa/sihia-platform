@@ -14,10 +14,17 @@ import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme/store";
 import appCss from "../styles.css?url";
 import type { RouterAppContext } from "../router";
 
+import { SihiaLogo } from "@/components/brand/SihiaLogo";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
+        <div className="mb-8 flex justify-center">
+          <Link to="/" aria-label="SIHIA — Accueil">
+            <SihiaLogo variant="compact" decorative />
+          </Link>
+        </div>
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold">Page introuvable</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -41,23 +48,31 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SIH IA — Système Intelligent de Gestion Hospitalière" },
+      { title: "SIHIA — Smart Hospital Intelligence Platform" },
       {
         name: "description",
         content:
-          "SIH IA est un SaaS HealthTech de gestion hospitalière intelligente : patients, médecins, rendez-vous, analytique et prédiction IA du flux de patients.",
+          "Intelligent hospital management platform combining healthcare operations, AI assistance, predictive analytics, RAG and Voice AI.",
       },
-      { name: "author", content: "SIH IA" },
-      { property: "og:title", content: "SIH IA — Système Intelligent de Gestion Hospitalière" },
+      { name: "author", content: "SIHIA" },
+      { property: "og:title", content: "SIHIA — Smart Hospital Intelligence Platform" },
       {
         property: "og:description",
         content:
-          "Gestion hospitalière augmentée par l'IA : KPIs temps réel, prédiction du flux patients, RBAC.",
+          "Hospital operations, AI assistance, predictive analytics, RAG and Voice AI in one HealthTech platform.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/brand/sihia-logo-primary.png" },
       { name: "twitter:card", content: "summary" },
+      { name: "theme-color", content: "#0F2A5A" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
+      { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

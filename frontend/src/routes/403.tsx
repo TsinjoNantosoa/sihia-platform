@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldOff } from "lucide-react";
+import { SihiaLogo } from "@/components/brand/SihiaLogo";
 import { useT } from "@/lib/i18n/store";
 
 export const Route = createFileRoute("/403")({
-  head: () => ({ meta: [{ title: "Accès refusé — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Accès refusé — SIHIA" }] }),
   component: ForbiddenPage,
 });
 
@@ -13,6 +14,11 @@ function ForbiddenPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
+        <div className="mb-8 flex justify-center">
+          <Link to="/" aria-label="SIHIA — Accueil">
+            <SihiaLogo variant="compact" decorative />
+          </Link>
+        </div>
         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-destructive/10">
           <ShieldOff className="size-8 text-destructive" />
         </div>

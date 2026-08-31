@@ -21,12 +21,6 @@ import TypingIndicator from "./TypingIndicator";
 
 import DynamicSuggestions from "./DynamicSuggestions";
 
-import chatbotMascot from "../assets/chat.png";
-
-//import chatbotMascot from '../assets/chathead.png'
-
-// Logo is handled in ChatHeader — no separate import needed here
-
 type Message = {
   id: string;
 
@@ -855,14 +849,14 @@ export default function ChatWidget({
                       {theme?.welcomeFr ||
                         "Bonjour, je suis l'assistant SIHIA. Comment puis-je vous orienter aujourd'hui ?"}
                       <br />
-                      <strong>{theme?.botName ?? "SIH IA Assistant"} est là pour vous.</strong>
+                      <strong>{theme?.botName ?? "SIHIA Assistant"} est là pour vous.</strong>
                     </>
                   ) : (
                     <>
                       {theme?.welcomeEn ||
                         "Hello, I am the SIHIA assistant. How can I help you today?"}
                       <br />
-                      <strong>{theme?.botName ?? "SIH IA Assistant"} is here for you.</strong>
+                      <strong>{theme?.botName ?? "SIHIA Assistant"} is here for you.</strong>
                     </>
                   )}
                 </div>
@@ -900,9 +894,9 @@ export default function ChatWidget({
 
             <div className="chat-fab-content">
               <img
-                src={chatbotMascot}
-                alt="Chatbot Mascot"
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                src="/brand/sihia-icon.png"
+                alt=""
+                style={{ width: "72%", height: "72%", objectFit: "contain" }}
               />
             </div>
 

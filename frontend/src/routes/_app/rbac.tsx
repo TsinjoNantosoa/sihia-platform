@@ -39,7 +39,7 @@ import { scheduleUndoableToast } from "@/lib/actions/undoableToast";
 
 export const Route = createFileRoute("/_app/rbac")({
   beforeLoad: requireRoutePermission("manage_roles"),
-  head: () => ({ meta: [{ title: "RBAC — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "RBAC — SIHIA" }] }),
   component: RbacPage,
 });
 

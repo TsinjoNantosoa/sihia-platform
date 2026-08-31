@@ -28,7 +28,7 @@ import {
 
 export const Route = createFileRoute("/_app/analytics")({
   beforeLoad: requireRoutePermission("view_analytics"),
-  head: () => ({ meta: [{ title: "Analytique — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Analytique — SIHIA" }] }),
   component: AnalyticsPage,
 });
 

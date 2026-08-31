@@ -38,7 +38,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/patients/$patientId")({
   beforeLoad: requireRoutePermission("view_patients"),
   head: ({ params }) => ({
-    meta: [{ title: `Dossier ${params.patientId} — SIH IA` }],
+    meta: [{ title: `Dossier ${params.patientId} — SIHIA` }],
   }),
   component: PatientDetailPage,
 });

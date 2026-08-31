@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_app/dashboard")({
   beforeLoad: requireRoutePermission("view_dashboard"),
   head: () => ({
     meta: [
-      { title: "Tableau de bord — SIH IA" },
+      { title: "Tableau de bord — SIHIA" },
       { name: "description", content: "KPIs temps réel et alertes hospitalières." },
     ],
   }),

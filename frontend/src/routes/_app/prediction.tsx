@@ -28,7 +28,7 @@ import { NoShowRiskPanel } from "@/components/shared/NoShowRiskPanel";
 
 export const Route = createFileRoute("/_app/prediction")({
   beforeLoad: requireRoutePermission("view_prediction"),
-  head: () => ({ meta: [{ title: "Prédiction IA — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Prédiction IA — SIHIA" }] }),
   component: PredictionPage,
 });
 

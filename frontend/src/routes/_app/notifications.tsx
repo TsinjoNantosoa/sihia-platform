@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/notifications")({
   beforeLoad: requireRoutePermission("view_dashboard"),
-  head: () => ({ meta: [{ title: "Notifications — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Notifications — SIHIA" }] }),
   component: NotificationsPage,
 });
 

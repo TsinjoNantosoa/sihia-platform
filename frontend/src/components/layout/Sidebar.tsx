@@ -120,7 +120,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       )}
     >
       <div className="flex h-16 items-center border-b border-border px-4">
-        <SihiaLogo />
+        <Link
+          to="/"
+          onClick={onNavigate}
+          aria-label="SIHIA — Accueil"
+          className="flex min-w-0 items-center"
+        >
+          <SihiaLogo variant="compact" decorative />
+        </Link>
       </div>
 
       <nav

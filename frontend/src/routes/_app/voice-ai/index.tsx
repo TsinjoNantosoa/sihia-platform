@@ -21,7 +21,7 @@ import type { VoiceCall } from "@/lib/api/types";
 
 export const Route = createFileRoute("/_app/voice-ai/")({
   beforeLoad: requireRoutePermission("view_voice"),
-  head: () => ({ meta: [{ title: "Voice AI — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Voice AI — SIHIA" }] }),
   component: VoiceAiPage,
 });
 

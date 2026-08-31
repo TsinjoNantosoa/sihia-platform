@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Search, LogOut, Menu, ChevronDown } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { SihiaLogo } from "@/components/brand/SihiaLogo";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
 import { useAuth } from "@/lib/auth/store";
@@ -49,6 +50,9 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
         >
           <Menu className="size-5" aria-hidden />
         </button>
+        <Link to="/" aria-label="SIHIA — Accueil" className="flex min-w-0 items-center lg:hidden">
+          <SihiaLogo variant="compact" decorative className="h-8 max-w-[140px]" />
+        </Link>
         <button
           type="button"
           data-onboarding="search"

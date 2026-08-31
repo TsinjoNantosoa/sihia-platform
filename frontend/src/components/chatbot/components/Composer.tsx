@@ -15,7 +15,7 @@ const MAX_RECORD_MS = 60_000;
 
 export default function Composer({
   onSend,
-  placeholder = "Question sur SIH IA ? Posez-la ici !",
+  placeholder = "Question sur SIHIA ? Posez-la ici !",
   language = "fr",
   apiBaseUrl = "",
   getAuthHeaders,

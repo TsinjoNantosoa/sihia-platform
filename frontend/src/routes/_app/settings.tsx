@@ -27,7 +27,7 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export const Route = createFileRoute("/_app/settings")({
   beforeLoad: requireRoutePermission("view_settings"),
-  head: () => ({ meta: [{ title: "Paramètres — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Paramètres — SIHIA" }] }),
   component: SettingsPage,
 });
 

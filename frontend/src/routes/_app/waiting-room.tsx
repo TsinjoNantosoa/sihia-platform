@@ -11,7 +11,7 @@ import { usePermission } from "@/lib/auth/usePermission";
 
 export const Route = createFileRoute("/_app/waiting-room")({
   beforeLoad: requireRoutePermission("view_appointments"),
-  head: () => ({ meta: [{ title: "Salle d'attente — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Salle d'attente — SIHIA" }] }),
   component: WaitingRoomPage,
 });
 

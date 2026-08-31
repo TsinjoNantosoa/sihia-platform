@@ -12,7 +12,7 @@ export const LOCALES: { code: Locale; label: string; dir: "ltr" | "rtl" }[] = [
 type Dict = Record<string, string>;
 
 const fr: Dict = {
-  "app.name": "SIH IA",
+  "app.name": "SIHIA",
   "app.tagline": "Système Intelligent de Gestion Hospitalière",
   "nav.section.main": "Principal",
   "nav.section.intelligence": "Intelligence",
@@ -190,7 +190,7 @@ const fr: Dict = {
     "Vous n'avez pas les permissions nécessaires pour accéder à cette ressource. Contactez votre administrateur si vous pensez qu'il s'agit d'une erreur.",
   "forbidden.backDashboard": "Retour au tableau de bord",
 
-  "login.title": "Connexion à SIH IA",
+  "login.title": "Connexion",
   "login.subtitle": "Plateforme intelligente pour les équipes hospitalières",
   "login.email": "Adresse e-mail",
   "login.password": "Mot de passe",
@@ -512,8 +512,8 @@ const fr: Dict = {
 };
 
 const en: Dict = {
-  "app.name": "SIH IA",
-  "app.tagline": "Smart Hospital Management Platform",
+  "app.name": "SIHIA",
+  "app.tagline": "Smart Hospital Intelligence Platform",
   "nav.section.main": "Main",
   "nav.section.intelligence": "Intelligence",
   "nav.section.system": "System",
@@ -689,7 +689,7 @@ const en: Dict = {
     "You do not have the permissions required for this resource. Contact your administrator if you believe this is a mistake.",
   "forbidden.backDashboard": "Back to dashboard",
 
-  "login.title": "Sign in to SIH IA",
+  "login.title": "Sign in",
   "login.subtitle": "Smart platform for hospital teams",
   "login.email": "Email address",
   "login.password": "Password",
@@ -1009,7 +1009,7 @@ const en: Dict = {
 };
 
 const ar: Dict = {
-  "app.name": "SIH IA",
+  "app.name": "SIHIA",
   "app.tagline": "منصة ذكية لإدارة المستشفيات",
   "nav.section.main": "الرئيسية",
   "nav.section.intelligence": "الذكاء",
@@ -1185,7 +1185,7 @@ const ar: Dict = {
     "ليس لديك الصلاحيات اللازمة للوصول إلى هذا المورد. اتصل بالمسؤول إذا كنت تعتقد أن هذا خطأ.",
   "forbidden.backDashboard": "العودة إلى لوحة التحكم",
 
-  "login.title": "تسجيل الدخول إلى SIH IA",
+  "login.title": "تسجيل الدخول",
   "login.subtitle": "منصة ذكية لفرق المستشفيات",
   "login.email": "البريد الإلكتروني",
   "login.password": "كلمة المرور",

@@ -109,7 +109,7 @@ type Doctor = {
 
 export const Route = createFileRoute("/_app/appointments")({
   beforeLoad: requireRoutePermission("view_appointments"),
-  head: () => ({ meta: [{ title: "Rendez-vous — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Rendez-vous — SIHIA" }] }),
   component: AppointmentsPage,
 });
 

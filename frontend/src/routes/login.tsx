@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { HeartPulse, Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
+import { SihiaLogo } from "@/components/brand/SihiaLogo";
 import { useAuth } from "@/lib/auth/store";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
@@ -9,8 +10,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Connexion — SIH IA" },
-      { name: "description", content: "Connectez-vous à la plateforme SIH IA." },
+      { title: "Connexion — SIHIA" },
+      { name: "description", content: "Connectez-vous à la plateforme SIHIA." },
     ],
   }),
   component: LoginPage,
@@ -56,14 +57,8 @@ function LoginPage() {
     <div className="grid min-h-[100dvh] w-full lg:grid-cols-2">
       <div className="flex items-center justify-center bg-background p-6 sm:p-12">
         <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-[var(--shadow-card)]">
-              <HeartPulse className="size-5" />
-            </div>
-            <div>
-              <div className="text-base font-semibold">{t("app.name")}</div>
-              <div className="text-xs text-muted-foreground">{t("app.tagline")}</div>
-            </div>
+          <div className="mb-8 lg:hidden">
+            <SihiaLogo variant="compact" />
           </div>
 
           <h1 className="text-2xl font-semibold tracking-tight">{t("login.title")}</h1>
@@ -161,12 +156,11 @@ function LoginPage() {
               "radial-gradient(circle at 20% 20%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 30%)",
           }}
         />
-        <div className="relative flex h-full flex-col justify-between p-12 text-primary-foreground">
-          <div className="flex items-center gap-2 text-sm font-medium opacity-90">
-            <span className="size-2 animate-pulse rounded-full bg-white" />
-            Plateforme certifiée HL7 FHIR · RGPD
+        <div className="relative flex h-full flex-col justify-between gap-10 p-12">
+          <div className="w-fit rounded-2xl bg-white px-6 py-5 shadow-[var(--shadow-card)]">
+            <SihiaLogo variant="full" className="max-w-[420px]" />
           </div>
-          <div className="space-y-6">
+          <div className="space-y-6 text-primary-foreground">
             <h2 className="text-4xl font-semibold leading-tight">
               L'intelligence opérationnelle au service du soin.
             </h2>
@@ -190,7 +184,10 @@ function LoginPage() {
               ))}
             </div>
           </div>
-          <div className="text-xs opacity-70">© 2025 SIH IA — Tous droits réservés</div>
+          <div className="flex items-center justify-between text-xs text-primary-foreground/70">
+            <span>HL7 FHIR · RGPD</span>
+            <span>© 2026 SIHIA</span>
+          </div>
         </div>
       </div>
     </div>

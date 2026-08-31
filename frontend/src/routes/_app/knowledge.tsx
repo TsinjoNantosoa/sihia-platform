@@ -14,7 +14,7 @@ import { requireRoutePermission } from "@/lib/auth/routeGuard";
 
 export const Route = createFileRoute("/_app/knowledge")({
   beforeLoad: requireRoutePermission("manage_roles"),
-  head: () => ({ meta: [{ title: "Base de connaissances — SIH IA" }] }),
+  head: () => ({ meta: [{ title: "Base de connaissances — SIHIA" }] }),
   component: KnowledgePage,
 });
 
