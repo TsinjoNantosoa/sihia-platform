@@ -1600,3 +1600,55 @@
   font-size: 0.72rem;
   line-height: 1.35;
 }
+
+/* ====== SIHIA APP INTEGRATION (dark mode + desktop layout) ====== */
+.dark .chat-widget {
+  background: hsl(222 47% 11%);
+  border: 1px solid hsl(217 33% 17%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.dark .chat-fab {
+  background: hsl(222 47% 11%);
+  border-color: hsl(217 33% 17%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dark .chat-callout {
+  background: hsl(222 47% 11%);
+  border-color: hsl(217 33% 17%);
+  color: #e2e8f0;
+}
+
+.dark .message-bubble.bot {
+  background: hsl(217 33% 17%);
+  color: #e2e8f0;
+}
+
+.dark .message-bubble.user {
+  background: hsl(187 55% 28%);
+  color: #f8fafc;
+}
+
+.dark .composer-input-wrap {
+  background: hsl(217 33% 17%);
+  border-color: hsl(217 33% 22%);
+}
+
+.dark .composer-input {
+  color: #e2e8f0;
+}
+
+@media (min-width: 1280px) {
+  .chat-widget:not(.closed) {
+    right: auto;
+    left: calc(16rem + 24px);
+    bottom: 24px;
+    width: min(380px, calc(100vw - 18rem));
+  }
+
+  .chat-fab-wrapper {
+    right: 24px;
+    bottom: 24px;
+  }
+}

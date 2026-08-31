@@ -15,7 +15,7 @@ import {
   PhoneCall,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { SihiaLogo } from "@/components/brand/SihiaLogo";
+import { SidebarBrand } from "@/components/brand/SidebarBrand";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { usePermissions } from "@/lib/auth/usePermission";
 import { API_URL } from "@/lib/api/services";
@@ -119,15 +119,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         isRtl ? "border-l" : "border-r",
       )}
     >
-      <div className="flex h-16 items-center border-b border-border px-4">
-        <Link
-          to="/"
-          onClick={onNavigate}
-          aria-label="SIHIA — Accueil"
-          className="flex min-w-0 items-center"
-        >
-          <SihiaLogo variant="compact" decorative />
-        </Link>
+      <div className="flex min-h-14 items-center border-b border-border px-4 py-3">
+        <SidebarBrand onNavigate={onNavigate} />
       </div>
 
       <nav
@@ -153,10 +146,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
                       active
-                        ? "bg-primary-soft text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        ? "border border-primary/20 bg-primary/10 text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
                     <Icon
@@ -170,7 +163,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     />
                     <span className="flex-1 truncate">{t(item.labelKey)}</span>
                     {"beta" in item && item.beta ? (
-                      <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent">
+                      <span className="rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
                         Beta
                       </span>
                     ) : null}
@@ -245,7 +238,7 @@ function ApiHealthIndicator() {
         />
       )}
       <span
-        className={`text-[10px] font-medium uppercase tracking-wide ${status === "down" ? "text-destructive" : "text-muted-foreground"}`}
+        className={`text-xs font-medium ${status === "down" ? "text-destructive" : "text-muted-foreground"}`}
       >
         {label[status]}
       </span>

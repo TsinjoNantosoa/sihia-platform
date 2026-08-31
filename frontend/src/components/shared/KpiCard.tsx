@@ -4,35 +4,52 @@ import { cn } from "@/lib/utils";
 
 interface KpiCardProps {
   label: string;
-  value: ReactNode;
+  value?: ReactNode;
   unit?: string;
   trend?: { value: number; positive?: boolean };
   icon?: ReactNode;
-  variant?: "default" | "critical" | "warning" | "success";
-  progress?: number; // 0..100
+  variant?: "default" | "critical" | "warning" | "success" | "neutral";
+  progress?: number;
   hint?: string;
+  loading?: boolean;
 }
 
 const variantStyles = {
-  default: "border-border",
-  critical: "border-destructive/30 bg-gradient-to-br from-destructive/5 to-card",
-  warning: "border-warning/30 bg-gradient-to-br from-warning/5 to-card",
-  success: "border-success/30 bg-gradient-to-br from-success/5 to-card",
+  default: "border-border bg-card",
+  neutral: "border-border bg-card",
+  critical: "border-destructive/25 bg-card",
+  warning: "border-warning/25 bg-card",
+  success: "border-success/25 bg-card",
 };
 
 const variantText = {
   default: "text-foreground",
+  neutral: "text-foreground",
   critical: "text-destructive",
   warning: "text-warning",
   success: "text-success",
 };
 
 const variantIconBg = {
-  default: "bg-primary-soft text-primary",
+  default: "bg-primary/10 text-primary",
+  neutral: "bg-muted text-muted-foreground",
   critical: "bg-destructive/10 text-destructive",
   warning: "bg-warning/10 text-warning",
   success: "bg-success/10 text-success",
 };
+
+export function KpiCardSkeleton() {
+  return (
+    <div className="animate-pulse rounded-xl border border-border bg-card p-5">
+      <div className="flex items-start justify-between">
+        <div className="h-3 w-28 rounded bg-muted" />
+        <div className="size-8 rounded-lg bg-muted" />
+      </div>
+      <div className="mt-4 h-8 w-20 rounded bg-muted" />
+      <div className="mt-2 h-3 w-32 rounded bg-muted" />
+    </div>
+  );
+}
 
 export function KpiCard({
   label,
@@ -43,11 +60,14 @@ export function KpiCard({
   variant = "default",
   progress,
   hint,
+  loading = false,
 }: KpiCardProps) {
+  if (loading) return <KpiCardSkeleton />;
+
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-elevated)]",
+        "rounded-xl border p-5 transition-colors hover:border-border/80",
         variantStyles[variant],
       )}
     >

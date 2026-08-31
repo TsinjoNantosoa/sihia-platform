@@ -16,6 +16,12 @@ export function formatMlConfidence(confidence: number): string {
   return `${Math.round(confidence * 100)}%`;
 }
 
+export function formatMlConfidenceLevel(confidence: number, t: (key: string) => string): string {
+  if (confidence >= 0.85) return t("ml.meta.confidenceHigh");
+  if (confidence >= 0.7) return t("ml.meta.confidenceModerate");
+  return t("ml.meta.confidenceLow");
+}
+
 export function mlForecastSummary(
   data: Pick<MlForecastResponse, "model" | "confidence" | "source" | "generatedAt">,
 ) {

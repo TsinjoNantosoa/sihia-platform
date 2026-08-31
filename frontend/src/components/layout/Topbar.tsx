@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search, LogOut, Menu, ChevronDown } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { SihiaLogo } from "@/components/brand/SihiaLogo";
+import { useNavigate } from "@tanstack/react-router";
+import { SidebarBrand } from "@/components/brand/SidebarBrand";
 import { useT, useI18n } from "@/lib/i18n/store";
 import { LOCALES, type Locale } from "@/lib/i18n/dictionaries";
 import { useAuth } from "@/lib/auth/store";
@@ -37,27 +37,27 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/80 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 xl:px-6">
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/90 px-3 backdrop-blur-md sm:gap-3 sm:px-4 xl:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <button
           id="mobile-menu-trigger"
           data-onboarding="navigation"
           onClick={onMenu}
-          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
+          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 lg:hidden"
           aria-label={t("a11y.openMenu")}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
         >
           <Menu className="size-5" aria-hidden />
         </button>
-        <Link to="/" aria-label="SIHIA — Accueil" className="flex min-w-0 items-center lg:hidden">
-          <SihiaLogo variant="compact" decorative className="h-8 max-w-[140px]" />
-        </Link>
+        <div className="lg:hidden">
+          <SidebarBrand />
+        </div>
         <button
           type="button"
           data-onboarding="search"
           onClick={() => setSearchOpen(true)}
-          className="flex size-10 min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 min-[480px]:h-auto min-[480px]:w-full min-[480px]:max-w-md min-[480px]:justify-start min-[480px]:px-3"
+          className="flex size-10 min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 min-[480px]:h-9 min-[480px]:w-full min-[480px]:max-w-sm min-[480px]:justify-start min-[480px]:px-3"
           aria-label={t("search.aria")}
         >
           <Search className="size-4 text-muted-foreground" aria-hidden />

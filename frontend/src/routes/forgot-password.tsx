@@ -40,7 +40,7 @@ function ForgotPasswordPage() {
     <div className="flex min-h-[100dvh] items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         <div className="mb-8">
-          <SihiaLogo variant="compact" />
+          <SihiaLogo variant="compact" surface="light" />
         </div>
 
         <h1 className="text-2xl font-semibold tracking-tight">{t("auth.forgotTitle")}</h1>

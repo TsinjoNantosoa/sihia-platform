@@ -22,7 +22,7 @@ function NotFoundComponent() {
       <div className="max-w-md text-center">
         <div className="mb-8 flex justify-center">
           <Link to="/" aria-label="SIHIA — Accueil">
-            <SihiaLogo variant="compact" decorative />
+            <SihiaLogo variant="compact" surface="light" decorative />
           </Link>
         </div>
         <h1 className="text-7xl font-bold text-foreground">404</h1>

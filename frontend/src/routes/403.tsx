@@ -16,7 +16,7 @@ function ForbiddenPage() {
       <div className="max-w-md text-center">
         <div className="mb-8 flex justify-center">
           <Link to="/" aria-label="SIHIA — Accueil">
-            <SihiaLogo variant="compact" decorative />
+            <SihiaLogo variant="compact" surface="light" decorative />
           </Link>
         </div>
         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-destructive/10">

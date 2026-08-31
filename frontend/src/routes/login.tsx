@@ -58,7 +58,7 @@ function LoginPage() {
       <div className="flex items-center justify-center bg-background p-6 sm:p-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
-            <SihiaLogo variant="compact" />
+            <SihiaLogo variant="compact" surface="light" />
           </div>
 
           <h1 className="text-2xl font-semibold tracking-tight">{t("login.title")}</h1>

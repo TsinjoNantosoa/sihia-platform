@@ -7,6 +7,11 @@ type SihiaLogoProps = {
   className?: string;
   /** When true, the image is hidden from assistive tech (parent must provide the label). */
   decorative?: boolean;
+  /**
+   * Light surface behind the logo — required on dark backgrounds so the navy wordmark stays readable.
+   * Does not alter the logo asset itself.
+   */
+  surface?: "none" | "light";
 };
 
 const VARIANTS = {
@@ -22,7 +27,7 @@ const VARIANTS = {
     width: 917,
     height: 217,
     alt: "SIHIA",
-    className: "h-9 w-auto max-w-[168px]",
+    className: "h-9 w-auto max-w-[180px]",
   },
   icon: {
     src: "/brand/sihia-icon.png",
@@ -33,16 +38,21 @@ const VARIANTS = {
   },
 } as const;
 
-export function SihiaLogo({ variant = "compact", className, decorative = false }: SihiaLogoProps) {
+export function SihiaLogo({
+  variant = "compact",
+  className,
+  decorative = false,
+  surface = "none",
+}: SihiaLogoProps) {
   const spec = VARIANTS[variant];
-  return (
+  const image = (
     <img
       src={spec.src}
       alt={decorative ? "" : spec.alt}
       width={spec.width}
       height={spec.height}
       className={cn(
-        "object-contain",
+        "block object-contain",
         variant === "icon" ? "object-center" : "object-left",
         spec.className,
         className,
@@ -51,6 +61,16 @@ export function SihiaLogo({ variant = "compact", className, decorative = false }
       draggable={false}
     />
   );
+
+  if (surface === "light") {
+    return (
+      <span className="inline-flex max-w-full items-center rounded-lg bg-white px-3 py-2 shadow-[var(--shadow-card)] ring-1 ring-black/5">
+        {image}
+      </span>
+    );
+  }
+
+  return image;
 }
 
 export function SihiaLogoIcon({ className }: { className?: string }) {

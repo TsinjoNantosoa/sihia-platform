@@ -44,14 +44,6 @@ type ChatSource = {
   excerpt?: string;
 };
 
-const MOBILE_BREAKPOINT_PX = 600;
-
-function isMobileViewport() {
-  if (typeof window === "undefined") return false;
-
-  return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`).matches;
-}
-
 import type { ClientTheme } from "../types/client";
 import { resolveBotName } from "../lib/tenantBranding";
 import {
@@ -89,9 +81,9 @@ export default function ChatWidget({
   jwtToken = "",
   theme,
 }: ChatWidgetProps) {
-  const [open, setOpen] = useState(() => isMobileViewport());
+  const [open, setOpen] = useState(false);
 
-  const [showCallout, setShowCallout] = useState(() => !isMobileViewport());
+  const [showCallout, setShowCallout] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>(() => getInitialChatState(clientId).messages);
 
@@ -847,16 +839,16 @@ export default function ChatWidget({
                   {language === "fr" ? (
                     <>
                       {theme?.welcomeFr ||
-                        "Bonjour, je suis l'assistant SIHIA. Comment puis-je vous orienter aujourd'hui ?"}
+                        "Bonjour, je suis l'Assistant SIHIA. Je peux vous aider à retrouver des informations sur les rendez-vous, les services hospitaliers et les documents disponibles."}
                       <br />
-                      <strong>{theme?.botName ?? "SIHIA Assistant"} est là pour vous.</strong>
+                      <strong>Je ne fournis pas de diagnostic médical.</strong>
                     </>
                   ) : (
                     <>
                       {theme?.welcomeEn ||
-                        "Hello, I am the SIHIA assistant. How can I help you today?"}
+                        "Hello, I am the SIHIA Assistant. I can help you find information about appointments, hospital services and available documents."}
                       <br />
-                      <strong>{theme?.botName ?? "SIHIA Assistant"} is here for you.</strong>
+                      <strong>I do not provide medical diagnoses.</strong>
                     </>
                   )}
                 </div>

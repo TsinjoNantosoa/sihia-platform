@@ -1,5 +1,5 @@
 /** SIHIA branding used until the API configuration is available. */
-export const BOT_NAME_BY_CLIENT: Record<string, string> = { sihia: "SIHIA Assistant" };
+export const BOT_NAME_BY_CLIENT: Record<string, string> = { sihia: "Assistant SIHIA" };
 export const PRIMARY_COLOR_BY_CLIENT: Record<string, string> = { sihia: "#0d6e6e" };
 export const LOGO_STATIC_PATH_BY_CLIENT: Record<string, string> = {
   sihia: "/brand/sihia-icon.png",
