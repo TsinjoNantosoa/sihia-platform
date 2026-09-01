@@ -16,9 +16,9 @@ def _headers(email: str = "dr.benali@sihia.health", password: str = "demo1234") 
 
 
 def _unique_date(offset_minutes: int = 0) -> str:
-    microseconds = int(uuid4().hex[:5], 16)
-    value = datetime(2094, 1, 1, 8, 0, tzinfo=timezone.utc)
-    return (value + timedelta(minutes=offset_minutes, microseconds=microseconds)).isoformat()
+    day_offset = int(uuid4().hex[:4], 16) % 360
+    value = datetime(2094, 1, 1, 8, 0, tzinfo=timezone.utc) + timedelta(days=day_offset)
+    return (value + timedelta(minutes=offset_minutes)).isoformat()
 
 
 def _create(headers: dict[str, str], *, doctor_id: str, date: str, status: str = "scheduled") -> dict:

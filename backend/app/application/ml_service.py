@@ -7,6 +7,7 @@ from typing import Any
 
 from app.application.analytics_service import AnalyticsService, _parse_appt_date, _utc_now
 from app.application.ml_engine import ml_data_source, prophet_enabled
+from app.infrastructure.database import connect
 
 MIN_OBSERVED_DAYS = 7
 MIN_NON_ZERO_DAYS = 3
@@ -37,7 +38,7 @@ def _linear_forecast(values: list[int], horizon: int) -> list[int]:
 def _try_prophet_forecast(
     daily: list[tuple[date, int]],
     horizon: int,
-) -> tuple[list[int], float] | None:
+) -> list[int] | None:
     if not prophet_enabled():
         return None
     try:
@@ -60,8 +61,7 @@ def _try_prophet_forecast(
         future = model.make_future_dataframe(periods=horizon)
         forecast = model.predict(future)
         tail = forecast.tail(horizon)["yhat"].tolist()
-        values = [max(0, round(v)) for v in tail]
-        return values, 0.0  # confidence computed separately from observations
+        return [max(0, round(v)) for v in tail]
     except Exception:
         return None
 
@@ -127,9 +127,8 @@ def _forecast_from_daily(
     if not _has_sufficient_forecast_data(stats):
         return [], "unavailable", None
 
-    prophet_result = _try_prophet_forecast(daily, horizon) if prophet_enabled() else None
-    if prophet_result:
-        forecast_values, _ = prophet_result
+    forecast_values = _try_prophet_forecast(daily, horizon) if prophet_enabled() else None
+    if forecast_values:
         confidence = _confidence_from_stats(stats, "prophet")
         return forecast_values, "prophet", confidence
 
@@ -170,7 +169,45 @@ class MlForecastService:
     def __init__(self, analytics: AnalyticsService | None = None) -> None:
         self._analytics = analytics or AnalyticsService()
 
-    def _daily_counts(self, lookback_days: int = 60) -> list[tuple[date, int]]:
+    def _daily_counts_from_ml_features(self, lookback_days: int) -> list[tuple[date, int]] | None:
+        """Utilise ml_features_daily (remplie par le DAG pipeline) si suffisamment peuplée."""
+        today = _utc_now().date()
+        start = today - timedelta(days=lookback_days - 1)
+        conn = connect()
+        try:
+            rows = conn.execute(
+                """
+                SELECT day, appointment_count FROM ml_features_daily
+                WHERE day >= ? AND day <= ?
+                ORDER BY day
+                """,
+                (start.isoformat(), today.isoformat()),
+            ).fetchall()
+        except Exception:
+            return None
+        finally:
+            conn.close()
+
+        if len(rows) < MIN_OBSERVED_DAYS:
+            return None
+
+        by_day: dict[date, int] = {}
+        for row in rows:
+            try:
+                day = date.fromisoformat(str(row["day"])[:10])
+                by_day[day] = int(row["appointment_count"])
+            except (ValueError, TypeError):
+                continue
+
+        if len(by_day) < MIN_OBSERVED_DAYS:
+            return None
+
+        return [
+            (start + timedelta(days=i), by_day.get(start + timedelta(days=i), 0))
+            for i in range(lookback_days)
+        ]
+
+    def _daily_counts_from_appointments(self, lookback_days: int) -> list[tuple[date, int]]:
         today = _utc_now().date()
         start = today - timedelta(days=lookback_days - 1)
         buckets: dict[date, int] = {start + timedelta(days=i): 0 for i in range(lookback_days)}
@@ -182,6 +219,12 @@ class MlForecastService:
             buckets[d] = buckets.get(d, 0) + 1
 
         return sorted(buckets.items())
+
+    def _daily_counts(self, lookback_days: int = 60) -> list[tuple[date, int]]:
+        features = self._daily_counts_from_ml_features(lookback_days)
+        if features is not None:
+            return features
+        return self._daily_counts_from_appointments(lookback_days)
 
     def _build_response(
         self,

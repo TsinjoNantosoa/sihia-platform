@@ -113,6 +113,7 @@ class Settings(BaseModel):
     )
     environment: str = "development"
     seed_demo_data: bool = False
+    auto_run_migrations: bool = True
     patient_ai_external_llm_enabled: bool = False
     redis_url: str = ""
 
@@ -123,6 +124,7 @@ class Settings(BaseModel):
             "http://localhost:5174,http://127.0.0.1:5174,http://localhost:8080,http://127.0.0.1:8080",
         )
         origins = [o.strip() for o in cors_raw.split(",") if o.strip()]
+        environment = os.getenv("ENVIRONMENT", "development")
         return cls(
             app_name=os.getenv("APP_NAME", "SIH IA Backend"),
             jwt_secret=os.getenv("JWT_SECRET", "change-me-in-production-please-use-32-plus-bytes"),
@@ -206,8 +208,12 @@ class Settings(BaseModel):
             voice_trust_proxy=_env_bool("VOICE_TRUST_PROXY", False),
             elevenlabs_tool_secret=os.getenv("ELEVENLABS_TOOL_SECRET", "").strip(),
             cors_origins=origins or ["http://localhost:5174"],
-            environment=os.getenv("ENVIRONMENT", "development"),
+            environment=environment,
             seed_demo_data=_env_bool("SEED_DEMO_DATA", False),
+            auto_run_migrations=_env_bool(
+                "AUTO_RUN_MIGRATIONS",
+                environment.lower() != "production",
+            ),
             patient_ai_external_llm_enabled=_env_bool("PATIENT_AI_EXTERNAL_LLM_ENABLED", False),
             redis_url=os.getenv("REDIS_URL", "").strip(),
         )

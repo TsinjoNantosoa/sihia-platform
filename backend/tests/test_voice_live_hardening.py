@@ -5,6 +5,7 @@ import hmac
 import json
 import time
 from datetime import datetime, timedelta, timezone
+import random
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -230,7 +231,7 @@ def test_sms_success_message() -> None:
             lastName="Ok",
             dob="1991-02-02",
             gender="F",
-            phone=f"+2126007{uuid4().hex[:6]}",
+            phone=f"+2126007{random.randint(100000, 999999)}",
             email="sms.ok@demo.sihia",
             address="1 Demo",
             bloodType="A+",
@@ -263,7 +264,7 @@ def test_sms_failure_does_not_cancel_appointment(monkeypatch) -> None:
             lastName="Fail",
             dob="1991-03-03",
             gender="M",
-            phone=f"+2126007{uuid4().hex[:6]}",
+            phone=f"+2126007{random.randint(100000, 999999)}",
             email="sms.fail@demo.sihia",
             address="1 Demo",
             bloodType="O+",

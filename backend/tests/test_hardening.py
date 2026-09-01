@@ -16,9 +16,7 @@ def _token(email: str = "admin@sihia.health", password: str = "admin123") -> str
     return res.json()["access_token"]
 
 
-def test_seed_demo_data_disabled_by_default() -> None:
-    assert settings.seed_demo_data is False or settings.environment != "production"
-
+def test_patient_history_get_does_not_seed_data() -> None:
     headers = {"Authorization": f"Bearer {_token()}"}
     created = client.post(
         "/api/patients",

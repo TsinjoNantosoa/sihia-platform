@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -155,25 +156,29 @@ def run_migrations() -> None:
 def bootstrap_database() -> None:
     from sqlalchemy import inspect
 
+    logger = logging.getLogger("sihia")
     engine = get_engine()
     inspector = inspect(engine)
     has_users = inspector.has_table("users")
     has_alembic = inspector.has_table("alembic_version")
 
-    if has_users and not has_alembic:
-        from alembic import command
-        from alembic.config import Config
+    if settings.auto_run_migrations:
+        if has_users and not has_alembic:
+            from alembic import command
+            from alembic.config import Config
 
-        alembic_ini = Path(__file__).resolve().parents[2] / "alembic.ini"
-        cfg = Config(str(alembic_ini))
-        cfg.set_main_option("sqlalchemy.url", sqlalchemy_url())
-        command.stamp(cfg, "head")
-    else:
-        run_migrations()
-
-    from app.infrastructure.seed import migrate_legacy_password_hashes, seed_demo_data
-
-    migrate_legacy_password_hashes()
+            alembic_ini = Path(__file__).resolve().parents[2] / "alembic.ini"
+            cfg = Config(str(alembic_ini))
+            cfg.set_main_option("sqlalchemy.url", sqlalchemy_url())
+            command.stamp(cfg, "head")
+        else:
+            run_migrations()
+    elif not has_alembic:
+        logger.warning(
+            "AUTO_RUN_MIGRATIONS=false : exécutez `alembic upgrade head` avant de démarrer l'application."
+        )
 
     if settings.seed_demo_data:
+        from app.infrastructure.seed import seed_demo_data
+
         seed_demo_data()

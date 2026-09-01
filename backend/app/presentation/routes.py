@@ -223,22 +223,54 @@ def get_patient(patient_id: str, _claims: dict = Depends(require_permission("pat
 
 
 @api_router.post("/patients")
-def create_patient(payload: PatientCreate, _claims: dict = Depends(require_permission("patients:create"))):
-    return _patient_payload(patients_service.create(payload))
+def create_patient(
+    request: Request,
+    payload: PatientCreate,
+    claims: dict = Depends(require_permission("patients:create")),
+):
+    patient = patients_service.create(payload)
+    log_admin_action(
+        request,
+        action="patient.create",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=patient.id,
+    )
+    return _patient_payload(patient)
 
 
 @api_router.patch("/patients/{patient_id}")
 def update_patient(
+    request: Request,
     patient_id: str,
     payload: PatientUpdate,
-    _claims: dict = Depends(require_permission("patients:update")),
+    claims: dict = Depends(require_permission("patients:update")),
 ):
-    return _patient_payload(patients_service.update(patient_id, payload))
+    patient = patients_service.update(patient_id, payload)
+    log_admin_action(
+        request,
+        action="patient.update",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=patient_id,
+    )
+    return _patient_payload(patient)
 
 
 @api_router.delete("/patients/{patient_id}", status_code=status.HTTP_200_OK)
-def delete_patient(patient_id: str, _claims: dict = Depends(require_permission("patients:delete"))):
+def delete_patient(
+    request: Request,
+    patient_id: str,
+    claims: dict = Depends(require_permission("patients:delete")),
+):
     patients_service.delete(patient_id)
+    log_admin_action(
+        request,
+        action="patient.archive",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=patient_id,
+    )
     return {"success": True}
 
 
@@ -262,14 +294,24 @@ def get_patient_history(patient_id: str, _claims: dict = Depends(require_permiss
 
 @api_router.post("/patients/{patient_id}/ai-summary")
 def patient_ai_summary(
+    request: Request,
     patient_id: str,
     lang: str = Query("fr", pattern="^(fr|en|ar)$"),
-    _claims: dict = Depends(require_permission("patients:read")),
+    claims: dict = Depends(require_permission("patients:read")),
 ):
     """Résumé IA du dossier (~5 lignes) — aide à la décision, pas un diagnostic."""
     patient = patients_service.get(patient_id)
     visits = medical_history_service.list(patient_id)
-    return patient_summary_service.summarize(patient, visits, lang=lang)
+    result = patient_summary_service.summarize(patient, visits, lang=lang)
+    log_admin_action(
+        request,
+        action="patient.ai_summary.generate",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=patient_id,
+        extra={"lang": lang},
+    )
+    return result
 
 
 @api_router.get("/patients/{patient_id}/documents")
@@ -279,6 +321,7 @@ def list_patient_documents(patient_id: str, _claims: dict = Depends(require_perm
 
 @api_router.post("/patients/{patient_id}/documents", status_code=status.HTTP_201_CREATED)
 async def upload_patient_document(
+    request: Request,
     patient_id: str,
     file: UploadFile = File(...),
     category: str = Form("other"),
@@ -286,7 +329,7 @@ async def upload_patient_document(
     claims: dict = Depends(require_permission("patients:update")),
 ):
     data = await file.read()
-    return patient_document_service.upload(
+    doc = patient_document_service.upload(
         patient_id,
         filename=file.filename or "document",
         content_type=file.content_type or "application/octet-stream",
@@ -295,15 +338,37 @@ async def upload_patient_document(
         notes=notes,
         uploaded_by=str(claims.get("id") or claims.get("sub") or ""),
     )
+    log_admin_action(
+        request,
+        action="patient.document.upload",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=patient_id,
+        extra={
+            "documentId": doc.get("id"),
+            "filename": doc.get("filename"),
+            "category": category,
+        },
+    )
+    return doc
 
 
 @api_router.get("/patients/{patient_id}/documents/{document_id}/download")
 def download_patient_document(
+    request: Request,
     patient_id: str,
     document_id: str,
-    _claims: dict = Depends(require_permission("patients:read")),
+    claims: dict = Depends(require_permission("patients:read")),
 ):
     doc, payload = patient_document_service.get_file(patient_id, document_id)
+    log_admin_action(
+        request,
+        action="patient.document.download",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=patient_id,
+        extra={"documentId": document_id, "filename": doc.filename},
+    )
     return Response(
         content=payload,
         media_type=doc.content_type,
@@ -313,21 +378,39 @@ def download_patient_document(
 
 @api_router.delete("/patients/{patient_id}/documents/{document_id}", status_code=status.HTTP_200_OK)
 def delete_patient_document(
+    request: Request,
     patient_id: str,
     document_id: str,
-    _claims: dict = Depends(require_permission("patients:update")),
+    claims: dict = Depends(require_permission("patients:update")),
 ):
     patient_document_service.delete(patient_id, document_id)
+    log_admin_action(
+        request,
+        action="patient.document.delete",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=patient_id,
+        extra={"documentId": document_id},
+    )
     return {"ok": True}
 
 
 @api_router.post("/patients/{patient_id}/history")
 def add_patient_visit(
+    request: Request,
     patient_id: str,
     payload: MedicalVisitCreate,
-    _claims: dict = Depends(require_permission("patients:update")),
+    claims: dict = Depends(require_permission("patients:update")),
 ):
     v = medical_history_service.add(patient_id, payload)
+    log_admin_action(
+        request,
+        action="medical_visit.create",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=patient_id,
+        extra={"visitId": v.id},
+    )
     return {
         "id": v.id,
         "date": v.date,
@@ -384,14 +467,37 @@ def list_appointments(_claims: dict = Depends(require_permission("appointments:r
 
 
 @api_router.post("/appointments")
-def create_appointment(payload: AppointmentCreate, _claims: dict = Depends(require_permission("appointments:create"))):
+def create_appointment(
+    request: Request,
+    payload: AppointmentCreate,
+    claims: dict = Depends(require_permission("appointments:create")),
+):
     a = appointments_service.create(payload)
+    log_admin_action(
+        request,
+        action="appointment.create",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=a.id,
+        extra={"patientId": a.patient_id, "doctorId": a.doctor_id},
+    )
     return _appointment_payload(a)
 
 
 @api_router.post("/appointments/{appointment_id}/cancel")
-def cancel_appointment(appointment_id: str, _claims: dict = Depends(require_permission("appointments:update"))):
+def cancel_appointment(
+    request: Request,
+    appointment_id: str,
+    claims: dict = Depends(require_permission("appointments:update")),
+):
     a = appointments_service.cancel(appointment_id)
+    log_admin_action(
+        request,
+        action="appointment.cancel",
+        actor_id=claims.get("sub"),
+        actor_email=claims.get("email"),
+        target_id=appointment_id,
+    )
     return asdict(a)
 
 

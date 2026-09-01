@@ -39,6 +39,25 @@ Tous les endpoints metier (hors login) exigent un `Authorization: Bearer <token>
 - `dr.benali@sihia.health` / `demo1234` (role doctor)
 - `admin@sihia.health` / `admin123` (role admin)
 
+## Migrations et données
+
+En **développement**, `AUTO_RUN_MIGRATIONS=true` (défaut) applique Alembic au démarrage.
+
+En **production**, définir `AUTO_RUN_MIGRATIONS=false` et exécuter avant le démarrage :
+
+```bash
+alembic upgrade head
+```
+
+Scripts one-shot :
+
+```bash
+python scripts/seed_demo.py
+python scripts/migrate_legacy_passwords.py
+```
+
+Le forecasting ML consomme `ml_features_daily` lorsque le DAG `ml_features` a peuplé la table ; sinon fallback sur les RDV en base.
+
 ## Notes architecture
 
 - Les use-cases dependent des ports `domain/ports.py`, pas des impl concretes.

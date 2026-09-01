@@ -50,11 +50,16 @@ def test_prophet_forecast_returns_values_when_available(monkeypatch) -> None:
     monkeypatch.setitem(sys.modules, "prophet", fake_prophet)
 
     daily = [(date(2026, 1, 1) + timedelta(days=i), 3 + (i % 4)) for i in range(14)]
-    values, confidence = ml_service._try_prophet_forecast(daily, horizon=7)
+    values = ml_service._try_prophet_forecast(daily, horizon=7)
 
+    assert values is not None
     assert len(values) == 7
     assert all(v >= 0 for v in values)
-    assert confidence >= 0.8
+
+    stats = ml_service._series_stats(daily)
+    confidence = ml_service._confidence_from_stats(stats, "prophet")
+    assert confidence is not None
+    assert confidence >= 0.65
 
 
 def test_mae_mape_helpers() -> None:

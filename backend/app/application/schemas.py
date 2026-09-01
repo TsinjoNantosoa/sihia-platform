@@ -2,7 +2,16 @@ from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.application.patient_validation import (
+    normalize_optional_email,
+    validate_blood_type,
+    validate_patient_dob,
+    validate_patient_name,
+    validate_patient_phone,
+)
 from app.core.password_policy import validate_password
+
+BloodType = Literal["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
 
 
 class LoginRequest(BaseModel):
@@ -47,36 +56,98 @@ class ResetPasswordRequest(BaseModel):
 
 
 class PatientCreate(BaseModel):
-    firstName: str
-    lastName: str
+    firstName: str = Field(min_length=1, max_length=80)
+    lastName: str = Field(min_length=1, max_length=80)
     dob: str
     gender: Literal["M", "F"]
     phone: str
-    email: str | None = None
-    address: str
-    bloodType: str
+    email: EmailStr | None = None
+    address: str = Field(min_length=1, max_length=240)
+    bloodType: BloodType
     allergies: list[str]
-    insurance: str | None = None
-    chronicConditions: str | None = None
-    currentTreatments: str | None = None
-    emergencyContact: str | None = None
+    insurance: str | None = Field(default=None, max_length=120)
+    chronicConditions: str | None = Field(default=None, max_length=500)
+    currentTreatments: str | None = Field(default=None, max_length=500)
+    emergencyContact: str | None = Field(default=None, max_length=120)
+
+    @field_validator("firstName", "lastName")
+    @classmethod
+    def _validate_names(cls, value: str, info) -> str:
+        label = "Prénom" if info.field_name == "firstName" else "Nom"
+        return validate_patient_name(value, field=label)
+
+    @field_validator("dob")
+    @classmethod
+    def _validate_dob(cls, value: str) -> str:
+        return validate_patient_dob(value)
+
+    @field_validator("phone")
+    @classmethod
+    def _validate_phone(cls, value: str) -> str:
+        return validate_patient_phone(value)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalize_email(cls, value: str | None) -> str | None:
+        return normalize_optional_email(value if isinstance(value, str) else value)
+
+    @field_validator("bloodType")
+    @classmethod
+    def _validate_blood_type(cls, value: str) -> str:
+        return validate_blood_type(value)
 
 
 class PatientUpdate(BaseModel):
-    firstName: str | None = None
-    lastName: str | None = None
+    firstName: str | None = Field(default=None, min_length=1, max_length=80)
+    lastName: str | None = Field(default=None, min_length=1, max_length=80)
     dob: str | None = None
     gender: Literal["M", "F"] | None = None
     phone: str | None = None
-    email: str | None = None
-    address: str | None = None
-    bloodType: str | None = None
+    email: EmailStr | None = None
+    address: str | None = Field(default=None, min_length=1, max_length=240)
+    bloodType: BloodType | None = None
     allergies: list[str] | None = None
-    insurance: str | None = None
+    insurance: str | None = Field(default=None, max_length=120)
     status: Literal["active", "inactive", "admitted", "archived"] | None = None
-    chronicConditions: str | None = None
-    currentTreatments: str | None = None
-    emergencyContact: str | None = None
+    chronicConditions: str | None = Field(default=None, max_length=500)
+    currentTreatments: str | None = Field(default=None, max_length=500)
+    emergencyContact: str | None = Field(default=None, max_length=120)
+
+    @field_validator("firstName", "lastName")
+    @classmethod
+    def _validate_names(cls, value: str | None, info) -> str | None:
+        if value is None:
+            return None
+        label = "Prénom" if info.field_name == "firstName" else "Nom"
+        return validate_patient_name(value, field=label)
+
+    @field_validator("dob")
+    @classmethod
+    def _validate_dob(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return validate_patient_dob(value)
+
+    @field_validator("phone")
+    @classmethod
+    def _validate_phone(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return validate_patient_phone(value)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalize_email(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return normalize_optional_email(value if isinstance(value, str) else value)
+
+    @field_validator("bloodType")
+    @classmethod
+    def _validate_blood_type(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return validate_blood_type(value)
 
 
 class MedicalVisitCreate(BaseModel):

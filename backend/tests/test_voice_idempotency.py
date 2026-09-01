@@ -1,4 +1,5 @@
 from uuid import uuid4
+import random
 
 from app.application.schemas import PatientCreate
 from app.presentation.deps import patients_service, voice_tools
@@ -21,7 +22,7 @@ def test_duplicate_create_replays_same_appointment() -> None:
             lastName="Potent",
             dob="1979-09-09",
             gender="M",
-            phone=f"+2126003{uuid4().hex[:6]}",
+            phone=f"+2126003{random.randint(100000, 999999)}",
             email="idem@demo.sihia",
             address="5 Demo",
             bloodType="AB+",

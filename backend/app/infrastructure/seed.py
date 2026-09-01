@@ -18,16 +18,33 @@ _DEMO_ACCOUNTS = [
 ]
 
 
-def migrate_legacy_password_hashes() -> None:
-    """Re-hash les mots de passe legacy (non PBKDF2) sans toucher aux comptes démo."""
+def is_legacy_plaintext_password(stored: str) -> bool:
+    """Détecte un mot de passe stocké en clair (hors formats hash connus)."""
+    if not stored:
+        return False
+    if stored.startswith("pbkdf2_sha256$"):
+        return False
+    if stored.startswith(("$2a$", "$2b$", "$2y$", "$argon2")):
+        return False
+    # bcrypt/argon2 contiennent des $ internes — ne pas re-hasher
+    if stored.count("$") >= 2 and len(stored) > 40:
+        return False
+    return True
+
+
+def migrate_legacy_password_hashes() -> int:
+    """Re-hash les mots de passe legacy (plaintext) — script one-shot uniquement."""
     conn = connect()
+    migrated = 0
     rows = conn.execute("SELECT id, password FROM users").fetchall()
     for row in rows:
-        pwd = row["password"]
-        if not str(pwd).startswith("pbkdf2_sha256$"):
+        pwd = str(row["password"])
+        if is_legacy_plaintext_password(pwd):
             conn.execute("UPDATE users SET password=? WHERE id=?", (hash_password(pwd), row["id"]))
+            migrated += 1
     conn.commit()
     conn.close()
+    return migrated
 
 
 def seed_demo_data() -> None:
