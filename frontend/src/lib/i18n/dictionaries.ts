@@ -200,7 +200,8 @@ const fr: Dict = {
   "login.backendUnreachable": "Backend injoignable. Lancez uvicorn sur le port 8000.",
   "login.error": "Identifiants invalides",
   "login.marketing.title": "Pilotez les opérations hospitalières avec intelligence.",
-  "login.marketing.subtitle": "Anticipez l'affluence, accompagnez les équipes et unifiez les informations grâce à une plateforme HealthTech moderne.",
+  "login.marketing.subtitle":
+    "Anticipez l'affluence, accompagnez les équipes et unifiez les informations grâce à une plateforme HealthTech moderne.",
   "login.marketing.capability.rag": "Hybrid RAG",
   "login.marketing.capability.analytics": "Analytique prédictive",
   "login.marketing.capability.voice": "Voice AI",
@@ -738,7 +739,8 @@ const en: Dict = {
   "login.backendUnreachable": "Backend unreachable. Start uvicorn on port 8000.",
   "login.error": "Invalid credentials",
   "login.marketing.title": "Run hospital operations with intelligence.",
-  "login.marketing.subtitle": "Anticipate patient flow, support care teams and unify information through a modern HealthTech platform.",
+  "login.marketing.subtitle":
+    "Anticipate patient flow, support care teams and unify information through a modern HealthTech platform.",
   "login.marketing.capability.rag": "Hybrid RAG",
   "login.marketing.capability.analytics": "Predictive analytics",
   "login.marketing.capability.voice": "Voice AI",

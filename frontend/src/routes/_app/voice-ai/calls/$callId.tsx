@@ -84,7 +84,9 @@ function VoiceCallDetailPage() {
         <div className="space-y-2" data-testid="voice-transcript">
           {call.transcript.map((segment) => (
             <div key={segment.id} className="rounded-lg bg-muted/40 p-3">
-              <StatusBadge tone={speakerTone(segment.speaker)}>{segment.speaker.toUpperCase()}</StatusBadge>
+              <StatusBadge tone={speakerTone(segment.speaker)}>
+                {segment.speaker.toUpperCase()}
+              </StatusBadge>
               <p className="mt-2 text-sm">{segment.content}</p>
             </div>
           ))}
@@ -109,7 +111,7 @@ function VoiceCallDetailPage() {
                   <td className="py-2 font-mono text-xs">{tool.toolName}</td>
                   <td>
                     <StatusBadge tone={tool.success ? "success" : "destructive"}>
-                      {tool.success ? "ok" : tool.errorCode ?? "error"}
+                      {tool.success ? "ok" : (tool.errorCode ?? "error")}
                     </StatusBadge>
                   </td>
                   <td>{tool.durationMs} ms</td>

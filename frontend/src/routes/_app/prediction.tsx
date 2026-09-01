@@ -49,8 +49,7 @@ function PredictionPage() {
   });
   const alerts = useQuery({ queryKey: ["alerts"], queryFn: alertsService.list });
 
-  const forecastReady =
-    pred.data && hasMeaningfulForecast(pred.data.historyDays, pred.data.points);
+  const forecastReady = pred.data && hasMeaningfulForecast(pred.data.historyDays, pred.data.points);
 
   return (
     <div className="flex flex-col gap-6">
@@ -101,11 +100,7 @@ function PredictionPage() {
             />
             <KpiCard
               label={t("prediction.confidence")}
-              value={
-                forecastReady
-                  ? `${Math.round(pred.data.confidence * 100)}%`
-                  : ML_UNAVAILABLE
-              }
+              value={forecastReady ? `${Math.round(pred.data.confidence * 100)}%` : ML_UNAVAILABLE}
               variant={forecastReady ? "success" : "neutral"}
               progress={forecastReady ? pred.data.confidence * 100 : undefined}
             />
@@ -150,95 +145,95 @@ function PredictionPage() {
                 icon={<Activity className="size-5" />}
               />
             ) : (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart
-                  data={pred.data.points}
-                  margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="bandFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.18} />
-                      <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="var(--color-border)"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="date"
-                    stroke="var(--color-muted-foreground)"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => format(parseISO(v), "dd/MM")}
-                    interval={horizon === "30d" ? 4 : 0}
-                  />
-                  <YAxis
-                    stroke="var(--color-muted-foreground)"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--color-card)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Area type="monotone" dataKey="upper" stroke="none" fill="url(#bandFill)" />
-                  <Area type="monotone" dataKey="lower" stroke="none" fill="var(--color-card)" />
-                  <Line
-                    type="monotone"
-                    dataKey="actual"
-                    stroke="var(--color-muted-foreground)"
-                    strokeWidth={2.5}
-                    dot={{ r: 2 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="forecast"
-                    stroke="var(--color-primary)"
-                    strokeWidth={2.5}
-                    strokeDasharray="6 4"
-                    dot={{ r: 2 }}
-                  />
-                  <ReferenceLine
-                    x={
-                      pred.data.points.find(
-                        (p: { actual?: number; forecast?: number }) => p.actual && !p.forecast,
-                      )?.date
-                    }
-                    stroke="var(--color-border)"
-                    strokeDasharray="4 4"
-                    label={{
-                      value: t("common.today"),
-                      fontSize: 10,
-                      fill: "var(--color-muted-foreground)",
-                    }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={pred.data.points}
+                    margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="bandFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.18} />
+                        <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--color-border)"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke="var(--color-muted-foreground)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => format(parseISO(v), "dd/MM")}
+                      interval={horizon === "30d" ? 4 : 0}
+                    />
+                    <YAxis
+                      stroke="var(--color-muted-foreground)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "var(--color-card)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Area type="monotone" dataKey="upper" stroke="none" fill="url(#bandFill)" />
+                    <Area type="monotone" dataKey="lower" stroke="none" fill="var(--color-card)" />
+                    <Line
+                      type="monotone"
+                      dataKey="actual"
+                      stroke="var(--color-muted-foreground)"
+                      strokeWidth={2.5}
+                      dot={{ r: 2 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="forecast"
+                      stroke="var(--color-primary)"
+                      strokeWidth={2.5}
+                      strokeDasharray="6 4"
+                      dot={{ r: 2 }}
+                    />
+                    <ReferenceLine
+                      x={
+                        pred.data.points.find(
+                          (p: { actual?: number; forecast?: number }) => p.actual && !p.forecast,
+                        )?.date
+                      }
+                      stroke="var(--color-border)"
+                      strokeDasharray="4 4"
+                      label={{
+                        value: t("common.today"),
+                        fontSize: 10,
+                        fill: "var(--color-muted-foreground)",
+                      }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
 
           {forecastReady ? (
-          <div className="rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/5 to-card p-5 shadow-[var(--shadow-card)]">
-            <div className="flex items-start gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                <LineChart className="size-4" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold">{t("prediction.recommendation")}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{pred.data.recommendation}</p>
+            <div className="rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/5 to-card p-5 shadow-[var(--shadow-card)]">
+              <div className="flex items-start gap-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                  <LineChart className="size-4" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold">{t("prediction.recommendation")}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{pred.data.recommendation}</p>
+                </div>
               </div>
             </div>
-          </div>
           ) : null}
 
           <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">

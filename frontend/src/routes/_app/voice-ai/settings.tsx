@@ -49,17 +49,50 @@ function VoiceSettingsPage() {
         }
       />
       <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2">
-        <Toggle label="Agent enabled" checked={s.agentEnabled} onChange={(v) => toggle("agentEnabled", v)} disabled={!canUpdate} />
-        <Toggle label="Inbound calls" checked={s.inboundCallsEnabled} onChange={(v) => toggle("inboundCallsEnabled", v)} disabled={!canUpdate} />
-        <Toggle label="Outbound calls" checked={s.outboundCallsEnabled} onChange={(v) => toggle("outboundCallsEnabled", v)} disabled={!canUpdate} />
-        <Toggle label="Require confirmation" checked={s.requireConfirmation} onChange={(v) => toggle("requireConfirmation", v)} disabled={!canUpdate} />
-        <Toggle label="Store transcripts" checked={s.storeTranscripts} onChange={(v) => toggle("storeTranscripts", v)} disabled={!canUpdate} />
-        <Toggle label="Store audio" checked={s.storeAudio} onChange={(v) => toggle("storeAudio", v)} disabled={!canUpdate} />
+        <Toggle
+          label="Agent enabled"
+          checked={s.agentEnabled}
+          onChange={(v) => toggle("agentEnabled", v)}
+          disabled={!canUpdate}
+        />
+        <Toggle
+          label="Inbound calls"
+          checked={s.inboundCallsEnabled}
+          onChange={(v) => toggle("inboundCallsEnabled", v)}
+          disabled={!canUpdate}
+        />
+        <Toggle
+          label="Outbound calls"
+          checked={s.outboundCallsEnabled}
+          onChange={(v) => toggle("outboundCallsEnabled", v)}
+          disabled={!canUpdate}
+        />
+        <Toggle
+          label="Require confirmation"
+          checked={s.requireConfirmation}
+          onChange={(v) => toggle("requireConfirmation", v)}
+          disabled={!canUpdate}
+        />
+        <Toggle
+          label="Store transcripts"
+          checked={s.storeTranscripts}
+          onChange={(v) => toggle("storeTranscripts", v)}
+          disabled={!canUpdate}
+        />
+        <Toggle
+          label="Store audio"
+          checked={s.storeAudio}
+          onChange={(v) => toggle("storeAudio", v)}
+          disabled={!canUpdate}
+        />
         <Info label="Default language" value={s.defaultLanguage} />
         <Info label="Supported languages" value={s.supportedLanguages.join(", ")} />
         <Info label="Max retries" value={String(s.maxRetries)} />
         <Info label="Silence timeout" value={`${s.silenceTimeoutSeconds}s`} />
-        <Info label="Human transfer configured" value={s.humanTransferNumberConfigured ? "yes" : "no"} />
+        <Info
+          label="Human transfer configured"
+          value={s.humanTransferNumberConfigured ? "yes" : "no"}
+        />
         <Info label="Provider mode" value={s.providerMode} />
         <Info label="OpenAI model" value={s.openaiModel} />
       </div>
@@ -81,7 +114,12 @@ function Toggle({
   return (
     <label className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
       <span>{label}</span>
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
     </label>
   );
 }

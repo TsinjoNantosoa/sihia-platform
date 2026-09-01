@@ -337,14 +337,7 @@ export interface RbacUser {
 
 export type VoiceDirection = "inbound" | "outbound";
 export type VoiceCallStatus =
-  | "initiated"
-  | "ringing"
-  | "active"
-  | "completed"
-  | "failed"
-  | "no_answer"
-  | "busy"
-  | "cancelled";
+  "initiated" | "ringing" | "active" | "completed" | "failed" | "no_answer" | "busy" | "cancelled";
 export type VoiceSpeaker = "agent" | "patient" | "system";
 
 export interface VoiceCall {

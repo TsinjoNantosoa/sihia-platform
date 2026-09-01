@@ -299,7 +299,11 @@ const getMockData = async (endpoint: string, options: RequestInit = {}) => {
     return MOCK_VOICE_CALL_DETAIL;
   }
   if (endpoint.includes("/api/voice/calls")) {
-    return { items: MOCK_VOICE_CALLS, count: MOCK_VOICE_CALLS.length, demoNotice: MOCK_VOICE_STATS.demoNotice };
+    return {
+      items: MOCK_VOICE_CALLS,
+      count: MOCK_VOICE_CALLS.length,
+      demoNotice: MOCK_VOICE_STATS.demoNotice,
+    };
   }
 
   return [];
@@ -373,8 +377,18 @@ const MOCK_VOICE_CALL_DETAIL: VoiceCallDetail = {
   identityStatus: "verified",
   events: [
     { id: "e1", eventType: "call.started", timestamp: MOCK_VOICE_CALLS[0].startedAt, payload: {} },
-    { id: "e2", eventType: "patient.verified", timestamp: MOCK_VOICE_CALLS[0].startedAt, payload: {} },
-    { id: "e3", eventType: "appointment.confirmed", timestamp: MOCK_VOICE_CALLS[0].startedAt, payload: {} },
+    {
+      id: "e2",
+      eventType: "patient.verified",
+      timestamp: MOCK_VOICE_CALLS[0].startedAt,
+      payload: {},
+    },
+    {
+      id: "e3",
+      eventType: "appointment.confirmed",
+      timestamp: MOCK_VOICE_CALLS[0].startedAt,
+      payload: {},
+    },
     { id: "e4", eventType: "call.ended", timestamp: MOCK_VOICE_CALLS[0].startedAt, payload: {} },
   ],
   toolCalls: [

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import axios from "axios";
 
@@ -16,7 +16,7 @@ import MessageBubble from "./MessageBubble";
 import ChatHeader from "./ChatHeader";
 
 import { quickRepliesForLang } from "../lib/quickReplies";
-import QuickReplies from "./QuickReplies";
+import QuickReplies, { type Reply } from "./QuickReplies";
 
 import Rating from "./Rating";
 
@@ -48,7 +48,6 @@ type ChatSource = {
 };
 
 import type { ClientTheme } from "../types/client";
-import { resolveBotName } from "../lib/tenantBranding";
 import {
   clearChatHistory,
   createSessionId,
@@ -127,7 +126,7 @@ export default function ChatWidget({
 
   // Helper function to get initial greeting based on language
 
-  function authHeaders(): Record<string, string> {
+  const authHeaders = useCallback((): Record<string, string> => {
     const h: Record<string, string> = {};
 
     if (tenantId) h["X-Tenant-ID"] = tenantId;
@@ -139,17 +138,20 @@ export default function ChatWidget({
     }
 
     return h;
-  }
+  }, [tenantId, clientId, apiToken, jwtToken]);
 
-  const getInitialGreeting = (lang: "fr" | "en") => {
-    if (theme?.welcomeFr && lang === "fr") return theme.welcomeFr;
-    if (theme?.welcomeEn && lang === "en") return theme.welcomeEn;
+  const getInitialGreeting = useCallback(
+    (lang: "fr" | "en") => {
+      if (theme?.welcomeFr && lang === "fr") return theme.welcomeFr;
+      if (theme?.welcomeEn && lang === "en") return theme.welcomeEn;
 
-    if (lang === "en") {
-      return "<p>Hello, I'm the SIHIA Assistant. How can I help you?</p><p>I can guide you on appointments, hospital services and available information.</p>";
-    }
-    return "<p>Bonjour, je suis l'Assistant SIHIA. Comment puis-je vous aider ?</p><p>Je peux vous orienter sur les rendez-vous, les services hospitaliers et les informations disponibles.</p>";
-  };
+      if (lang === "en") {
+        return "<p>Hello, I'm the SIHIA Assistant. How can I help you?</p><p>I can guide you on appointments, hospital services and available information.</p>";
+      }
+      return "<p>Bonjour, je suis l'Assistant SIHIA. Comment puis-je vous aider ?</p><p>Je peux vous orienter sur les rendez-vous, les services hospitaliers et les informations disponibles.</p>";
+    },
+    [theme?.welcomeFr, theme?.welcomeEn],
+  );
 
   function shouldShowQuickReplies(initialMessages: Message[]): boolean {
     if (initialMessages.length === 0) return true;
@@ -163,7 +165,7 @@ export default function ChatWidget({
     return !hasUserMessages && !hasBotReplyBeyondGreeting;
   }
 
-  function resetFrontendSession(): string {
+  const resetFrontendSession = useCallback((): string => {
     const nextSessionId = createSessionId();
 
     const now = Date.now();
@@ -193,9 +195,9 @@ export default function ChatWidget({
     setSessionId(nextSessionId);
 
     return nextSessionId;
-  }
+  }, [clientId, getInitialGreeting]);
 
-  function resolveActiveSessionId(): string {
+  const resolveActiveSessionId = useCallback((): string => {
     if (typeof window === "undefined") return sessionId;
 
     const maxAge = sessionMaxAgeMs();
@@ -217,7 +219,29 @@ export default function ChatWidget({
     }
 
     return sessionId;
-  }
+  }, [sessionId, clientId, resetFrontendSession]);
+
+  const clearConversation = useCallback(() => {
+    const initMsg: Message = {
+      id: "b-init",
+
+      role: "bot",
+
+      html: sanitizeBot(getInitialGreeting(language)),
+    };
+
+    setMessages([initMsg]);
+
+    setQuickRepliesVisible(true);
+
+    setDynamicSuggestions([]);
+
+    setShowSuggestions(false);
+
+    setLanguageSwitchNotice(null);
+
+    clearChatHistory(clientId);
+  }, [clientId, language, getInitialGreeting]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -271,7 +295,7 @@ export default function ChatWidget({
 
         setQuickRepliesVisible(true);
       });
-  }, [apiBaseUrl, sessionId, clientId, tenantId]);
+  }, [apiBaseUrl, sessionId, clientId, tenantId, messages, authHeaders, getInitialGreeting]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -313,7 +337,7 @@ export default function ChatWidget({
 
       window.removeEventListener("focus", checkExpiration);
     };
-  }, [sessionId, clientId]);
+  }, [sessionId, clientId, resolveActiveSessionId]);
 
   // Handle header menu actions dispatched from ChatHeader
 
@@ -329,7 +353,7 @@ export default function ChatWidget({
     window.addEventListener("chat-header-action", onHeaderAction as EventListener);
 
     return () => window.removeEventListener("chat-header-action", onHeaderAction as EventListener);
-  }, []);
+  }, [clearConversation]);
 
   // Scroll to bottom when messages update OR when widget opens
 
@@ -516,30 +540,6 @@ export default function ChatWidget({
     }
   }
 
-  // Clear conversation: reset to initial greeting
-
-  function clearConversation() {
-    const initMsg: Message = {
-      id: "b-init",
-
-      role: "bot",
-
-      html: sanitizeBot(getInitialGreeting(language)),
-    };
-
-    setMessages([initMsg]);
-
-    setQuickRepliesVisible(true);
-
-    setDynamicSuggestions([]);
-
-    setShowSuggestions(false);
-
-    setLanguageSwitchNotice(null);
-
-    clearChatHistory(clientId);
-  }
-
   useEffect(() => {
     setMessages((prev) => {
       if (prev.length === 0) return prev;
@@ -554,7 +554,7 @@ export default function ChatWidget({
         };
       });
     });
-  }, [language]);
+  }, [language, getInitialGreeting]);
 
   // (Export and logs functions removed — header only dispatches 'clear')
 
@@ -717,9 +717,7 @@ export default function ChatWidget({
                 return nodes;
               })()}
 
-              {isTyping && (
-                <TypingIndicator language={language} />
-              )}
+              {isTyping && <TypingIndicator language={language} />}
 
               {languageSwitchNotice && (
                 <div className="language-switch-notice">{languageSwitchNotice}</div>

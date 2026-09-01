@@ -218,10 +218,10 @@ function PatientsListPage() {
                 className="w-full bg-transparent text-sm focus:outline-none"
               >
                 <option value="all">{t("patients.filter.all")}</option>
-              <option value="active">{t("patients.status.active")}</option>
-              <option value="admitted">{t("patients.status.admitted")}</option>
-              <option value="inactive">{t("patients.status.inactive")}</option>
-            </select>
+                <option value="active">{t("patients.status.active")}</option>
+                <option value="admitted">{t("patients.status.admitted")}</option>
+                <option value="inactive">{t("patients.status.inactive")}</option>
+              </select>
             </div>
           </div>
         </div>
@@ -273,7 +273,10 @@ function PatientsListPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {pageData.map((p: Patient) => (
-                    <tr key={p.id} className="transition-colors hover:bg-muted/40 focus-within:bg-muted/30">
+                    <tr
+                      key={p.id}
+                      className="transition-colors hover:bg-muted/40 focus-within:bg-muted/30"
+                    >
                       {table.isVisible("id") ? (
                         <td className={`${rowClassName} font-mono text-xs text-muted-foreground`}>
                           {p.recordNumber}
