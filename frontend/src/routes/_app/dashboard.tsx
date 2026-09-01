@@ -123,20 +123,6 @@ function DashboardPage() {
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
             {t("dash.emptyActivityDesc")}
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link
-              to="/patients"
-              className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
-            >
-              {t("dash.qa.newPatient")}
-            </Link>
-            <Link
-              to="/appointments"
-              className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
-            >
-              {t("dash.qa.newAppointment")}
-            </Link>
-          </div>
         </div>
       ) : null}
 

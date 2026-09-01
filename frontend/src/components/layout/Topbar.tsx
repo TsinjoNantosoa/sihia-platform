@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { GlobalSearch, useGlobalSearchHotkey } from "@/components/shared/GlobalSearch";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { useSearchShortcutLabel } from "@/hooks/use-search-shortcut-label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,7 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+  const searchShortcut = useSearchShortcutLabel();
   useGlobalSearchHotkey(() => setSearchOpen(true));
 
   const handleLogout = async () => {
@@ -57,10 +59,10 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
           type="button"
           data-onboarding="search"
           onClick={() => setSearchOpen(true)}
-          className="flex size-10 min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 min-[480px]:h-9 min-[480px]:w-full min-[480px]:max-w-sm min-[480px]:justify-start min-[480px]:px-3"
+          className="group flex size-10 min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-left transition-colors hover:border-border hover:bg-muted/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 min-[480px]:h-9 min-[480px]:w-full min-[480px]:max-w-sm min-[480px]:justify-start min-[480px]:px-3"
           aria-label={t("search.aria")}
         >
-          <Search className="size-4 text-muted-foreground" aria-hidden />
+          <Search className="size-4 text-muted-foreground transition-colors group-hover:text-foreground group-focus-visible:text-foreground" aria-hidden />
           <span className="hidden min-w-0 flex-1 truncate text-sm text-muted-foreground min-[480px]:block">
             {t("common.searchPlaceholder")}
           </span>
@@ -68,7 +70,7 @@ export function Topbar({ onMenu, menuOpen = false }: { onMenu?: () => void; menu
             aria-hidden
             className="hidden shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground lg:block"
           >
-            ⌘K
+            {searchShortcut}
           </kbd>
         </button>
       </div>

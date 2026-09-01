@@ -22,9 +22,15 @@ type MlForecastMetaProps = {
     | "horizon"
   >;
   compact?: boolean;
+  /** When false, confidence is shown as unavailable (—). */
+  forecastAvailable?: boolean;
 };
 
-export function MlForecastMeta({ data, compact = false }: MlForecastMetaProps) {
+export function MlForecastMeta({
+  data,
+  compact = false,
+  forecastAvailable = true,
+}: MlForecastMetaProps) {
   const t = useT();
   const locale = useI18n((s) => s.locale);
 
@@ -36,11 +42,13 @@ export function MlForecastMeta({ data, compact = false }: MlForecastMetaProps) {
   });
 
   const confidenceTone =
-    data.confidence >= 0.85
-      ? "text-success"
-      : data.confidence >= 0.7
-        ? "text-foreground"
-        : "text-warning";
+    !forecastAvailable || data.confidence <= 0
+      ? "text-muted-foreground"
+      : data.confidence >= 0.85
+        ? "text-success"
+        : data.confidence >= 0.7
+          ? "text-foreground"
+          : "text-warning";
 
   if (compact) {
     return (
@@ -53,8 +61,8 @@ export function MlForecastMeta({ data, compact = false }: MlForecastMetaProps) {
         />
         <MetaItem
           label={t("ml.meta.confidence")}
-          value={formatMlConfidence(data.confidence)}
-          hint={formatMlConfidenceLevel(data.confidence, t)}
+          value={formatMlConfidence(data.confidence, forecastAvailable)}
+          hint={formatMlConfidenceLevel(data.confidence, t, forecastAvailable)}
           valueClassName={confidenceTone}
           icon={<Info className="size-3.5" aria-hidden />}
         />
@@ -89,9 +97,11 @@ export function MlForecastMeta({ data, compact = false }: MlForecastMetaProps) {
       <div>
         <div className="mb-1 uppercase tracking-wide">{t("ml.meta.confidence")}</div>
         <div className={`text-lg font-semibold ${confidenceTone}`}>
-          {formatMlConfidence(data.confidence)}
+          {formatMlConfidence(data.confidence, forecastAvailable)}
         </div>
-        <div className="mt-0.5 text-[10px]">{formatMlConfidenceLevel(data.confidence, t)}</div>
+        <div className="mt-0.5 text-[10px]">
+          {formatMlConfidenceLevel(data.confidence, t, forecastAvailable)}
+        </div>
       </div>
       <div>
         <div className="mb-1 flex items-center gap-1 uppercase tracking-wide">

@@ -171,11 +171,10 @@ function LoginPage() {
           aria-hidden
         />
         <div className="relative flex h-full flex-col justify-between gap-10 p-12">
-          <SihiaLogo
-            variant="full"
-            decorative
-            className="max-h-16 w-auto max-w-[280px] opacity-95"
-          />
+          <div className="flex items-center gap-2.5">
+            <SihiaLogo variant="icon" decorative className="size-10 shrink-0 opacity-95" />
+            <span className="text-xl font-semibold tracking-tight text-white">SIHIA</span>
+          </div>
 
           <div className="space-y-6 text-white">
             <h2 className="max-w-lg text-3xl font-semibold leading-tight tracking-tight">

@@ -8,7 +8,8 @@ type Props = {
   open: boolean;
   onToggle: () => void;
   language: "fr" | "en";
-  onLanguageChange: (lang: "fr" | "en") => void;
+  onLanguageChange?: (lang: "fr" | "en") => void;
+  showLanguageToggle?: boolean;
   clientId: string;
   theme?: ClientTheme;
 };
@@ -18,6 +19,7 @@ export default function ChatHeader({
   onToggle,
   language,
   onLanguageChange,
+  showLanguageToggle = false,
   clientId,
   theme,
 }: Props) {
@@ -66,16 +68,18 @@ export default function ChatHeader({
         </div>
       </div>
       <div className="chat-header-right">
-        <button
-          className="chat-header-btn"
-          aria-label="Change language"
-          onClick={() => onLanguageChange(language === "fr" ? "en" : "fr")}
-        >
-          {language.toUpperCase()}
-          <span className="chat-tooltip" role="tooltip">
-            {language === "fr" ? "Passer en anglais" : "Switch to French"}
-          </span>
-        </button>
+        {showLanguageToggle && onLanguageChange ? (
+          <button
+            className="chat-header-btn"
+            aria-label="Change language"
+            onClick={() => onLanguageChange(language === "fr" ? "en" : "fr")}
+          >
+            {language.toUpperCase()}
+            <span className="chat-tooltip" role="tooltip">
+              {language === "fr" ? "Passer en anglais" : "Switch to French"}
+            </span>
+          </button>
+        ) : null}
 
         <button
           className="chat-header-btn chat-header-btn-icon"

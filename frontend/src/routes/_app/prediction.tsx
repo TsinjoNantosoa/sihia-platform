@@ -14,14 +14,15 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { DisclaimerNote } from "@/components/shared/DisclaimerNote";
-import { RefreshCw, TrendingUp, AlertCircle, Info, LineChart } from "lucide-react";
+import { RefreshCw, TrendingUp, AlertCircle, Info, LineChart, Activity } from "lucide-react";
 import { useT } from "@/lib/i18n/store";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
-import { LoadingState } from "@/components/shared/States";
+import { EmptyState, LoadingState } from "@/components/shared/States";
 import { MlForecastMeta } from "@/components/shared/MlForecastMeta";
 import { MlMetricsPanel } from "@/components/shared/MlMetricsPanel";
-import { formatMlModelLabel } from "@/lib/ml/format";
+import { formatMlModelLabel, ML_UNAVAILABLE } from "@/lib/ml/format";
+import { hasMeaningfulForecast } from "@/lib/dashboard/kpiHelpers";
 import { requireRoutePermission } from "@/lib/auth/routeGuard";
 import { mlService, alertsService } from "@/lib/api/services";
 import { NoShowRiskPanel } from "@/components/shared/NoShowRiskPanel";
@@ -47,6 +48,9 @@ function PredictionPage() {
     queryFn: mlService.metrics,
   });
   const alerts = useQuery({ queryKey: ["alerts"], queryFn: alertsService.list });
+
+  const forecastReady =
+    pred.data && hasMeaningfulForecast(pred.data.historyDays, pred.data.points);
 
   return (
     <div className="flex flex-col gap-6">
@@ -97,15 +101,19 @@ function PredictionPage() {
             />
             <KpiCard
               label={t("prediction.confidence")}
-              value={`${Math.round(pred.data.confidence * 100)}%`}
-              variant="success"
-              progress={pred.data.confidence * 100}
+              value={
+                forecastReady
+                  ? `${Math.round(pred.data.confidence * 100)}%`
+                  : ML_UNAVAILABLE
+              }
+              variant={forecastReady ? "success" : "neutral"}
+              progress={forecastReady ? pred.data.confidence * 100 : undefined}
             />
             <KpiCard
               label={t("prediction.peak")}
-              value={pred.data.peak.value}
-              unit={`(${pred.data.peak.date.slice(5)})`}
-              variant="warning"
+              value={forecastReady ? pred.data.peak.value : ML_UNAVAILABLE}
+              unit={forecastReady ? `(${pred.data.peak.date.slice(5)})` : undefined}
+              variant={forecastReady ? "warning" : "neutral"}
               icon={<TrendingUp className="size-4" />}
             />
             <KpiCard
@@ -115,7 +123,7 @@ function PredictionPage() {
             />
           </div>
 
-          <MlForecastMeta data={pred.data} />
+          <MlForecastMeta data={pred.data} forecastAvailable={!!forecastReady} />
           {metrics.data ? (
             <MlMetricsPanel data={metrics.data} />
           ) : metrics.isLoading ? (
@@ -135,6 +143,13 @@ function PredictionPage() {
             <h2 className="mb-3 text-sm font-semibold">
               {t("dash.predictionTitle")} — {horizon === "7d" ? "7 jours" : "30 jours"}
             </h2>
+            {!forecastReady ? (
+              <EmptyState
+                title={t("dash.predictionUnavailable")}
+                description={`${t("dash.predictionUnavailableDesc")} ${t("dash.predictionUnavailableHint")}`}
+                icon={<Activity className="size-5" />}
+              />
+            ) : (
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
@@ -209,8 +224,10 @@ function PredictionPage() {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
+            )}
           </div>
 
+          {forecastReady ? (
           <div className="rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/5 to-card p-5 shadow-[var(--shadow-card)]">
             <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
@@ -222,6 +239,7 @@ function PredictionPage() {
               </div>
             </div>
           </div>
+          ) : null}
 
           <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
             <div className="flex items-center justify-between border-b border-border p-5">

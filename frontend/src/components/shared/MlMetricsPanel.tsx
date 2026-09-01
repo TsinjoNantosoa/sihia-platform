@@ -1,7 +1,7 @@
 import { Gauge, Target, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { MlMetricsResponse } from "@/lib/api/types";
 import { useT } from "@/lib/i18n/store";
-import { formatMlModelLabel } from "@/lib/ml/format";
+import { formatMlModelLabel, hasMeaningfulMetrics } from "@/lib/ml/format";
 
 type MlMetricsPanelProps = {
   data: MlMetricsResponse;
@@ -35,7 +35,7 @@ export function MlMetricsPanel({ data }: MlMetricsPanelProps) {
         </div>
       </div>
 
-      {data.status === "insufficient_data" || data.mae === null || data.mape === null ? (
+      {hasMeaningfulMetrics(data) ? (
         <p className="text-sm text-muted-foreground">{t("ml.metrics.insufficient")}</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

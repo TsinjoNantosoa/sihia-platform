@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 
 import axios from "axios";
 
+import { useI18n } from "@/lib/i18n/store";
+
 import { sanitizeBot, sanitizeUser } from "../lib/sanitize";
 import { fetchBotSpeech, playBotSpeechBlob, stopBotSpeech } from "../lib/voiceSpeech";
 
@@ -92,11 +94,18 @@ export default function ChatWidget({
 
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  // Language state
+  const appLocale = useI18n((s) => s.locale);
+  const appChatLanguage: "fr" | "en" = appLocale === "en" ? "en" : "fr";
 
-  const [language, setLanguage] = useState<"fr" | "en">("fr");
+  // Language state (synced with app i18n)
 
-  const languageRef = useRef<"fr" | "en">(language);
+  const [language, setLanguage] = useState<"fr" | "en">(appChatLanguage);
+
+  const languageRef = useRef<"fr" | "en">(appChatLanguage);
+
+  useEffect(() => {
+    setLanguage(appChatLanguage);
+  }, [appChatLanguage]);
 
   useEffect(() => {
     languageRef.current = language;
@@ -531,18 +540,6 @@ export default function ChatWidget({
     clearChatHistory(clientId);
   }
 
-  function handleLanguageChange(nextLang: "fr" | "en") {
-    if (nextLang === language) return;
-
-    setLanguage(nextLang);
-
-    setLanguageSwitchNotice(
-      nextLang === "en"
-        ? "--- You are now switched to English ---"
-        : "--- Vous êtes maintenant passé en français ---",
-    );
-  }
-
   useEffect(() => {
     setMessages((prev) => {
       if (prev.length === 0) return prev;
@@ -663,11 +660,11 @@ export default function ChatWidget({
 
             language={language}
 
-            onLanguageChange={handleLanguageChange}
-
             clientId={clientId}
 
             theme={theme}
+
+            showLanguageToggle={false}
           />
 
           <div className="chat-body">
@@ -721,7 +718,7 @@ export default function ChatWidget({
               })()}
 
               {isTyping && (
-                <TypingIndicator language={language} clientId={clientId} botName={theme?.botName} />
+                <TypingIndicator language={language} />
               )}
 
               {languageSwitchNotice && (

@@ -65,12 +65,17 @@
   background: #fff;
   display: flex;
   flex-direction: column;
-  height: min(640px, calc(100vh - 48px));
-  max-height: calc(100vh - 48px);
   position: fixed;
   right: 20px;
   bottom: 20px;
-  z-index: 40;
+  z-index: 15;
+}
+
+.chat-widget:not(.closed) {
+  top: calc(3.5rem + 12px);
+  bottom: 20px;
+  height: auto;
+  max-height: none;
 }
 
 /* animate open/close by transitioning height */
@@ -1006,35 +1011,34 @@
 
 /* ====== TYPING INDICATOR ====== */
 .typing-row {
-  opacity: 0.85;
+  opacity: 0.55;
 }
 .typing-indicator {
-  max-width: 75%;
-  padding: 14px 18px;
-  border-radius: 18px;
-  font-size: 14px;
-  background: #fff;
-  border: 1.5px solid #e8effe;
+  max-width: 56px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   border-bottom-left-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.04);
+  justify-content: center;
+  box-shadow: none;
 }
 .typing-text {
-  color: #64748b;
-  font-style: italic;
+  display: none;
 }
 .typing-dots {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
 }
 .typing-dots .dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--brand-blue);
+  background: #94a3b8;
   display: inline-block;
 }
 
@@ -1693,9 +1697,49 @@
   background: hsl(217 33% 20%);
 }
 
+.dark .typing-indicator {
+  background: hsl(217 33% 17%);
+  border-color: hsl(217 33% 22%);
+}
+
+.dark .typing-dots .dot {
+  background: #64748b;
+}
+
+.dark .quick-replies.cards {
+  background: hsl(222 47% 11%);
+  border-top-color: hsl(217 33% 17%);
+}
+
+.dark .quick-replies.cards .quick-reply-btn.card {
+  background: hsl(217 33% 17%);
+  border-color: hsl(217 33% 22%);
+  box-shadow: none;
+}
+
+.dark .quick-replies.cards .qr-icon {
+  background: hsl(217 33% 20%);
+}
+
+.dark .quick-replies.cards .qr-label {
+  color: #e2e8f0;
+}
+
+.dark .suggestions-section {
+  background: hsl(222 47% 11%);
+  border-top-color: hsl(217 33% 17%);
+}
+
+.dark .language-switch-notice {
+  background: hsl(217 33% 17%);
+  border-color: hsl(217 33% 22%);
+  color: #94a3b8;
+}
+
 @media (min-width: 1280px) {
   .chat-widget:not(.closed) {
     right: 24px;
+    top: calc(3.5rem + 16px);
     bottom: 24px;
     width: min(380px, calc(100vw - 48px));
   }
