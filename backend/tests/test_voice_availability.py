@@ -35,7 +35,7 @@ def test_booked_slot_is_excluded_then_freed_after_cancel() -> None:
     assert voice_availability.is_slot_free("d-1", iso, 30)
     created = appointments_service.create(
         AppointmentCreate(
-            patientId="p-voice-av",
+            patientId="p-test",
             patientName="Voice Av",
             doctorId="d-1",
             doctorName="Dr. Amina Diallo",

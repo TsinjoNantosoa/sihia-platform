@@ -44,7 +44,7 @@ def test_rbac_crud_emits_audit_logs(caplog) -> None:
         json={
             "name": "Audit User",
             "email": "audit.user@sihia.health",
-            "password": "auditpass1",
+            "password": "auditpass12",
             "role": "staff",
         },
     )

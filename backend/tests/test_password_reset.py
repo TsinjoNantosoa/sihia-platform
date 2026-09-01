@@ -28,6 +28,12 @@ def _last_code() -> str:
     return notification_channels.password_reset_outbox[-1]["code"]
 
 
+def _admin_headers() -> dict[str, str]:
+    res = client.post("/api/auth/login", json={"email": "admin@sihia.health", "password": "admin123"})
+    assert res.status_code == 200
+    return {"Authorization": f"Bearer {res.json()['access_token']}"}
+
+
 def test_forgot_password_anti_enumeration():
     known = client.post("/api/auth/forgot-password", json={"email": "admin@sihia.health"})
     assert known.status_code == 200
@@ -41,7 +47,21 @@ def test_forgot_password_anti_enumeration():
 
 
 def test_verify_and_reset_password_flow():
-    email = "admin@sihia.health"
+    headers = _admin_headers()
+    created = client.post(
+        "/api/rbac/users",
+        headers=headers,
+        json={
+            "name": "Reset Flow",
+            "email": "reset.flow@sihia.health",
+            "password": "resetflow12",
+            "role": "staff",
+        },
+    )
+    assert created.status_code == 201
+    user_id = created.json()["id"]
+    email = "reset.flow@sihia.health"
+
     notification_channels.password_reset_outbox.clear()
     client.post("/api/auth/forgot-password", json={"email": email})
     code = _last_code()
@@ -69,11 +89,4 @@ def test_verify_and_reset_password_flow():
     assert login.status_code == 200
     assert login.json().get("access_token")
 
-    # Restore demo password for other tests
-    notification_channels.password_reset_outbox.clear()
-    client.post("/api/auth/forgot-password", json={"email": email})
-    code2 = _last_code()
-    client.post(
-        "/api/auth/reset-password",
-        json={"email": email, "code": code2, "newPassword": "admin123"},
-    )
+    client.delete(f"/api/rbac/users/{user_id}", headers=headers)

@@ -112,6 +112,9 @@ class Settings(BaseModel):
         ],
     )
     environment: str = "development"
+    seed_demo_data: bool = False
+    patient_ai_external_llm_enabled: bool = False
+    redis_url: str = ""
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -204,6 +207,9 @@ class Settings(BaseModel):
             elevenlabs_tool_secret=os.getenv("ELEVENLABS_TOOL_SECRET", "").strip(),
             cors_origins=origins or ["http://localhost:5174"],
             environment=os.getenv("ENVIRONMENT", "development"),
+            seed_demo_data=_env_bool("SEED_DEMO_DATA", False),
+            patient_ai_external_llm_enabled=_env_bool("PATIENT_AI_EXTERNAL_LLM_ENABLED", False),
+            redis_url=os.getenv("REDIS_URL", "").strip(),
         )
 
     @property
@@ -215,3 +221,6 @@ settings = Settings.from_env()
 
 if settings.is_production and settings.jwt_secret.startswith("change-me"):
     raise RuntimeError("JWT_SECRET doit être défini en production.")
+
+if settings.is_production and settings.seed_demo_data:
+    raise RuntimeError("SEED_DEMO_DATA=true est interdit en production.")

@@ -3,7 +3,7 @@ from typing import Literal
 
 
 Role = Literal["admin", "doctor", "staff", "manager"]
-PatientStatus = Literal["active", "inactive", "admitted"]
+PatientStatus = Literal["active", "inactive", "admitted", "archived"]
 AppointmentStatus = Literal["scheduled", "confirmed", "arrived", "completed", "cancelled", "noshow"]
 ReminderChannel = Literal["email", "sms"]
 ReminderKind = Literal["manual", "auto"]

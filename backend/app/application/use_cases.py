@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 
 from app.application.schemas import AppointmentCreate, DoctorUpdate, MedicalVisitCreate, PatientCreate, PatientUpdate
 from app.core.config import settings
+from app.core.password_policy import validate_password
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -151,6 +152,10 @@ class AuthService:
         if user is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable")
 
+        if getattr(user, "status", "active") == "suspended":
+            self.refresh_sessions.revoke(session_id)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte suspendu")
+
         self.refresh_sessions.revoke(session_id)
 
         new_session_id = f"rs-{uuid4().hex}"
@@ -229,6 +234,7 @@ class AuthService:
         self._get_valid_reset(email, code)
 
     def reset_password(self, email: str, code: str, new_password: str) -> None:
+        validate_password(new_password)
         user, reset = self._get_valid_reset(email, code)
         user.password = hash_password(new_password)
         self.users.update(user)
@@ -250,7 +256,6 @@ class PatientsService:
         return patient
 
     def create(self, data: PatientCreate) -> Patient:
-        now = datetime.utcnow().strftime("%Y-%m-%d")
         patient = Patient(
             id=f"p-{uuid4().hex[:10]}",
             record_number=f"PT-{uuid4().hex[:6].upper()}",
@@ -265,7 +270,7 @@ class PatientsService:
             allergies=data.allergies,
             insurance=data.insurance,
             status="active",
-            last_visit=now,
+            last_visit=None,
             chronic_conditions=data.chronicConditions,
             current_treatments=data.currentTreatments,
             emergency_contact=data.emergencyContact,
@@ -310,7 +315,9 @@ class PatientsService:
         return self.patients.update(patient)
 
     def delete(self, patient_id: str) -> None:
-        self.patients.delete(patient_id)
+        patient = self.get(patient_id)
+        patient.status = "archived"
+        self.patients.update(patient)
 
 
 def _parse_appointment_dt(value: str) -> datetime:
@@ -361,13 +368,19 @@ class DoctorsService:
 
 
 class MedicalHistoryService:
-    def __init__(self, repo) -> None:
+    def __init__(self, repo, patients: PatientRepository) -> None:
         self.repo = repo
+        self.patients = patients
 
     def list(self, patient_id: str) -> list[MedicalVisit]:
+        if self.patients.get(patient_id) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
         return self.repo.get_for_patient(patient_id)
 
     def add(self, patient_id: str, data: MedicalVisitCreate) -> MedicalVisit:
+        patient = self.patients.get(patient_id)
+        if patient is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
         visit = MedicalVisit(
             id=f"{patient_id}-v{uuid4().hex[:8]}",
             patient_id=patient_id,
@@ -379,17 +392,37 @@ class MedicalHistoryService:
             treatment=data.treatment,
             notes=data.notes,
         )
-        return self.repo.add_visit(visit)
+        created = self.repo.add_visit(visit)
+        patient.last_visit = data.date
+        self.patients.update(patient)
+        return created
 
 
 class AppointmentsService:
-    def __init__(self, appointments: AppointmentRepository) -> None:
+    def __init__(
+        self,
+        appointments: AppointmentRepository,
+        patients: PatientRepository,
+        doctors: DoctorRepository,
+    ) -> None:
         self.appointments = appointments
+        self.patients = patients
+        self.doctors = doctors
 
     def list(self):
         return self.appointments.list()
 
     def create(self, data: AppointmentCreate) -> Appointment:
+        patient = self.patients.get(data.patientId)
+        if patient is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
+        doctor = self.doctors.get(data.doctorId)
+        if doctor is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+
+        patient_name = f"{patient.first_name} {patient.last_name}".strip()
+        doctor_name = f"Dr {doctor.first_name} {doctor.last_name}".strip()
+
         new_start = _parse_appointment_dt(data.date)
         for appt in self.appointments.list():
             if appt.doctor_id != data.doctorId or appt.status == "cancelled":
@@ -400,13 +433,13 @@ class AppointmentsService:
         appointment = Appointment(
             id=f"a-{uuid4().hex[:10]}",
             patient_id=data.patientId,
-            patient_name=data.patientName,
+            patient_name=patient_name,
             doctor_id=data.doctorId,
-            doctor_name=data.doctorName,
+            doctor_name=doctor_name,
             date=data.date,
             duration_min=data.durationMin,
             reason=data.reason,
-            status=data.status,
+            status="scheduled",
         )
         return self.appointments.create(appointment)
 

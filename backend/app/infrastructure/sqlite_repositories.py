@@ -266,30 +266,7 @@ class SQLiteDoctorRepository:
 
 
 class SQLiteMedicalHistoryRepository:
-    _SEED = [
-        ("2026-03-12", "Bilan annuel de routine", "Dr. Mansouri", "Médecine générale", "Bilan normal, légère hypertension artérielle de stade I", "Régime hyposodé, activité physique 30 min/j", "Contrôle TA dans 3 mois"),
-        ("2025-11-04", "Consultation ORL", "Dr. Cherkaoui", "ORL", "Otite moyenne aiguë droite", "Amoxicilline 1g x2/j - 7 jours + analgésiques", None),
-        ("2025-08-21", "Vaccination grippe saisonnière", "Dr. Benali", "Médecine préventive", "Patient en bonne santé, vaccin administré", None, "Rappel vaccin tétanos à prévoir dans 2 ans"),
-        ("2025-04-15", "Douleurs thoraciques atypiques", "Dr. Diallo", "Cardiologie", "Douleur musculo-squelettique, ECG normal", "AINS sur 5 jours, repos", "Echo cardiaque non nécessaire"),
-    ]
-
-    def _seed_if_empty(self, patient_id: str) -> None:
-        conn = connect()
-        c = conn.execute("SELECT COUNT(*) AS c FROM medical_visits WHERE patient_id=?", (patient_id,)).fetchone()["c"]
-        if c == 0:
-            for i, v in enumerate(self._SEED, start=1):
-                conn.execute(
-                    """
-                    INSERT INTO medical_visits (id,patient_id,date,reason,doctor_name,specialty,diagnosis,treatment,notes)
-                    VALUES (?,?,?,?,?,?,?,?,?)
-                    """,
-                    (f"{patient_id}-v{i}", patient_id, *v),
-                )
-            conn.commit()
-        conn.close()
-
     def get_for_patient(self, patient_id: str) -> list[MedicalVisit]:
-        self._seed_if_empty(patient_id)
         conn = connect()
         rows = conn.execute("SELECT * FROM medical_visits WHERE patient_id=? ORDER BY date DESC", (patient_id,)).fetchall()
         conn.close()

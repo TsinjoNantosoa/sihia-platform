@@ -25,7 +25,7 @@ def test_admin_crud_user_lifecycle() -> None:
         json={
             "name": "Test RBAC",
             "email": "test.rbac@sihia.health",
-            "password": "testpass1",
+            "password": "testpass12",
             "role": "staff",
         },
     )
@@ -59,7 +59,7 @@ def test_staff_cannot_create_user() -> None:
         json={
             "name": "Hack",
             "email": "hack@sihia.health",
-            "password": "hackpass",
+            "password": "hackpass12",
             "role": "admin",
         },
     )
@@ -84,7 +84,7 @@ def test_suspended_user_cannot_login() -> None:
         json={
             "name": "Suspended User",
             "email": "suspended@sihia.health",
-            "password": "suspend1",
+            "password": "suspend1234",
             "role": "staff",
         },
     )
@@ -100,7 +100,7 @@ def test_suspended_user_cannot_login() -> None:
 
     login = client.post(
         "/api/auth/login",
-        json={"email": "suspended@sihia.health", "password": "suspend1"},
+        json={"email": "suspended@sihia.health", "password": "suspend1234"},
     )
     assert login.status_code == 403
 

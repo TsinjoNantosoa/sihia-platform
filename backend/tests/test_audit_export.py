@@ -42,7 +42,7 @@ def test_audit_export_jsonl_after_rbac_crud(tmp_path: Path, monkeypatch) -> None
         json={
             "name": "Export Audit",
             "email": "export.audit@sihia.health",
-            "password": "exportpass1",
+            "password": "exportpass12",
             "role": "staff",
         },
     )

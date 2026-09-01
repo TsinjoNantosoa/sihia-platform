@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from app.main import app
+from tests.helpers_patients import appointment_payload, unique_future_iso
 
 client = TestClient(app)
 
@@ -44,27 +45,18 @@ def _create_future_appointment(headers: dict[str, str], patient_id: str, *, with
             datetime.now(timezone.utc) + timedelta(hours=within_hours, minutes=int(uuid4().hex[:2], 16) % 50)
         ).replace(microsecond=0)
     else:
-        when = datetime(
-            2099,
-            1,
-            1,
-            8 + int(uuid4().hex[:2], 16) % 10,
-            int(uuid4().hex[2:4], 16) % 59,
-            tzinfo=timezone.utc,
-        )
+        when = unique_future_iso()
     res = client.post(
         "/api/appointments",
         headers=headers,
-        json={
-            "patientId": patient_id,
-            "patientName": "Rappel Test",
-            "doctorId": f"d-reminder-{patient_id}",
-            "doctorName": "Dr. Karim",
-            "date": when.isoformat(),
-            "durationMin": 30,
-            "reason": "Controle",
-            "status": "scheduled",
-        },
+        json=appointment_payload(
+            client,
+            headers,
+            patient_id=patient_id,
+            doctor_id="d-2",
+            date=when if isinstance(when, str) else when.isoformat(),
+            reason="Controle",
+        ),
     )
     assert res.status_code == 200
     return res.json()["id"]

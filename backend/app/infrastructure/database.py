@@ -171,6 +171,9 @@ def bootstrap_database() -> None:
     else:
         run_migrations()
 
-    from app.infrastructure.seed import seed_demo_data
+    from app.infrastructure.seed import migrate_legacy_password_hashes, seed_demo_data
 
-    seed_demo_data()
+    migrate_legacy_password_hashes()
+
+    if settings.seed_demo_data:
+        seed_demo_data()

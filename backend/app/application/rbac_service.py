@@ -3,8 +3,10 @@ from uuid import uuid4
 from fastapi import HTTPException, status
 
 from app.application.schemas import UserCreate, UserUpdate
+from app.core.password_policy import validate_password
 from app.core.security import hash_password
 from app.domain.models import User
+from app.domain.ports import RefreshSessionRepository
 from app.infrastructure.doctor_sync import ensure_doctor_profile_for_user
 from app.infrastructure.sqlite_repositories import SQLiteUserRepository
 
@@ -22,8 +24,13 @@ def _user_payload(user: User) -> dict:
 
 
 class RbacService:
-    def __init__(self, users: SQLiteUserRepository) -> None:
+    def __init__(
+        self,
+        users: SQLiteUserRepository,
+        refresh_sessions: RefreshSessionRepository | None = None,
+    ) -> None:
         self.users = users
+        self.refresh_sessions = refresh_sessions
 
     def list_users(self) -> list[dict]:
         return [_user_payload(u) for u in self.users.list_all()]
@@ -54,6 +61,9 @@ class RbacService:
         if not updates:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Aucun champ à mettre à jour")
 
+        old_role = user.role
+        old_status = user.status
+
         new_role = updates.get("role", user.role)
         new_status = updates.get("status", user.status)
         if user.role == "admin" and (new_role != "admin" or new_status == "suspended"):
@@ -79,11 +89,24 @@ class RbacService:
         if "facility" in updates:
             user.facility = updates["facility"].strip()
         if "password" in updates:
+            validate_password(updates["password"])
             user.password = hash_password(updates["password"])
 
         self.users.update(user)
         if user.role == "doctor" and user.status == "active":
             ensure_doctor_profile_for_user(user)
+
+        revoke_sessions = False
+        if "password" in updates:
+            revoke_sessions = True
+        if "role" in updates and updates["role"] != old_role:
+            revoke_sessions = True
+        if "status" in updates and updates["status"] != old_status:
+            revoke_sessions = True
+
+        if revoke_sessions and self.refresh_sessions is not None:
+            self.refresh_sessions.revoke_all_for_user(user.id)
+
         return _user_payload(user)
 
     def delete_user(self, user_id: str, actor_id: str) -> None:
@@ -99,5 +122,8 @@ class RbacService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Impossible de supprimer le dernier administrateur actif",
             )
+
+        if self.refresh_sessions is not None:
+            self.refresh_sessions.revoke_all_for_user(user.id)
 
         self.users.delete(user_id)

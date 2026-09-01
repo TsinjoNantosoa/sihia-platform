@@ -48,7 +48,13 @@ from app.presentation.deps import (
 )
 from app.infrastructure.audit_log import export_audit_jsonl, read_audit_records
 from app.presentation.audit import log_admin_action
-from app.presentation.rate_limit import check_login_allowed, register_login_failure, reset_login_limiter
+from app.presentation.rate_limit import (
+    check_login_allowed,
+    check_password_reset_allowed,
+    register_login_failure,
+    register_password_reset_attempt,
+    reset_login_limiter,
+)
 
 
 def _doctor_payload(d) -> dict:
@@ -142,7 +148,20 @@ def logout_all(request: Request, claims: dict = Depends(require_auth)):
 
 
 @api_router.post("/auth/forgot-password")
-def forgot_password(payload: ForgotPasswordRequest):
+def forgot_password(payload: ForgotPasswordRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    limiter_key = f"reset:{client_ip}:{payload.email.lower()}"
+    retry_after = check_password_reset_allowed(limiter_key)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "code": "TOO_MANY_ATTEMPTS",
+                "message": "Trop de tentatives. Réessayez plus tard.",
+                "retryAfterSeconds": retry_after,
+            },
+        )
+    register_password_reset_attempt(limiter_key)
     auth_service.request_password_reset(str(payload.email))
     return {
         "status": "ok",
@@ -151,13 +170,39 @@ def forgot_password(payload: ForgotPasswordRequest):
 
 
 @api_router.post("/auth/verify-reset-code")
-def verify_reset_code(payload: VerifyResetCodeRequest):
+def verify_reset_code(payload: VerifyResetCodeRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    limiter_key = f"reset:{client_ip}:{payload.email.lower()}"
+    retry_after = check_password_reset_allowed(limiter_key)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "code": "TOO_MANY_ATTEMPTS",
+                "message": "Trop de tentatives. Réessayez plus tard.",
+                "retryAfterSeconds": retry_after,
+            },
+        )
+    register_password_reset_attempt(limiter_key)
     auth_service.verify_reset_code(str(payload.email), payload.code)
     return {"status": "ok"}
 
 
 @api_router.post("/auth/reset-password")
-def reset_password(payload: ResetPasswordRequest):
+def reset_password(payload: ResetPasswordRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    limiter_key = f"reset:{client_ip}:{payload.email.lower()}"
+    retry_after = check_password_reset_allowed(limiter_key)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "code": "TOO_MANY_ATTEMPTS",
+                "message": "Trop de tentatives. Réessayez plus tard.",
+                "retryAfterSeconds": retry_after,
+            },
+        )
+    register_password_reset_attempt(limiter_key)
     auth_service.reset_password(str(payload.email), payload.code, payload.new_password)
     return {"status": "ok"}
 

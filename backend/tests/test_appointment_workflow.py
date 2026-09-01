@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
+
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
 from app.main import app
+from tests.helpers_patients import appointment_payload
 
 client = TestClient(app)
 
@@ -15,20 +17,15 @@ def _headers(email: str = "dr.benali@sihia.health", password: str = "demo1234") 
 
 
 def _create_appointment(headers: dict[str, str]) -> str:
-    stamp = uuid4().hex[:8]
     response = client.post(
         "/api/appointments",
         headers=headers,
-        json={
-            "patientId": f"p-workflow-{stamp}",
-            "patientName": "Patient Workflow",
-            "doctorId": f"d-workflow-{stamp}",
-            "doctorName": "Dr. Workflow",
-            "date": datetime(2097, 1, 1, 9, 0, tzinfo=timezone.utc).isoformat(),
-            "durationMin": 30,
-            "reason": "Test workflow",
-            "status": "scheduled",
-        },
+        json=appointment_payload(
+            client,
+            headers,
+            doctor_id="d-1",
+            reason="Test workflow",
+        ),
     )
     assert response.status_code == 200
     return response.json()["id"]

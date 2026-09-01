@@ -128,9 +128,22 @@ def test_conflict_when_slot_taken_between_propose_and_commit() -> None:
         )
     )
     slot = _next_slot()
+    other_patient = patients_service.create(
+        PatientCreate(
+            firstName="Other",
+            lastName="Patient",
+            dob="1980-01-01",
+            gender="M",
+            phone="+212600222004",
+            email="other.demo@demo.sihia",
+            address="5 Demo",
+            bloodType="O-",
+            allergies=[],
+        )
+    )
     other = appointments_service.create(
         AppointmentCreate(
-            patientId="p-other",
+            patientId=other_patient.id,
             patientName="Other",
             doctorId="d-1",
             doctorName="Dr. Amina Diallo",

@@ -1,47 +1,56 @@
-"""Données de démonstration (après migrations Alembic)."""
+"""Données de démonstration — uniquement via SEED_DEMO_DATA=true ou scripts/seed_demo.py."""
 
 from __future__ import annotations
 
 import json
+import logging
 
-from app.core.security import hash_password, verify_password
+from app.core.security import hash_password
 from app.infrastructure.database import connect
+
+logger = logging.getLogger("sihia.seed")
+
+_DEMO_ACCOUNTS = [
+    ("u-admin", "Admin SIH", "admin@sihia.health", "admin123", "admin"),
+    ("u-doctor", "Dr Benali", "dr.benali@sihia.health", "demo1234", "doctor"),
+    ("u-manager", "Mme Diallo", "manager@sihia.health", "manager123", "manager"),
+    ("u-staff", "Accueil SIH", "staff@sihia.health", "staff123", "staff"),
+]
+
+
+def migrate_legacy_password_hashes() -> None:
+    """Re-hash les mots de passe legacy (non PBKDF2) sans toucher aux comptes démo."""
+    conn = connect()
+    rows = conn.execute("SELECT id, password FROM users").fetchall()
+    for row in rows:
+        pwd = row["password"]
+        if not str(pwd).startswith("pbkdf2_sha256$"):
+            conn.execute("UPDATE users SET password=? WHERE id=?", (hash_password(pwd), row["id"]))
+    conn.commit()
+    conn.close()
 
 
 def seed_demo_data() -> None:
+    """Charge les comptes et données de démonstration (appel explicite uniquement)."""
     conn = connect()
     if conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"] == 0:
         conn.executemany(
             "INSERT INTO users (id,name,email,password,role,facility,status) VALUES (?,?,?,?,?,?,?)",
             [
-                ("u-admin", "Admin SIH", "admin@sihia.health", hash_password("admin123"), "admin", "Hopital Central", "active"),
-                ("u-doctor", "Dr Benali", "dr.benali@sihia.health", hash_password("demo1234"), "doctor", "Hopital Central", "active"),
-                ("u-manager", "Mme Diallo", "manager@sihia.health", hash_password("manager123"), "manager", "Hopital Central", "active"),
-                ("u-staff", "Accueil SIH", "staff@sihia.health", hash_password("staff123"), "staff", "Hopital Central", "active"),
+                (uid, name, email, hash_password(pwd), role, "Hopital Central", "active")
+                for uid, name, email, pwd, role in _DEMO_ACCOUNTS
             ],
         )
+        logger.info("demo_users_created count=%s", len(_DEMO_ACCOUNTS))
     else:
-        rows = conn.execute("SELECT id, password FROM users").fetchall()
-        for row in rows:
-            pwd = row["password"]
-            if not str(pwd).startswith("pbkdf2_sha256$"):
-                conn.execute("UPDATE users SET password=? WHERE id=?", (hash_password(pwd), row["id"]))
-
-    demo_accounts = [
-        ("u-admin", "Admin SIH", "admin@sihia.health", "admin123", "admin"),
-        ("u-doctor", "Dr Benali", "dr.benali@sihia.health", "demo1234", "doctor"),
-        ("u-manager", "Mme Diallo", "manager@sihia.health", "manager123", "manager"),
-        ("u-staff", "Accueil SIH", "staff@sihia.health", "staff123", "staff"),
-    ]
-    for user_id, name, email, password, role in demo_accounts:
-        row = conn.execute("SELECT id, password FROM users WHERE lower(email)=lower(?)", (email,)).fetchone()
-        if not row:
-            conn.execute(
-                "INSERT INTO users (id,name,email,password,role,facility,status) VALUES (?,?,?,?,?,?,?)",
-                (user_id, name, email, hash_password(password), role, "Hopital Central", "active"),
-            )
-        elif not verify_password(password, row["password"]):
-            conn.execute("UPDATE users SET password=? WHERE id=?", (hash_password(password), row["id"]))
+        for user_id, name, email, password, role in _DEMO_ACCOUNTS:
+            row = conn.execute("SELECT id FROM users WHERE lower(email)=lower(?)", (email,)).fetchone()
+            if not row:
+                conn.execute(
+                    "INSERT INTO users (id,name,email,password,role,facility,status) VALUES (?,?,?,?,?,?,?)",
+                    (user_id, name, email, hash_password(password), role, "Hopital Central", "active"),
+                )
+                logger.info("demo_user_inserted email=%s", email)
 
     if conn.execute("SELECT COUNT(*) AS c FROM doctors").fetchone()["c"] == 0:
         days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
@@ -80,6 +89,7 @@ def seed_demo_data() -> None:
             ],
         )
 
+    _seed_demo_clinical_data(conn)
     conn.commit()
     conn.close()
 
@@ -87,21 +97,77 @@ def seed_demo_data() -> None:
 
     sync_all_doctor_users()
     _seed_voice_demo()
+    logger.info("demo_seed_complete")
+
+
+def _seed_demo_clinical_data(conn) -> None:
+    from datetime import date, timedelta
+
+    row = conn.execute("SELECT id FROM patients WHERE id=?", ("p-test",)).fetchone()
+    if not row:
+        conn.execute(
+            """
+            INSERT INTO patients (
+                id, record_number, first_name, last_name, dob, gender, phone, email,
+                address, blood_type, allergies, insurance, status, last_visit
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                "p-test",
+                "PT-DEMO01",
+                "Demo",
+                "Patient",
+                "1990-01-01",
+                "M",
+                "+212600000099",
+                "demo.patient@sihia.health",
+                "Casablanca",
+                "O+",
+                "[]",
+                None,
+                "active",
+                None,
+            ),
+        )
+
+    existing = conn.execute("SELECT COUNT(*) AS c FROM appointments").fetchone()["c"]
+    if existing >= 10:
+        return
+
+    today = date.today()
+    for offset in range(14, 0, -1):
+        day = today - timedelta(days=offset)
+        if offset % 2 == 0:
+            continue
+        appt_id = f"a-demo-{offset}"
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO appointments
+                (id, patient_id, patient_name, doctor_id, doctor_name, date, duration_min, reason, status)
+            VALUES (?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                appt_id,
+                "p-test",
+                "Demo Patient",
+                "d-1",
+                "Dr Amina Diallo",
+                f"{day.isoformat()}T10:00:00",
+                30,
+                "Consultation démo",
+                "scheduled",
+            ),
+        )
+    logger.info("demo_clinical_data_ready")
 
 
 def _seed_voice_demo() -> None:
     """Appels Voice synthétiques pour la console portfolio (aucune donnée réelle)."""
     from datetime import datetime, timezone
+
     from app.infrastructure.database import connect as db_connect
 
     conn = db_connect()
-    try:
-        tables = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='voice_calls'"
-        ).fetchall()
-    except Exception:
-        tables = [{"name": "voice_calls"}]
-    # PostgreSQL n'a pas sqlite_master — on tente le COUNT.
     try:
         count_row = conn.execute("SELECT COUNT(*) AS c FROM voice_calls").fetchone()
     except Exception:

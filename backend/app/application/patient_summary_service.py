@@ -49,7 +49,7 @@ class PatientAiSummaryService:
         lines = deterministic["lines"]
         bullets = deterministic["bullets"]
 
-        if settings.openai_api_key and sorted_visits:
+        if settings.patient_ai_external_llm_enabled and settings.openai_api_key and sorted_visits:
             try:
                 llm_lines = self._llm_summary(patient, sorted_visits, lang)
                 if llm_lines:

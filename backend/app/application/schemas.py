@@ -1,6 +1,8 @@
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.core.password_policy import validate_password
 
 
 class LoginRequest(BaseModel):
@@ -34,9 +36,14 @@ class VerifyResetCodeRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     code: str = Field(min_length=4, max_length=16)
-    new_password: str = Field(min_length=6, max_length=128, alias="newPassword")
+    new_password: str = Field(min_length=10, max_length=128, alias="newPassword")
 
     model_config = {"populate_by_name": True}
+
+    @field_validator("new_password")
+    @classmethod
+    def _validate_new_password(cls, value: str) -> str:
+        return validate_password(value)
 
 
 class PatientCreate(BaseModel):
@@ -66,7 +73,7 @@ class PatientUpdate(BaseModel):
     bloodType: str | None = None
     allergies: list[str] | None = None
     insurance: str | None = None
-    status: Literal["active", "inactive", "admitted"] | None = None
+    status: Literal["active", "inactive", "admitted", "archived"] | None = None
     chronicConditions: str | None = None
     currentTreatments: str | None = None
     emergencyContact: str | None = None
@@ -99,13 +106,13 @@ class ReminderSendRequest(BaseModel):
 
 class AppointmentCreate(BaseModel):
     patientId: str
-    patientName: str
+    patientName: str | None = None  # ignoré — dérivé côté serveur
     doctorId: str
-    doctorName: str
+    doctorName: str | None = None  # ignoré — dérivé côté serveur
     date: str
     durationMin: int = Field(default=30, ge=15, le=240)
     reason: str
-    status: Literal["scheduled", "confirmed", "arrived", "completed", "cancelled", "noshow"]
+    status: Literal["scheduled", "confirmed", "arrived", "completed", "cancelled", "noshow"] | None = None
 
 
 class AppointmentStatusUpdate(BaseModel):
@@ -123,15 +130,20 @@ UserRole = Literal["admin", "doctor", "staff", "manager"]
 class UserCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     email: EmailStr
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=10, max_length=128)
     role: UserRole
     facility: str = Field(default="Hopital Central", min_length=2, max_length=120)
+
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        return validate_password(value)
 
 
 class UserUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=120)
     email: EmailStr | None = None
-    password: str | None = Field(default=None, min_length=6, max_length=128)
+    password: str | None = Field(default=None, min_length=10, max_length=128)
     role: UserRole | None = None
     facility: str | None = Field(default=None, min_length=2, max_length=120)
     status: Literal["active", "suspended"] | None = None
