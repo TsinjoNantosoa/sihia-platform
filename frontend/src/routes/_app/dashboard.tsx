@@ -118,9 +118,11 @@ function DashboardPage() {
       <DashboardHeader greeting={getGreeting(t)} userName={user?.name ?? "Dr."} canMl={canMl} />
 
       {showQuietBanner ? (
-        <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 sm:px-5">
+        <div className="rounded-xl border border-border bg-muted/20 px-4 py-4 sm:px-5">
           <p className="text-sm font-medium text-foreground">{t("dash.emptyActivityTitle")}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("dash.emptyActivityDesc")}</p>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            {t("dash.emptyActivityDesc")}
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               to="/patients"

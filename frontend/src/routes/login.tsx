@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2, Brain, LineChart, PhoneCall, ShieldCheck } from "lucide-react";
+import { SidebarBrand } from "@/components/brand/SidebarBrand";
 import { SihiaLogo } from "@/components/brand/SihiaLogo";
 import { useAuth } from "@/lib/auth/store";
 import { useT, useI18n } from "@/lib/i18n/store";
@@ -17,13 +18,20 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+const CAPABILITIES = [
+  { key: "login.marketing.capability.rag", icon: Brain },
+  { key: "login.marketing.capability.analytics", icon: LineChart },
+  { key: "login.marketing.capability.voice", icon: PhoneCall },
+  { key: "login.marketing.capability.rbac", icon: ShieldCheck },
+] as const;
+
 function LoginPage() {
   const t = useT();
   const { locale, setLocale } = useI18n();
   const login = useAuth((s) => s.login);
   const navigate = useNavigate();
-  const [email, setEmail] = useState("dr.benali@sihia.health");
-  const [password, setPassword] = useState("demo1234");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +66,7 @@ function LoginPage() {
       <div className="flex items-center justify-center bg-background p-6 sm:p-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
-            <SihiaLogo variant="compact" surface="light" />
+            <SidebarBrand />
           </div>
 
           <h1 className="text-2xl font-semibold tracking-tight">{t("login.title")}</h1>
@@ -70,12 +78,13 @@ function LoginPage() {
                 {t("login.email")}
               </label>
               <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
-                <Mail className="size-4 text-muted-foreground" />
+                <Mail className="size-4 text-muted-foreground" aria-hidden />
                 <input
                   id="email"
                   data-testid="login-email"
                   type="email"
                   required
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-transparent text-sm focus:outline-none"
@@ -89,12 +98,13 @@ function LoginPage() {
                 {t("login.password")}
               </label>
               <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
-                <Lock className="size-4 text-muted-foreground" />
+                <Lock className="size-4 text-muted-foreground" aria-hidden />
                 <input
                   id="password"
                   data-testid="login-password"
                   type="password"
                   required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-transparent text-sm focus:outline-none"
@@ -104,7 +114,10 @@ function LoginPage() {
             </div>
 
             {error ? (
-              <div className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-xs text-destructive">
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-xs text-destructive"
+              >
                 {error}
               </div>
             ) : null}
@@ -113,9 +126,9 @@ function LoginPage() {
               type="submit"
               data-testid="login-submit"
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60"
             >
-              {loading ? <Loader2 className="size-4 animate-spin" /> : null}
+              {loading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
               {t("login.submit")}
             </button>
 
@@ -129,9 +142,9 @@ function LoginPage() {
                     key={l.code}
                     type="button"
                     onClick={() => setLocale(l.code as Locale)}
-                    className={`rounded px-1.5 py-0.5 text-[10px] uppercase ${
+                    className={`rounded px-1.5 py-0.5 text-[10px] uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 ${
                       locale === l.code
-                        ? "bg-primary-soft font-bold text-primary"
+                        ? "bg-primary-soft font-semibold text-primary"
                         : "hover:text-foreground"
                     }`}
                   >
@@ -148,44 +161,46 @@ function LoginPage() {
         </div>
       </div>
 
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-primary via-primary to-accent lg:block">
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-[oklch(0.28_0.06_250)] via-[oklch(0.32_0.08_235)] to-[oklch(0.35_0.07_165)] lg:block">
         <div
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0 opacity-15"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 20% 20%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 30%)",
+              "radial-gradient(circle at 20% 20%, white 0, transparent 35%), radial-gradient(circle at 80% 70%, white 0, transparent 35%)",
           }}
+          aria-hidden
         />
         <div className="relative flex h-full flex-col justify-between gap-10 p-12">
-          <div className="w-fit rounded-2xl bg-white px-6 py-5 shadow-[var(--shadow-card)]">
-            <SihiaLogo variant="full" className="max-w-[420px]" />
-          </div>
-          <div className="space-y-6 text-primary-foreground">
-            <h2 className="text-4xl font-semibold leading-tight">
-              L'intelligence opérationnelle au service du soin.
+          <SihiaLogo
+            variant="full"
+            decorative
+            className="max-h-16 w-auto max-w-[280px] opacity-95"
+          />
+
+          <div className="space-y-6 text-white">
+            <h2 className="max-w-lg text-3xl font-semibold leading-tight tracking-tight">
+              {t("login.marketing.title")}
             </h2>
-            <p className="max-w-md text-base opacity-90">
-              KPIs temps réel, prédiction du flux patients par LSTM et chatbot médical multilingue —
-              tout dans une seule plateforme moderne.
+            <p className="max-w-md text-sm leading-relaxed text-white/85">
+              {t("login.marketing.subtitle")}
             </p>
-            <div className="grid grid-cols-3 gap-4 pt-4">
-              {[
-                { v: "99.5%", l: "Uptime SLA" },
-                { v: "<200ms", l: "Latence API" },
-                { v: "10k", l: "Patients simul." },
-              ].map((s) => (
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              {CAPABILITIES.map(({ key, icon: Icon }) => (
                 <div
-                  key={s.l}
-                  className="rounded-xl border border-white/15 bg-white/10 p-3 backdrop-blur"
+                  key={key}
+                  className="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/8 px-3 py-2.5"
                 >
-                  <div className="text-xl font-semibold">{s.v}</div>
-                  <div className="text-[10px] uppercase tracking-wider opacity-80">{s.l}</div>
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                    <Icon className="size-4 text-white/90" aria-hidden />
+                  </span>
+                  <span className="text-sm font-medium text-white/95">{t(key)}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between text-xs text-primary-foreground/70">
-            <span>HL7 FHIR · RGPD</span>
+
+          <div className="flex items-center justify-between text-xs text-white/60">
+            <span>{t("login.marketing.footer")}</span>
             <span>© 2026 SIHIA</span>
           </div>
         </div>

@@ -66,6 +66,15 @@
   --shadow-card: 0 1px 2px oklch(0.2 0.04 240 / 0.04), 0 1px 3px oklch(0.2 0.04 240 / 0.06);
   --shadow-elevated:
     0 8px 24px -8px oklch(0.2 0.04 240 / 0.12), 0 2px 6px oklch(0.2 0.04 240 / 0.06);
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
 }
 
 :root {

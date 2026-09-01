@@ -189,38 +189,40 @@ function PatientsListPage() {
         }
       />
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
-            <Search className="size-4 text-muted-foreground" aria-hidden />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              placeholder={t("common.searchPlaceholder")}
-              aria-label={t("common.search")}
-              className="w-full bg-transparent text-sm focus:outline-none"
-            />
-          </div>
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-            <Filter className="size-4 text-muted-foreground" aria-hidden />
-            <select
-              aria-label={t("common.status")}
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="bg-transparent text-sm focus:outline-none"
-            >
-              <option value="all">Tous statuts</option>
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row">
+            <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
+              <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder={t("common.searchPlaceholder")}
+                aria-label={t("common.search")}
+                className="w-full bg-transparent text-sm focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 sm:min-w-[160px]">
+              <Filter className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <select
+                aria-label={t("common.status")}
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full bg-transparent text-sm focus:outline-none"
+              >
+                <option value="all">{t("patients.filter.all")}</option>
               <option value="active">{t("patients.status.active")}</option>
               <option value="admitted">{t("patients.status.admitted")}</option>
               <option value="inactive">{t("patients.status.inactive")}</option>
             </select>
+            </div>
           </div>
         </div>
 
@@ -248,7 +250,7 @@ function PatientsListPage() {
                 data-testid="patients-table"
                 data-density={table.dense ? "compact" : "comfortable"}
               >
-                <thead className="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <thead className="bg-muted/50 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   <tr>
                     {columns.map((column) =>
                       table.isVisible(column.id) ? (
@@ -271,7 +273,7 @@ function PatientsListPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {pageData.map((p: Patient) => (
-                    <tr key={p.id} className="hover:bg-muted/30">
+                    <tr key={p.id} className="transition-colors hover:bg-muted/40 focus-within:bg-muted/30">
                       {table.isVisible("id") ? (
                         <td className={`${rowClassName} font-mono text-xs text-muted-foreground`}>
                           {p.recordNumber}
@@ -319,8 +321,9 @@ function PatientsListPage() {
                           <Link
                             to="/patients/$patientId"
                             params={{ patientId: p.id }}
-                            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                            aria-label="Voir"
+                            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                            aria-label={t("patients.view")}
+                            title={t("patients.view")}
                           >
                             <Eye className="size-4" />
                           </Link>
@@ -328,8 +331,9 @@ function PatientsListPage() {
                             <button
                               onClick={() => setToDelete(p)}
                               disabled={pendingDeletionIds.has(p.id)}
-                              className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
-                              aria-label="Supprimer"
+                              className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive-soft hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-50"
+                              aria-label={t("common.delete")}
+                              title={t("common.delete")}
                             >
                               <Trash2 className="size-4" />
                             </button>
@@ -345,7 +349,11 @@ function PatientsListPage() {
             {/* Pagination */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
-                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} sur {total}
+                {t("patients.pagination.range", {
+                  from: (page - 1) * PAGE_SIZE + 1,
+                  to: Math.min(page * PAGE_SIZE, total),
+                  total,
+                })}
               </span>
               <div className="flex items-center gap-1">
                 <button
@@ -376,11 +384,12 @@ function PatientsListPage() {
       <ConfirmDialog
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Supprimer le patient"
-        description={`Supprimer le dossier de ${toDelete?.firstName} ${toDelete?.lastName} ? ${t(
-          "undo.confirmDescription",
-          { seconds: UNDOABLE_ACTION_DELAY_MS / 1_000 },
-        )}`}
+        title={t("patients.deleteTitle")}
+        description={`${t("patients.deleteConfirm", {
+          name: `${toDelete?.firstName ?? ""} ${toDelete?.lastName ?? ""}`.trim(),
+        })} ${t("undo.confirmDescription", {
+          seconds: UNDOABLE_ACTION_DELAY_MS / 1_000,
+        })}`}
         confirmLabel={t("common.delete")}
         destructive
         onConfirm={() => toDelete && schedulePatientDeletion(toDelete)}
@@ -435,26 +444,26 @@ function NewPatientDialog({
 
   const submit = () => {
     const errs: Record<string, string> = {};
-    if (!form.firstName.trim()) errs.firstName = "Requis";
-    if (!form.lastName.trim()) errs.lastName = "Requis";
+    if (!form.firstName.trim()) errs.firstName = t("patients.validation.required");
+    if (!form.lastName.trim()) errs.lastName = t("patients.validation.required");
     if (!form.dob) {
-      errs.dob = "Requis";
+      errs.dob = t("patients.validation.required");
     } else {
       const dob = new Date(form.dob);
       const today = new Date();
-      if (dob > today) errs.dob = "La date de naissance ne peut pas être dans le futur";
+      if (dob > today) errs.dob = t("patients.validation.dobFuture");
       else if (today.getFullYear() - dob.getFullYear() > 150)
-        errs.dob = "Date de naissance invalide";
+        errs.dob = t("patients.validation.dobInvalid");
     }
     if (!form.phone.trim()) {
-      errs.phone = "Requis";
+      errs.phone = t("patients.validation.required");
     } else if (!/^\+?[\d\s\-()]{7,20}$/.test(form.phone.trim())) {
-      errs.phone = "Numéro de téléphone invalide";
+      errs.phone = t("patients.validation.phoneInvalid");
     }
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      errs.email = "Adresse email invalide";
+      errs.email = t("patients.validation.emailInvalid");
     }
-    if (!form.address.trim()) errs.address = "Requis";
+    if (!form.address.trim()) errs.address = t("patients.validation.required");
     setErrors(errs);
     if (Object.keys(errs).length) return;
     createMut.mutate({

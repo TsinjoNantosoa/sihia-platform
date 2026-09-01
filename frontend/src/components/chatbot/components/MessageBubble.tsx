@@ -154,13 +154,15 @@ export default function MessageBubble({
         <span className="msg-time">{getTime()}</span>
         {message.sources && message.sources.length > 0 && (
           <div className="message-sources">
-            <small>Sources :</small>
+            <small>Source</small>
             <ul>
               {message.sources.map((source, i) => (
                 <li key={`${source.document_id}-${i}`} className="message-source-card">
-                  <strong>{source.filename}</strong>
-                  {source.page ? <span> — page {source.page}</span> : null}
-                  {source.section ? <span> — {source.section}</span> : null}
+                  <strong>
+                    {source.filename}
+                    {source.section ? ` — ${source.section}` : ""}
+                  </strong>
+                  {source.page ? <span> · p. {source.page}</span> : null}
                   {source.excerpt ? <p>{source.excerpt}</p> : null}
                 </li>
               ))}

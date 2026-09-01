@@ -148,7 +148,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     className={cn(
                       "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
                       active
-                        ? "border border-primary/20 bg-primary/10 text-foreground"
+                        ? "border-s border-primary/40 bg-primary/10 text-foreground"
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >

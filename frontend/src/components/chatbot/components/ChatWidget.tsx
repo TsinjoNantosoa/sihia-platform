@@ -133,15 +133,13 @@ export default function ChatWidget({
   }
 
   const getInitialGreeting = (lang: "fr" | "en") => {
-    const name = resolveBotName(clientId, theme?.botName);
-
     if (theme?.welcomeFr && lang === "fr") return theme.welcomeFr;
-
     if (theme?.welcomeEn && lang === "en") return theme.welcomeEn;
 
-    if (lang === "en") return `Hello! I'm ${name}, your SIHIA assistant. How can I help you?`;
-
-    return `Bonjour ! Je suis ${name}, votre assistant SIHIA. Comment puis-je vous aider ?`;
+    if (lang === "en") {
+      return "<p>Hello, I'm the SIHIA Assistant. How can I help you?</p><p>I can guide you on appointments, hospital services and available information.</p>";
+    }
+    return "<p>Bonjour, je suis l'Assistant SIHIA. Comment puis-je vous aider ?</p><p>Je peux vous orienter sur les rendez-vous, les services hospitaliers et les informations disponibles.</p>";
   };
 
   function shouldShowQuickReplies(initialMessages: Message[]): boolean {
@@ -880,8 +878,6 @@ export default function ChatWidget({
                 style={{ width: "72%", height: "72%", objectFit: "contain" }}
               />
             </div>
-
-            <div className="chat-fab-badge">1</div>
           </button>
         </motion.div>
       )}

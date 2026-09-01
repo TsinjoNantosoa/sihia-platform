@@ -23,12 +23,6 @@ export default function ChatHeader({
 }: Props) {
   const logoSrc = theme?.logoUrl ?? defaultLogo;
   const botName = resolveBotName(clientId, theme?.botName);
-  const colorStart = theme?.primaryColor ?? "#132251";
-  const colorEnd = theme?.primaryColor ?? "#0F1B42";
-
-  const headerStyle: React.CSSProperties = {
-    background: `linear-gradient(90deg, ${colorStart} 0%, ${colorEnd} 100%)`,
-  };
 
   const statusText = language === "fr" ? "En ligne" : "Online";
   const clearTooltip = language === "fr" ? "Réinitialiser" : "Clear";
@@ -41,31 +35,14 @@ export default function ChatHeader({
       : "Open";
 
   return (
-    <div className="chat-header" style={headerStyle}>
-      <svg className="header-curve" viewBox="0 0 400 60" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="curveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={colorStart} />
-            <stop offset="100%" stopColor={colorEnd} />
-          </linearGradient>
-        </defs>
-        <path d="M 0 20 Q 100 0, 200 20 T 400 20 L 400 0 L 0 0 Z" fill="url(#curveGradient)" />
-        <path
-          d="M 0 20 Q 100 5, 200 20 T 400 20"
-          stroke="#ffffff"
-          strokeWidth="1"
-          fill="none"
-          opacity="0.15"
-        />
-      </svg>
-
+    <div className="chat-header">
       <div className="chat-header-left">
         <div className="chat-avatar-square">
           <img
             src={logoSrc}
             srcSet={`${logoSrc} 1x`}
-            sizes="64px"
-            alt={`${botName} logo`}
+            sizes="40px"
+            alt=""
             className="chat-avatar-img"
             onError={(e) => {
               const img = e.currentTarget as HTMLImageElement;
@@ -81,10 +58,9 @@ export default function ChatHeader({
           />
         </div>
         <div className="chat-header-info">
-          <span className="chat-title">{language === "fr" ? "Discuter avec" : "Chat with"}</span>
           <span className="chat-name">{botName}</span>
           <span className="chat-header-status">
-            <span className="online-dot" />
+            <span className="online-dot" aria-hidden />
             {statusText}
           </span>
         </div>
